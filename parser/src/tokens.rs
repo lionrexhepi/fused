@@ -5,57 +5,64 @@ use crate::{
     location::SourceLocation,
 };
 
-struct Ident(String);
+pub struct Ident(String);
 
-enum Literal {
+pub enum Literal {
     Number(String),
     String(String),
 }
 
 pub enum Punct {
-    Plus,        //+
-    Minus,       //-
-    Star,        //*
-    Slash,       // /
-    Percent,     // %
-    Caret,       // ^
-    Ampersand,   // &
-    Pipe,        // |
-    PlusEq,      // +=
-    MinusEq,     // -=
-    StarEq,      // *=
-    SlashEq,     // /=
-    PercentEq,   // %=
-    CaretEq,     // ^=
-    AmpersandEq, // &=
-    PipeEq,      // |=
-    Tilde,       // ~
-    Question,    // ?
-    Exclamation, // !
-    Dot,         // .
-    Comma,       // ,
-    Colon,       // :
-    SemiColon,   // ;
-    Eq,          // =
-    NotEq,       // !=
-    Lt,          // <
-    LtEq,        // <=
-    Gt,          // >
-    GtEq,        // >=
-    LBrace,      // {
-    RBrace,      // }
-    LBracket,    // [
-    RBracket,    // ]
-    LParen,      // (
-    RParen,      // )
-    Arrow,       // ->
-    FatArrow,    // =>
-    Hash,        // #
-    Dollar,      // $
-    At,          // @
-    Underscore,  // _
-    Backslash,   // \
-    Newline,     // \n
+    Plus,         //+
+    Minus,        //-
+    Star,         //*
+    Slash,        // /
+    Percent,      // %
+    Caret,        // ^
+    Ampersand,    // &
+    Pipe,         // |
+    DoublePipe,   // ||
+    PlusEq,       // +=
+    MinusEq,      // -=
+    StarEq,       // *=
+    SlashEq,      // /=
+    PercentEq,    // %=
+    CaretEq,      // ^=
+    AmpersandEq,  // &=
+    PipeEq,       // |=
+    Tilde,        // ~
+    Question,     // ?
+    Exclamation,  // !
+    Dot,          // .
+    Comma,        // ,
+    Colon,        // :
+    SemiColon,    // ;
+    Eq,           // =
+    DoubleEq,     // ==
+    NotEq,        // !=
+    Lt,           // <
+    LeftShift,    // <<
+    LeftShiftEq,  // <<=
+    LtEq,         // <=
+    Gt,           // >
+    RightShift,   // >>
+    RightShiftEq, // >>=
+    GtEq,         // >=
+    LBrace,       // {
+    RBrace,       // }
+    LBracket,     // [
+    RBracket,     // ]
+    LParen,       // (
+    RParen,       // )
+    Arrow,        // ->
+    FatArrow,     // =>
+    Hash,         // #
+    Dollar,       // $
+    At,           // @
+    Underscore,   // _
+    Backslash,    // \
+    Newline,
+    DoubleAmpersand, // \n
 }
 
 pub enum TokenType {
@@ -199,6 +206,8 @@ impl TokenStream {
                 '&' => {
                     if file.next_is('=')? {
                         TokenType::Punct(Punct::AmpersandEq)
+                    } else if file.next_is('&')? {
+                        TokenType::Punct(Punct::DoubleAmpersand)
                     } else {
                         TokenType::Punct(Punct::Ampersand)
                     }
@@ -206,6 +215,8 @@ impl TokenStream {
                 '|' => {
                     if file.next_is('=')? {
                         TokenType::Punct(Punct::PipeEq)
+                    } else if file.next_is('|')? {
+                        TokenType::Punct(Punct::DoublePipe)
                     } else {
                         TokenType::Punct(Punct::Pipe)
                     }
@@ -223,10 +234,22 @@ impl TokenStream {
                 ',' => TokenType::Punct(Punct::Comma),
                 ':' => TokenType::Punct(Punct::Colon),
                 ';' => TokenType::Punct(Punct::SemiColon),
-                '=' => TokenType::Punct(Punct::Eq),
+                '=' => {
+                    if file.next_is('=')? {
+                        TokenType::Punct(Punct::DoubleEq)
+                    } else {
+                        TokenType::Punct(Punct::Eq)
+                    }
+                }
                 '<' => {
                     if file.next_is('=')? {
                         TokenType::Punct(Punct::LtEq)
+                    } else if file.next_is('<')? {
+                        if file.next_is('=')? {
+                            TokenType::Punct(Punct::LeftShiftEq)
+                        } else {
+                            TokenType::Punct(Punct::LeftShift)
+                        }
                     } else {
                         TokenType::Punct(Punct::Lt)
                     }
@@ -234,6 +257,12 @@ impl TokenStream {
                 '>' => {
                     if file.next_is('=')? {
                         TokenType::Punct(Punct::GtEq)
+                    } else if file.next_is('>')? {
+                        if file.next_is('=')? {
+                            TokenType::Punct(Punct::RightShiftEq)
+                        } else {
+                            TokenType::Punct(Punct::RightShift)
+                        }
                     } else {
                         TokenType::Punct(Punct::Gt)
                     }
