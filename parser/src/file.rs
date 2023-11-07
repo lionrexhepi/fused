@@ -1,16 +1,12 @@
-use std::{
-    ascii::AsciiExt,
-    collections::VecDeque,
-    io::{BufRead, BufReader, Read},
-};
+use std::{ ascii::AsciiExt, collections::VecDeque, io::{ BufRead, BufReader, Read } };
 
 use crate::location::SourceLocation;
 
 pub type Result<T> = std::result::Result<T, SourceFileError>;
 
-pub struct SourceFile {
+pub struct SourceFile<'a> {
     pub name: String,
-    content: BufReader<Box<dyn Read>>,
+    content: BufReader<Box<dyn Read + 'a>>,
     buffer: VecDeque<char>,
     pos: SourceLocation,
     buffer_pos: usize,
@@ -27,8 +23,8 @@ impl From<std::io::Error> for SourceFileError {
     }
 }
 
-impl SourceFile {
-    pub fn new(name: String, content: impl Read + 'static) -> Self {
+impl<'a> SourceFile<'a> {
+    pub fn new(name: String, content: impl Read + 'a) -> Self {
         Self {
             name,
             content: BufReader::new(Box::new(content)),
@@ -42,8 +38,12 @@ impl SourceFile {
         let mut buf = vec![0; 255 - self.buffer.len()];
         let len = self.content.read(&mut buf)?;
 
-        self.buffer
-            .extend(buf.into_iter().take(len).map(|c| c as char));
+        self.buffer.extend(
+            buf
+                .into_iter()
+                .take(len)
+                .map(|c| c as char)
+        );
 
         Ok(())
     }
@@ -79,8 +79,12 @@ impl SourceFile {
         loop {
             let (c, pos) = match self.peek() {
                 Ok((c, pos)) => (c, pos),
-                Err(SourceFileError::EOF) => break Ok((buf, self.pos)),
-                Err(SourceFileError::IoError(err)) => return Err(SourceFileError::IoError(err)),
+                Err(SourceFileError::EOF) => {
+                    break Ok((buf, self.pos));
+                }
+                Err(SourceFileError::IoError(err)) => {
+                    return Err(SourceFileError::IoError(err));
+                }
             };
 
             if condition(c) {
@@ -105,7 +109,7 @@ impl SourceFile {
 
     pub fn next_if(
         &mut self,
-        condition: impl Fn(char) -> bool,
+        condition: impl Fn(char) -> bool
     ) -> Result<Option<(char, SourceLocation)>> {
         let (c, pos) = self.peek()?;
 
@@ -117,14 +121,14 @@ impl SourceFile {
         }
     }
 
-    pub fn next_is(&mut self, ch: char) -> Result<(bool)> {
+    pub fn next_is(&mut self, ch: char) -> Result<bool> {
         let (c, pos) = self.peek()?;
 
         if c == ch {
             self.next()?;
-            Ok((true))
+            Ok(true)
         } else {
-            Ok((false))
+            Ok(false)
         }
     }
 }

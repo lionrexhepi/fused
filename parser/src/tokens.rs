@@ -271,6 +271,8 @@ impl Group {
             _ => panic!("Invalid Delimiter"),
         }
 
+        let mut content = String::new();
+
         while braces > 0 || brackets > 0 || parens > 0 {
             let (c, _) = file.next()?;
 
@@ -297,7 +299,18 @@ impl Group {
             }
         }
 
-        todo!()
+        let content_file = SourceFile::new(file.name.clone(), Box::new(content.as_bytes()));
+
+        let content = TokenStream::new(content_file)?;
+
+        Ok(Self {
+            content,
+            delim: match delim_char {
+                '(' => Punct::LParen,
+
+                _ => panic!("Invalid Delimiter"),
+            },
+        })
     }
 }
 
@@ -329,7 +342,7 @@ pub struct TokenStream {
 }
 
 impl TokenStream {
-    pub fn new(mut file: SourceFile) -> Result<Self> {
+    pub fn new(mut file: SourceFile<'_>) -> Result<Self> {
         let mut tokens = VecDeque::new();
 
         loop {
