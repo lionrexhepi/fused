@@ -1,5 +1,5 @@
 use core::panic;
-use std::collections::VecDeque;
+use std::{ collections::VecDeque, io::BufReader };
 
 use crate::{ file::{ SourceFile, SourceFileError }, location::SourceLocation };
 
@@ -244,6 +244,60 @@ impl Punct {
             '\n' => Self::Newline,
             _ => panic!("Invalid Punctuation"), //Check the is_punct_char function before calling this
         })
+    }
+}
+
+struct Group {
+    content: TokenStream,
+    delim: Punct,
+}
+
+impl Group {
+    fn parse(file: &mut SourceFile, delim_char: char) -> Result<Self> {
+        let mut braces = 0;
+        let mut brackets = 0;
+        let mut parens = 0;
+
+        match delim_char {
+            '{' => {
+                braces += 1;
+            }
+            '[' => {
+                brackets += 1;
+            }
+            '(' => {
+                parens += 1;
+            }
+            _ => panic!("Invalid Delimiter"),
+        }
+
+        while braces > 0 || brackets > 0 || parens > 0 {
+            let (c, _) = file.next()?;
+
+            match c {
+                '{' => {
+                    braces += 1;
+                }
+                '}' => {
+                    braces -= 1;
+                }
+                '[' => {
+                    brackets += 1;
+                }
+                ']' => {
+                    brackets -= 1;
+                }
+                '(' => {
+                    parens += 1;
+                }
+                ')' => {
+                    parens -= 1;
+                }
+                _ => {}
+            }
+        }
+
+        todo!()
     }
 }
 
