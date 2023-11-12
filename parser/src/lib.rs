@@ -1,3 +1,2 @@
-mod file;
-mod location;
+pub mod file;
 pub mod tokens;

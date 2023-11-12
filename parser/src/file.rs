@@ -1,8 +1,4 @@
-use std::{ ascii::AsciiExt, collections::VecDeque, io::{ BufRead, BufReader, Read }, str::Chars };
-
-use crate::location::SourceLocation;
-
-pub type SourceChar = Option<char>;
+use std::str::Chars;
 
 pub const EOF: char = '\0';
 
@@ -43,14 +39,16 @@ impl<'a> Cursor<'a> {
         self.content.clone().next().unwrap_or(EOF)
     }
 
-    pub fn second_next(&self) -> char {
-        self.content.clone().nth(1).unwrap_or(EOF)
+    pub fn nth(&self, n: usize) -> char {
+        self.content.clone().nth(n).unwrap_or(EOF)
     }
 
     pub fn advance(&mut self) -> Option<char> {
         let char = self.content.next()?;
 
         self.current = char;
+        self.consumed += 1;
+        self.absolute += 1;
 
         Some(char)
     }
