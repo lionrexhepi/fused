@@ -4,7 +4,6 @@ pub const EOF: char = '\0';
 
 pub struct Cursor<'a> {
     content: Chars<'a>,
-    current: char,
     consumed: usize,
     absolute: usize,
 }
@@ -13,7 +12,6 @@ impl<'a> Cursor<'a> {
     pub fn new(data: &'a str) -> Self {
         Self {
             content: data.chars(),
-            current: EOF,
             consumed: 0,
             absolute: 0,
         }
@@ -32,24 +30,21 @@ impl<'a> Cursor<'a> {
     }
 
     pub fn current(&self) -> char {
-        self.current
+        self.content.clone().nth(0).unwrap_or(EOF)
     }
 
     pub fn next(&self) -> char {
-        self.content.clone().next().unwrap_or(EOF)
+        self.content.clone().nth(1).unwrap_or(EOF)
     }
 
     pub fn nth(&self, n: usize) -> char {
         self.content.clone().nth(n).unwrap_or(EOF)
     }
 
-    pub fn advance(&mut self) -> Option<char> {
-        let char = self.content.next()?;
-
-        self.current = char;
+    pub fn advance(&mut self) -> char {
         self.consumed += 1;
         self.absolute += 1;
 
-        Some(char)
+        self.content.next().unwrap_or(EOF)
     }
 }

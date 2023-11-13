@@ -1,6 +1,3 @@
-use core::num;
-use std::{ char, thread::current };
-
 use crate::file::Cursor;
 
 const fn is_digit(char: char) -> bool {
@@ -25,8 +22,8 @@ impl TokenLiteral {
 }
 
 pub struct LiteralNumber {
-    r#type: NumberType,
-    digits: Option<String>,
+    pub r#type: NumberType,
+    pub digits: Option<String>,
 }
 
 impl LiteralNumber {
@@ -63,6 +60,7 @@ impl LiteralNumber {
     }
 }
 
+#[derive(Debug, PartialEq, Eq)]
 pub enum NumberType {
     Decimal,
     Hexadecimal,
@@ -125,8 +123,8 @@ fn read_hexadecimal(cursor: &mut Cursor<'_>) -> Option<String> {
 }
 
 pub struct LiteralString {
-    r#type: StringType,
-    content: String,
+    pub r#type: StringType,
+    pub content: String,
 }
 
 impl LiteralString {
@@ -141,7 +139,7 @@ impl LiteralString {
             })
         } else if cursor.current() == 'r' && cursor.next() == '"' {
             cursor.advance();
-            let mut quotes = 1;
+            let mut quotes = 0;
             while cursor.current() == '"' {
                 quotes += 1;
                 cursor.advance();
@@ -162,7 +160,6 @@ fn read_string(cursor: &mut Cursor, quotes: usize) -> String {
         let current = cursor.current();
         if current == '"' {
             let mut quotes_found = 1;
-            cursor.advance();
             while cursor.current() == '"' {
                 quotes_found += 1;
                 cursor.advance();
@@ -182,10 +179,70 @@ fn read_string(cursor: &mut Cursor, quotes: usize) -> String {
             cursor.advance();
         }
     }
-    todo!()
+    content
 }
 
+#[derive(Debug, PartialEq, Eq)]
 pub enum StringType {
     Regular,
     Raw(usize),
+}
+
+#[cfg(test)]
+mod test {
+    use crate::{
+        file::Cursor,
+        tokens::literal::{ LiteralNumber, NumberType, LiteralString, StringType },
+    };
+
+    #[test]
+    fn test_integer() {
+        let mut cursor = Cursor::new("123");
+        let number = LiteralNumber::try_read(&mut cursor).unwrap();
+        assert_eq!(number.r#type, NumberType::Decimal);
+        assert_eq!(number.digits, Some("123".to_string()));
+    }
+
+    #[test]
+    fn test_decimals() {
+        let mut cursor = Cursor::new("123.456");
+        let number = LiteralNumber::try_read(&mut cursor).unwrap();
+        assert_eq!(number.r#type, NumberType::Decimal);
+        assert_eq!(number.digits, Some("123.456".to_string()));
+    }
+
+    #[test]
+    fn test_binary() {
+        let mut cursor = Cursor::new("0b1010");
+        let number = LiteralNumber::try_read(&mut cursor).unwrap();
+        assert_eq!(number.r#type, NumberType::Binary);
+        assert_eq!(number.digits, Some("1010".to_string()));
+    }
+
+    #[test]
+    fn test_hexadecimal() {
+        let mut cursor = Cursor::new("0x123abc");
+        let number = LiteralNumber::try_read(&mut cursor).unwrap();
+        assert_eq!(number.r#type, NumberType::Hexadecimal);
+        assert_eq!(number.digits, Some("123abc".to_string()));
+    }
+
+    #[test]
+    fn test_string() {
+        let mut cursor = Cursor::new("\"Hello, world!\"");
+        let string = LiteralString::try_read(&mut cursor).unwrap();
+        assert_eq!(string.r#type, StringType::Regular);
+        assert_eq!(string.content, "Hello, world!".to_string());
+    }
+
+    #[test]
+    fn escaped_string() {
+        for n in 1..5 {
+            let test_str = format!("r{q}Hello, world!{q}", q = "\"".repeat(n));
+            let mut cursor = Cursor::new(&test_str);
+            let string = LiteralString::try_read(&mut cursor).unwrap();
+            assert_eq!(string.r#type, StringType::Raw(n));
+            assert_eq!(string.content, "Hello, world!".to_string());
+        }
+    }
 }
