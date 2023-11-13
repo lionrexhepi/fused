@@ -29,6 +29,10 @@
 
 ## Parsing/AST
 * [ ] Keywords
+* [ ] Actual literals
+    * [ ] Bools
+    * [ ] Strings
+    * [ ] Numbers
 * [ ] Blocks
 * [ ] Expressions
     * [ ] Operations
@@ -53,9 +57,15 @@
     * [ ] Declaration
     * [ ] Imports
     
+## Runtime
+* [ ] Types
+* [ ] GC 
+* [ ] AST Walking
+    * [ ] Handle special cases (const substitution, etc.)
+* [ ] API to interact with the runtime
+* [ ] STD Lib basics
 
-
-
-    
+## Post-Prototype
+Try to get here first man what is this
     
 
