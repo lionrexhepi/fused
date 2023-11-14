@@ -3,7 +3,7 @@
 ## Tokenization
 * [x] Cursor
 * [ ] TokenStream
-* [ ] Identifiers
+* [x] Identifiers
 * [ ] Operators
     * [ ] Single-char (+, -, etc.)
     * [ ] Multi-char (+=, <<, etc.)
