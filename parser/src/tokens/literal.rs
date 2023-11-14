@@ -128,9 +128,12 @@ pub struct LiteralString {
 }
 
 impl LiteralString {
-    pub fn try_read(cursor: &mut Cursor) -> Option<Self> {
-        if cursor.current() == '"' {
-            cursor.advance();
+    pub fn try_read(cursor: &mut Cursor) -> Option<Self> {      
+
+        if cursor.current() == '"' {           
+
+            cursor.advance();            
+
             let content = read_string(cursor, 1);
 
             Some(Self {
@@ -148,6 +151,7 @@ impl LiteralString {
 
             Some(Self { r#type: StringType::Raw(quotes), content })
         } else {
+
             None
         }
     }
@@ -157,9 +161,11 @@ fn read_string(cursor: &mut Cursor, quotes: usize) -> String {
     let mut content = String::new();
 
     loop {
+
         let current = cursor.current();
+        println!("current: {}", current);
         if current == '"' {
-            let mut quotes_found = 1;
+            let mut quotes_found = 0;
             while cursor.current() == '"' {
                 quotes_found += 1;
                 cursor.advance();
@@ -174,7 +180,7 @@ fn read_string(cursor: &mut Cursor, quotes: usize) -> String {
             todo!("Escape sequences");
         } else if current == '{' {
             todo!("Format args");
-        } else {
+        } else  if current == '\0' { break;} else {
             content.push(current);
             cursor.advance();
         }
@@ -229,7 +235,9 @@ mod test {
 
     #[test]
     fn test_string() {
+        println!("yo");
         let mut cursor = Cursor::new("\"Hello, world!\"");
+        
         let string = LiteralString::try_read(&mut cursor).unwrap();
         assert_eq!(string.r#type, StringType::Regular);
         assert_eq!(string.content, "Hello, world!".to_string());
@@ -237,6 +245,7 @@ mod test {
 
     #[test]
     fn escaped_string() {
+    
         for n in 1..5 {
             let test_str = format!("r{q}Hello, world!{q}", q = "\"".repeat(n));
             let mut cursor = Cursor::new(&test_str);
@@ -244,5 +253,16 @@ mod test {
             assert_eq!(string.r#type, StringType::Raw(n));
             assert_eq!(string.content, "Hello, world!".to_string());
         }
+    }
+
+    #[test]
+    fn contains_quotes() {
+        let test_string =r#" r""Hello,"World" """#.to_string();
+        let mut cursor = Cursor::new(&test_string);
+        cursor.advance(); //Skip the whitespace
+        let string = LiteralString::try_read(&mut cursor).unwrap();
+        assert_eq!(string.r#type, StringType::Raw(2));
+        assert_eq!(string.content, r#"Hello,"World" "#.to_string());
+
     }
 }
