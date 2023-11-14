@@ -140,7 +140,7 @@ impl LiteralString {
                 r#type: StringType::Regular,
                 content,
             })
-        } else if cursor.current() == 'r' && cursor.next() == '"' {
+        } else if cursor.current() == '@' && cursor.next() == '"' {
             cursor.advance();
             let mut quotes = 0;
             while cursor.current() == '"' {
@@ -180,7 +180,9 @@ fn read_string(cursor: &mut Cursor, quotes: usize) -> String {
             todo!("Escape sequences");
         } else if current == '{' {
             todo!("Format args");
-        } else  if current == '\0' { break;} else {
+        } else  if current == '\0' { 
+            break;
+        } else {
             content.push(current);
             cursor.advance();
         }
@@ -247,7 +249,7 @@ mod test {
     fn escaped_string() {
     
         for n in 1..5 {
-            let test_str = format!("r{q}Hello, world!{q}", q = "\"".repeat(n));
+            let test_str = format!("@{q}Hello, world!{q}", q = "\"".repeat(n));
             let mut cursor = Cursor::new(&test_str);
             let string = LiteralString::try_read(&mut cursor).unwrap();
             assert_eq!(string.r#type, StringType::Raw(n));
@@ -257,7 +259,7 @@ mod test {
 
     #[test]
     fn contains_quotes() {
-        let test_string =r#" r""Hello,"World" """#.to_string();
+        let test_string =r#" @""Hello,"World" """#.to_string();
         let mut cursor = Cursor::new(&test_string);
         cursor.advance(); //Skip the whitespace
         let string = LiteralString::try_read(&mut cursor).unwrap();
