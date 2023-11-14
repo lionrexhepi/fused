@@ -10,11 +10,10 @@
 * [ ] Spaces
 * [ ] Line breaks
 * [ ] EOF
-* [ ] Literals
+* [x] Literals
     * [x] Number literals
     * [x] String Literals
         * [x] Raw strings
-    * [ ] Char literals
 * [ ] Comments
     * [ ] Single Line
     * [ ] Multiline
