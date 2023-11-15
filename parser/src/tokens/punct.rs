@@ -39,7 +39,6 @@ pub enum Punct {
     Arrow, // ->
     FatArrow, // =>
     Dollar, // $
-    At, // @
     Backslash, // \
     DoubleAmpersand, // &&
 }
@@ -179,7 +178,6 @@ impl Punct {
             '~' => Some(Self::Tilde),
 
             '?' => Some(Self::Question),
-            '@' => Some(Self::At),
             '$' => Some(Self::Dollar),
             '\\' => Some(Self::Backslash),
 
