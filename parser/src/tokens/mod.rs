@@ -1,3 +1,5 @@
+use crate::file::Cursor;
+
 use self::literal::TokenLiteral;
 
 mod literal;
@@ -16,3 +18,8 @@ pub enum TokenType {
     Comment,
     EOF,
 }
+
+fn is_eof(cursor: &Cursor) -> bool {
+    cursor.eof()
+}
+

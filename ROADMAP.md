@@ -9,7 +9,7 @@
     * [ ] Multi-char (+=, <<, etc.)
 * [ ] Spaces
 * [ ] Line breaks
-* [ ] EOF
+* [x] EOF
 * [x] Literals
     * [x] Number literals
     * [x] String Literals
