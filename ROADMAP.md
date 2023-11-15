@@ -7,8 +7,8 @@
 * [ ] Operators
     * [ ] Single-char (+, -, etc.)
     * [ ] Multi-char (+=, <<, etc.)
-* [ ] Spaces
-* [ ] Line breaks
+* [x] Spaces
+* [x] Line breaks
 * [x] EOF
 * [x] Literals
     * [x] Number literals

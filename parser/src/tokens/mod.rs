@@ -4,6 +4,7 @@ use self::literal::TokenLiteral;
 
 mod literal;
 mod ident;
+pub mod spacing;
 
 pub struct Token {
     pub content: TokenType,
@@ -19,7 +20,4 @@ pub enum TokenType {
     EOF,
 }
 
-fn is_eof(cursor: &Cursor) -> bool {
-    cursor.eof()
-}
 
