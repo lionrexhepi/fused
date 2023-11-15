@@ -5,6 +5,7 @@ use self::literal::TokenLiteral;
 mod literal;
 mod ident;
 pub mod spacing;
+pub mod punct;
 
 pub struct Token {
     pub content: TokenType,
@@ -19,5 +20,3 @@ pub enum TokenType {
     Comment,
     EOF,
 }
-
-
