@@ -6,6 +6,7 @@ mod literal;
 mod ident;
 pub mod spacing;
 pub mod punct;
+pub mod comment;
 
 pub struct Token {
     pub content: TokenType,

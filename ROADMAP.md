@@ -4,9 +4,9 @@
 * [x] Cursor
 * [ ] TokenStream
 * [x] Identifiers
-* [ ] Operators
-    * [ ] Single-char (+, -, etc.)
-    * [ ] Multi-char (+=, <<, etc.)
+* [x] Operators
+    * [x] Single-char (+, -, etc.)
+    * [x] Multi-char (+=, <<, etc.)
 * [x] Spaces
 * [x] Line breaks
 * [x] EOF
