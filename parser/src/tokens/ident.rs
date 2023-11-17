@@ -1,5 +1,6 @@
 use crate::file::Cursor;
 
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TokenIdent {
     pub name: String,
     pub escaped: bool,

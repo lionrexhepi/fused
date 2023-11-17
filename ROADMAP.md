@@ -2,7 +2,7 @@
 
 ## Tokenization
 * [x] Cursor
-* [ ] TokenStream
+* [] TokenStream
 * [x] Identifiers
 * [x] Operators
     * [x] Single-char (+, -, etc.)
@@ -14,10 +14,10 @@
     * [x] Number literals
     * [x] String Literals
         * [x] Raw strings
-* [ ] Comments
-    * [ ] Single Line
-    * [ ] Multiline
-    * [ ] Doc comments
+* [x] Comments
+    * [x] Single Line
+    * [x] Multiline
+    * [x] Doc comments
 * [ ] Groups
     * [ ] Delimiters
     * [ ] Content

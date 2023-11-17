@@ -3,7 +3,7 @@ use crate::file::Cursor;
 const fn is_digit(char: char) -> bool {
     matches!(char, '0'..='9')
 }
-
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TokenLiteral {
     String(LiteralString),
     Number(LiteralNumber),
@@ -20,7 +20,7 @@ impl TokenLiteral {
         }
     }
 }
-
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct LiteralNumber {
     pub r#type: NumberType,
     pub digits: Option<String>,
@@ -60,7 +60,7 @@ impl LiteralNumber {
     }
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum NumberType {
     Decimal,
     Hexadecimal,
@@ -121,7 +121,7 @@ fn read_hexadecimal(cursor: &mut Cursor<'_>) -> Option<String> {
         Some(number)
     }
 }
-
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct LiteralString {
     pub r#type: StringType,
     pub content: String,
@@ -190,7 +190,7 @@ fn read_string(cursor: &mut Cursor, quotes: usize) -> String {
     content
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum StringType {
     Regular,
     Raw(usize),
