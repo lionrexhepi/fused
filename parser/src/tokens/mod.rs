@@ -61,7 +61,7 @@ impl Token {
                 Some(TokenType::Space(spaces))
             } else {
                 cursor.advance();
-                None
+                return Err(TokenError::InvalidChar(cursor.current()));
             }
         };
 
