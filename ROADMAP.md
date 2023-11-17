@@ -18,9 +18,9 @@
     * [x] Single Line
     * [x] Multiline
     * [x] Doc comments
-* [ ] Groups
-    * [ ] Delimiters
-    * [ ] Content
+* [x] Groups
+    * [x] Delimiters
+    * [x] Content
 * [ ] Positions
     * [ ] Span
     * [ ] SourceLocation (line|col)

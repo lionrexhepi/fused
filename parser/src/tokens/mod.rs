@@ -2,13 +2,14 @@
 
 use crate::file::Cursor;
 
-use self::{literal::TokenLiteral, comment::TokenComment};
+use self::{literal::TokenLiteral, comment::TokenComment, group::TokenGroup};
 
 mod literal;
 mod ident;
 pub mod spacing;
 pub mod punct;
 pub mod comment;
+pub mod group;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Token {
@@ -27,7 +28,10 @@ impl Token {
             Some(TokenType::Punct(punct))
         } else if let Some(comment) = comment::TokenComment::try_read(cursor) {
             Some(TokenType::Comment(comment))
-        } else if cursor.eof() {
+        } else if let Some(group) = TokenGroup::try_read(cursor){
+            Some(TokenType::Group(group))
+        }
+        else if cursor.eof() {
             Some(TokenType::EOF)
         } else {
             let spaces = spacing::count_spaces(cursor);
@@ -47,7 +51,7 @@ impl Token {
 pub enum TokenType {
     Literal(TokenLiteral),
     Ident(ident::TokenIdent),
-    Group,
+    Group(TokenGroup),
     Punct(punct::TokenPunct),
     Space(usize),
     Newline,
