@@ -50,7 +50,7 @@ impl TokenGroup {
 
 #[cfg(test)]
 mod test{
-    use crate::{file::Cursor, tokens::{group::{TokenGroup, Delim}, Token, ident::TokenIdent, TokenType}};
+    use crate::{file::Cursor, tokens::{group::{TokenGroup, Delim},  ident::TokenIdent, TokenType}};
 
     #[test]
     fn test_paren() {

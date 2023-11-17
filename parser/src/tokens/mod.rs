@@ -12,12 +12,27 @@ pub mod comment;
 pub mod group;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Span {
+    pub start: usize,
+    pub end: usize,
+}
+
+impl Span {
+    pub fn len(&self) -> usize {
+        self.end - self.start
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Token {
     pub content: TokenType,
+    pub span: Span,
 }
 
 impl Token {
     pub fn try_read(cursor: &mut Cursor ) -> Option<Self> {
+
+        let start = cursor.pos();
         let content = if let Some(literal) = TokenLiteral::try_read(cursor) {
             Some(TokenType::Literal(literal))
         } else if let Some(ident) = ident::TokenIdent::try_read(cursor) {
@@ -43,7 +58,7 @@ impl Token {
             }
         };
 
-        content.map(|content| Self { content })
+        content.map(|content| Self { content, span: Span { start, end: cursor.pos() } })
     }
 }
 
@@ -59,3 +74,36 @@ pub enum TokenType {
     EOF,
 }
 
+#[cfg(test)]
+mod test {
+    use crate::file::Cursor;
+
+    #[test]
+    fn test_span_start() {
+        let mut cursor = Cursor::new("test");
+        let token = super::Token::try_read(&mut cursor).unwrap();
+        assert_eq!(token.span.start, 0);
+    }
+    
+    #[test]
+    fn test_span_end() {
+        let mut cursor = Cursor::new("test");
+        let token = super::Token::try_read(&mut cursor).unwrap();
+        assert_eq!(token.span.end, 4);
+    }
+
+    #[test]
+    fn test_nonzero_start() {
+        let mut cursor = Cursor::new(" test");
+        cursor.advance(); //Skip the whitespace
+        let token = super::Token::try_read(&mut cursor).unwrap();
+        assert_eq!(token.span.start, 1);
+    }
+
+    #[test]
+    fn test_length() {
+        let mut cursor = Cursor::new("test");
+        let token = super::Token::try_read(&mut cursor).unwrap();
+        assert_eq!(token.span.len(), 4);
+    }
+}

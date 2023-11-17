@@ -21,9 +21,7 @@
 * [x] Groups
     * [x] Delimiters
     * [x] Content
-* [ ] Positions
-    * [ ] Span
-    * [ ] SourceLocation (line|col)
+* [x] Span
 * [ ] Files
 
 ## Parsing/AST
