@@ -33,7 +33,7 @@ pub fn read_newline(cursor: &mut Cursor) -> bool {
 
 #[cfg(test)]
 mod test {
-    use crate::{ file::Cursor, tokens::spacing::{ read_newline } };
+    use crate::{ file::Cursor, tokens::spacing::read_newline };
     use super::count_spaces;
     #[test]
     fn test_regular_spaces() {

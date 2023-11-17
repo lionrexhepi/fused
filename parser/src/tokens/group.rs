@@ -1,7 +1,6 @@
-use crate::file::Cursor;
+use crate::{ file::Cursor, reject_eof };
 
-use super::Token;
-
+use super::{ Token, TokenContent, TokenResult };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Delim {
@@ -17,8 +16,8 @@ pub struct TokenGroup {
     pub tokens: Vec<Token>,
 }
 
-impl TokenGroup {
-    pub fn try_read(cursor: &mut Cursor) -> Option<Self> {
+impl TokenContent for TokenGroup {
+    fn try_read(cursor: &mut Cursor) -> TokenResult<Self> {
         let (delim, close) = if cursor.current() == '(' {
             (Delim::Paren, ')')
         } else if cursor.current() == '[' {
@@ -26,9 +25,9 @@ impl TokenGroup {
         } else if cursor.current() == '{' {
             (Delim::Brace, '}')
         } else if cursor.current() == '<' {
-            (Delim::Angle,'>')
+            (Delim::Angle, '>')
         } else {
-            return None;
+            return Ok(None);
         };
 
         cursor.advance();
@@ -36,62 +35,75 @@ impl TokenGroup {
         let mut tokens = Vec::new();
 
         while cursor.current() != close && !cursor.eof() {
-            tokens.push(Token::try_read(cursor)?);
+            reject_eof!(cursor);
+            tokens.push(Token::try_read(cursor)?.unwrap());
         }
-        if cursor.eof() {
-            return None;
-        } else {
+
         cursor.advance();
-        
-        Some(Self { delim, tokens })
-        }
+
+        Ok(Some(Self { delim, tokens }))
     }
 }
 
 #[cfg(test)]
-mod test{
-    use crate::{file::Cursor, tokens::{group::{TokenGroup, Delim},  ident::TokenIdent, TokenType}};
+mod test {
+    use crate::{
+        file::Cursor,
+        tokens::{ group::{ TokenGroup, Delim }, ident::TokenIdent, TokenType, TokenContent },
+    };
 
     #[test]
     fn test_paren() {
         let mut cursor = Cursor::new("(test)");
-        let group = TokenGroup::try_read(&mut cursor).unwrap();
+        let group = TokenGroup::try_read(&mut cursor).unwrap().unwrap();
         assert_eq!(group.delim, Delim::Paren);
         assert_eq!(group.tokens.len(), 1);
-        assert_eq!(group.tokens.first().unwrap().content, TokenType::Ident(TokenIdent::new("test".to_string())));
+        assert_eq!(
+            group.tokens.first().unwrap().content,
+            TokenType::Ident(TokenIdent::new("test".to_string()))
+        );
     }
 
     #[test]
     fn test_bracket() {
         let mut cursor = Cursor::new("[test]");
-        let group = TokenGroup::try_read(&mut cursor).unwrap();
+        let group = TokenGroup::try_read(&mut cursor).unwrap().unwrap();
         assert_eq!(group.delim, Delim::Bracket);
         assert_eq!(group.tokens.len(), 1);
-        assert_eq!(group.tokens.first().unwrap().content, TokenType::Ident(TokenIdent::new("test".to_string())));
+        assert_eq!(
+            group.tokens.first().unwrap().content,
+            TokenType::Ident(TokenIdent::new("test".to_string()))
+        );
     }
 
     #[test]
     fn test_braces() {
         let mut cursor = Cursor::new("{test}");
-        let group = TokenGroup::try_read(&mut cursor).unwrap();
+        let group = TokenGroup::try_read(&mut cursor).unwrap().unwrap();
         assert_eq!(group.delim, Delim::Brace);
         assert_eq!(group.tokens.len(), 1);
-        assert_eq!(group.tokens.first().unwrap().content, TokenType::Ident(TokenIdent::new("test".to_string())));
+        assert_eq!(
+            group.tokens.first().unwrap().content,
+            TokenType::Ident(TokenIdent::new("test".to_string()))
+        );
     }
 
     #[test]
     fn test_angle() {
         let mut cursor = Cursor::new("<test>");
-        let group = TokenGroup::try_read(&mut cursor).unwrap();
+        let group = TokenGroup::try_read(&mut cursor).unwrap().unwrap();
         assert_eq!(group.delim, Delim::Angle);
         assert_eq!(group.tokens.len(), 1);
-        assert_eq!(group.tokens.first().unwrap().content, TokenType::Ident(TokenIdent::new("test".to_string())));
+        assert_eq!(
+            group.tokens.first().unwrap().content,
+            TokenType::Ident(TokenIdent::new("test".to_string()))
+        );
     }
 
     #[test]
     fn test_nonterminated() {
         let mut cursor = Cursor::new("(test");
-        let group = TokenGroup::try_read(&mut cursor);
+        let group = TokenGroup::try_read(&mut cursor).unwrap();
         assert_eq!(group, None);
     }
 }

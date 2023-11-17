@@ -1,4 +1,6 @@
-use crate::file::Cursor;
+use crate::{ file::Cursor, reject_eof };
+
+use super::{ TokenContent, TokenResult, TokenError };
 
 const fn is_digit(char: char) -> bool {
     matches!(char, '0'..='9')
@@ -9,25 +11,27 @@ pub enum TokenLiteral {
     Number(LiteralNumber),
 }
 
-impl TokenLiteral {
-    pub fn try_read(cursor: &mut Cursor) -> Option<Self> {
-        if let Some(number) = LiteralNumber::try_read(cursor) {
-            Some(Self::Number(number))
-        } else if let Some(string) = LiteralString::try_read(cursor) {
-            Some(Self::String(string))
-        } else {
-            None
-        }
+impl TokenContent for TokenLiteral {
+    fn try_read(cursor: &mut Cursor) -> TokenResult<Self> {
+        Ok(
+            if let Some(number) = LiteralNumber::try_read(cursor)? {
+                Some(Self::Number(number))
+            } else if let Some(string) = LiteralString::try_read(cursor)? {
+                Some(Self::String(string))
+            } else {
+                None
+            }
+        )
     }
 }
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct LiteralNumber {
     pub r#type: NumberType,
-    pub digits: Option<String>,
+    pub digits: String,
 }
 
-impl LiteralNumber {
-    pub fn try_read(cursor: &mut Cursor) -> Option<Self> {
+impl TokenContent for LiteralNumber {
+    fn try_read(cursor: &mut Cursor) -> TokenResult<Self> {
         if is_digit(cursor.current()) {
             let mut num_type = NumberType::Decimal;
             let digits = if cursor.current() == '0' && matches!(cursor.next(), 'x' | 'b') {
@@ -36,26 +40,30 @@ impl LiteralNumber {
                     'x' => {
                         num_type = NumberType::Hexadecimal;
                         cursor.advance();
-                        read_hexadecimal(cursor)
+                        read_hexadecimal(cursor)?
                     }
                     'b' => {
                         num_type = NumberType::Binary;
                         cursor.advance();
-                        read_binary(cursor)
+                        read_binary(cursor)?
                     }
                     _ => unreachable!(),
                 }
             } else {
+                //TODO:
                 //Since we checked that the first character is a digit, we can assume that the number has at least one valid digit.
-                Some(read_decimal(cursor))
+                //Therefore, an EOF wouldn't really matter. So does it really make sense to have read_decimal return a Result?
+                read_decimal(cursor)?
             };
 
-            Some(LiteralNumber {
-                r#type: num_type,
-                digits,
-            })
+            Ok(
+                Some(LiteralNumber {
+                    r#type: num_type,
+                    digits,
+                })
+            )
         } else {
-            None
+            Ok(None)
         }
     }
 }
@@ -67,11 +75,12 @@ pub enum NumberType {
     Binary,
 }
 
-fn read_decimal(cursor: &mut Cursor) -> String {
+fn read_decimal(cursor: &mut Cursor) -> Result<String, TokenError> {
     let mut number = String::new();
     let mut decimal = false;
 
     loop {
+        reject_eof!(cursor);
         let current = cursor.current();
         if matches!(current, '0'..='9') {
             //Digit
@@ -88,37 +97,39 @@ fn read_decimal(cursor: &mut Cursor) -> String {
         cursor.advance();
     }
 
-    number
+    Ok(number)
 }
 
-fn read_binary(cursor: &mut Cursor) -> Option<String> {
+fn read_binary(cursor: &mut Cursor) -> Result<String, TokenError> {
     let mut number = String::new();
 
     //Read all digits
     while matches!(cursor.current(), '0' | '1') {
+        reject_eof!(cursor);
         number.push(cursor.current());
         cursor.advance();
     }
 
     if number.is_empty() {
-        None
+        Err(TokenError::InvalidChar(cursor.current()))
     } else {
-        Some(number)
+        Ok(number)
     }
 }
 
-fn read_hexadecimal(cursor: &mut Cursor<'_>) -> Option<String> {
+fn read_hexadecimal(cursor: &mut Cursor<'_>) -> Result<String, TokenError> {
     let mut number = String::new();
 
     while matches!(cursor.current(), '0'..='9' | 'a'..='f' | 'A'..='F') {
+        reject_eof!(cursor);
         number.push(cursor.current());
         cursor.advance();
     }
 
     if number.is_empty() {
-        None
+        Err(TokenError::InvalidChar(cursor.current()))
     } else {
-        Some(number)
+        Ok(number)
     }
 }
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -127,19 +138,19 @@ pub struct LiteralString {
     pub content: String,
 }
 
-impl LiteralString {
-    pub fn try_read(cursor: &mut Cursor) -> Option<Self> {      
+impl TokenContent for LiteralString {
+    fn try_read(cursor: &mut Cursor) -> TokenResult<Self> {
+        if cursor.current() == '"' {
+            cursor.advance();
 
-        if cursor.current() == '"' {           
+            let content = read_string(cursor, 1)?;
 
-            cursor.advance();            
-
-            let content = read_string(cursor, 1);
-
-            Some(Self {
-                r#type: StringType::Regular,
-                content,
-            })
+            Ok(
+                Some(Self {
+                    r#type: StringType::Regular,
+                    content,
+                })
+            )
         } else if cursor.current() == '@' && cursor.next() == '"' {
             cursor.advance();
             let mut quotes = 0;
@@ -147,21 +158,20 @@ impl LiteralString {
                 quotes += 1;
                 cursor.advance();
             }
-            let content = read_string(cursor, quotes);
+            let content = read_string(cursor, quotes)?;
 
-            Some(Self { r#type: StringType::Raw(quotes), content })
+            Ok(Some(Self { r#type: StringType::Raw(quotes), content }))
         } else {
-
-            None
+            Ok(None)
         }
     }
 }
 
-fn read_string(cursor: &mut Cursor, quotes: usize) -> String {
+fn read_string(cursor: &mut Cursor, quotes: usize) -> Result<String, TokenError> {
     let mut content = String::new();
 
     loop {
-
+        reject_eof!(cursor);
         let current = cursor.current();
         println!("current: {}", current);
         if current == '"' {
@@ -180,14 +190,12 @@ fn read_string(cursor: &mut Cursor, quotes: usize) -> String {
             todo!("Escape sequences");
         } else if current == '{' {
             todo!("Format args");
-        } else  if current == '\0' { 
-            break;
         } else {
             content.push(current);
             cursor.advance();
         }
     }
-    content
+    Ok(content)
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -200,58 +208,57 @@ pub enum StringType {
 mod test {
     use crate::{
         file::Cursor,
-        tokens::literal::{ LiteralNumber, NumberType, LiteralString, StringType },
+        tokens::{ literal::{ LiteralNumber, NumberType, LiteralString, StringType }, TokenContent },
     };
 
     #[test]
     fn test_integer() {
         let mut cursor = Cursor::new("123");
-        let number = LiteralNumber::try_read(&mut cursor).unwrap();
+        let number = LiteralNumber::try_read(&mut cursor).unwrap().unwrap();
         assert_eq!(number.r#type, NumberType::Decimal);
-        assert_eq!(number.digits, Some("123".to_string()));
+        assert_eq!(number.digits, "123".to_string());
     }
 
     #[test]
     fn test_decimals() {
         let mut cursor = Cursor::new("123.456");
-        let number = LiteralNumber::try_read(&mut cursor).unwrap();
+        let number = LiteralNumber::try_read(&mut cursor).unwrap().unwrap();
         assert_eq!(number.r#type, NumberType::Decimal);
-        assert_eq!(number.digits, Some("123.456".to_string()));
+        assert_eq!(number.digits, "123.456".to_string());
     }
 
     #[test]
     fn test_binary() {
         let mut cursor = Cursor::new("0b1010");
-        let number = LiteralNumber::try_read(&mut cursor).unwrap();
+        let number = LiteralNumber::try_read(&mut cursor).unwrap().unwrap();
         assert_eq!(number.r#type, NumberType::Binary);
-        assert_eq!(number.digits, Some("1010".to_string()));
+        assert_eq!(number.digits, "1010".to_string());
     }
 
     #[test]
     fn test_hexadecimal() {
         let mut cursor = Cursor::new("0x123abc");
-        let number = LiteralNumber::try_read(&mut cursor).unwrap();
+        let number = LiteralNumber::try_read(&mut cursor).unwrap().unwrap();
         assert_eq!(number.r#type, NumberType::Hexadecimal);
-        assert_eq!(number.digits, Some("123abc".to_string()));
+        assert_eq!(number.digits, "123abc".to_string());
     }
 
     #[test]
     fn test_string() {
         println!("yo");
         let mut cursor = Cursor::new("\"Hello, world!\"");
-        
-        let string = LiteralString::try_read(&mut cursor).unwrap();
+
+        let string = LiteralString::try_read(&mut cursor).unwrap().unwrap();
         assert_eq!(string.r#type, StringType::Regular);
         assert_eq!(string.content, "Hello, world!".to_string());
     }
 
     #[test]
     fn escaped_string() {
-    
         for n in 1..5 {
             let test_str = format!("@{q}Hello, world!{q}", q = "\"".repeat(n));
             let mut cursor = Cursor::new(&test_str);
-            let string = LiteralString::try_read(&mut cursor).unwrap();
+            let string = LiteralString::try_read(&mut cursor).unwrap().unwrap();
             assert_eq!(string.r#type, StringType::Raw(n));
             assert_eq!(string.content, "Hello, world!".to_string());
         }
@@ -259,12 +266,11 @@ mod test {
 
     #[test]
     fn contains_quotes() {
-        let test_string =r#" @""Hello,"World" """#.to_string();
+        let test_string = r#" @""Hello,"World" """#.to_string();
         let mut cursor = Cursor::new(&test_string);
         cursor.advance(); //Skip the whitespace
-        let string = LiteralString::try_read(&mut cursor).unwrap();
+        let string = LiteralString::try_read(&mut cursor).unwrap().unwrap();
         assert_eq!(string.r#type, StringType::Raw(2));
         assert_eq!(string.content, r#"Hello,"World" "#.to_string());
-
     }
 }

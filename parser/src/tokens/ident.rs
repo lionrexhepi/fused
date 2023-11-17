@@ -1,4 +1,6 @@
-use crate::file::Cursor;
+use crate::{ file::Cursor, reject_eof };
+
+use super::{ TokenResult, TokenContent };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TokenIdent {
@@ -10,26 +12,28 @@ impl TokenIdent {
     pub const fn new(name: String) -> Self {
         Self { name, escaped: false }
     }
+}
 
-    pub fn try_read(cursor: &mut Cursor) -> Option<Self> {
-        let escaped = if cursor.current() == '@' {
+impl TokenContent for TokenIdent {
+    fn try_read(cursor: &mut Cursor) -> TokenResult<Self> {
+        let escaped = if cursor.current() == '@' && is_valid_ident_char(cursor.next()) {
             cursor.advance();
             true
         } else {
             false
         };
-        if is_valid_ident_start(cursor.current()) {
+        if escaped || is_valid_ident_start(cursor.current()) {
             let mut name = String::new();
 
             while is_valid_ident_char(cursor.current()) {
+                reject_eof!(cursor);
                 name.push(cursor.current());
                 cursor.advance();
             }
 
-            Some(Self { name, escaped })
+            Ok(Some(Self { name, escaped }))
         } else {
-            print!("bad: {}", cursor.current());
-            None
+            Ok(None)
         }
     }
 }
@@ -44,13 +48,13 @@ pub(crate) fn is_valid_ident_char(c: char) -> bool {
 
 #[cfg(test)]
 pub(crate) mod test {
-    use crate::file::Cursor;
+    use crate::{ file::Cursor, tokens::TokenContent };
     use super::TokenIdent;
 
     #[test]
     fn test_ident() {
         let mut cursor = Cursor::new("test");
-        let ident = TokenIdent::try_read(&mut cursor).unwrap();
+        let ident = TokenIdent::try_read(&mut cursor).unwrap().unwrap();
         assert_eq!(ident.name, "test");
         assert_eq!(ident.escaped, false);
     }
@@ -58,7 +62,7 @@ pub(crate) mod test {
     #[test]
     fn test_escaped_ident() {
         let mut cursor = Cursor::new("@test");
-        let ident = TokenIdent::try_read(&mut cursor).unwrap();
+        let ident = TokenIdent::try_read(&mut cursor).unwrap().unwrap();
         assert_eq!(ident.name, "test");
         assert_eq!(ident.escaped, true);
     }
@@ -66,21 +70,21 @@ pub(crate) mod test {
     #[test]
     fn test_nonvalid_start() {
         let mut cursor = Cursor::new("1test");
-        let ident = TokenIdent::try_read(&mut cursor);
+        let ident = TokenIdent::try_read(&mut cursor).unwrap();
         assert!(ident.is_none());
     }
 
     #[test]
     fn test_nonvalid_char() {
         let mut cursor = Cursor::new("te+t");
-        let ident = TokenIdent::try_read(&mut cursor).unwrap();
+        let ident = TokenIdent::try_read(&mut cursor).unwrap().unwrap();
         assert_eq!(ident.name, "te");
         assert_eq!(ident.escaped, false);
 
         assert_eq!(cursor.current(), '+');
         cursor.advance();
 
-        let next_ident = TokenIdent::try_read(&mut cursor).unwrap();
+        let next_ident = TokenIdent::try_read(&mut cursor).unwrap().unwrap();
         assert_eq!(next_ident.name, "t");
         assert_eq!(next_ident.escaped, false);
     }

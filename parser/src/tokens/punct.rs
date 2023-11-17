@@ -1,5 +1,7 @@
 use crate::file::Cursor;
 
+use super::{ TokenContent, TokenResult };
+
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum TokenPunct {
     Plus, //+
@@ -44,8 +46,8 @@ pub enum TokenPunct {
     DoubleAmpersand, // &&
 }
 
-impl TokenPunct {
-    pub fn try_read(cursor: &mut Cursor) -> Option<Self> {
+impl TokenContent for TokenPunct {
+    fn try_read(cursor: &mut Cursor) -> TokenResult<Self> {
         let result = match cursor.current() {
             '+' => {
                 if cursor.next() == '=' {
@@ -189,89 +191,89 @@ impl TokenPunct {
             cursor.advance();
         }
 
-        result
+        Ok(result)
     }
 }
 
 #[cfg(test)]
 mod test {
-    use crate::{ file::Cursor, tokens::punct::TokenPunct };
+    use crate::{ file::Cursor, tokens::{ punct::TokenPunct, TokenContent } };
 
     #[test]
     fn test_single_puncts() {
         let mut cursor = Cursor::new("+ - * / % ^ & | ~ ? $ . \\ < > ! ; : ,");
 
-        assert_eq!(TokenPunct::try_read(&mut cursor), Some(TokenPunct::Plus));
+        assert_eq!(TokenPunct::try_read(&mut cursor).unwrap(), Some(TokenPunct::Plus));
         cursor.advance();
-        assert_eq!(TokenPunct::try_read(&mut cursor), Some(TokenPunct::Minus));
+        assert_eq!(TokenPunct::try_read(&mut cursor).unwrap(), Some(TokenPunct::Minus));
         cursor.advance();
-        assert_eq!(TokenPunct::try_read(&mut cursor), Some(TokenPunct::Star));
+        assert_eq!(TokenPunct::try_read(&mut cursor).unwrap(), Some(TokenPunct::Star));
         cursor.advance();
-        assert_eq!(TokenPunct::try_read(&mut cursor), Some(TokenPunct::Slash));
+        assert_eq!(TokenPunct::try_read(&mut cursor).unwrap(), Some(TokenPunct::Slash));
         cursor.advance();
-        assert_eq!(TokenPunct::try_read(&mut cursor), Some(TokenPunct::Percent));
+        assert_eq!(TokenPunct::try_read(&mut cursor).unwrap(), Some(TokenPunct::Percent));
         cursor.advance();
-        assert_eq!(TokenPunct::try_read(&mut cursor), Some(TokenPunct::Caret));
+        assert_eq!(TokenPunct::try_read(&mut cursor).unwrap(), Some(TokenPunct::Caret));
         cursor.advance();
-        assert_eq!(TokenPunct::try_read(&mut cursor), Some(TokenPunct::Ampersand));
+        assert_eq!(TokenPunct::try_read(&mut cursor).unwrap(), Some(TokenPunct::Ampersand));
         cursor.advance();
-        assert_eq!(TokenPunct::try_read(&mut cursor), Some(TokenPunct::Pipe));
+        assert_eq!(TokenPunct::try_read(&mut cursor).unwrap(), Some(TokenPunct::Pipe));
         cursor.advance();
-        assert_eq!(TokenPunct::try_read(&mut cursor), Some(TokenPunct::Tilde));
+        assert_eq!(TokenPunct::try_read(&mut cursor).unwrap(), Some(TokenPunct::Tilde));
         cursor.advance();
-        assert_eq!(TokenPunct::try_read(&mut cursor), Some(TokenPunct::Question));
+        assert_eq!(TokenPunct::try_read(&mut cursor).unwrap(), Some(TokenPunct::Question));
         cursor.advance();
-        assert_eq!(TokenPunct::try_read(&mut cursor), Some(TokenPunct::Dollar));
+        assert_eq!(TokenPunct::try_read(&mut cursor).unwrap(), Some(TokenPunct::Dollar));
         cursor.advance();
-        assert_eq!(TokenPunct::try_read(&mut cursor), Some(TokenPunct::Dot));
+        assert_eq!(TokenPunct::try_read(&mut cursor).unwrap(), Some(TokenPunct::Dot));
         cursor.advance();
-        assert_eq!(TokenPunct::try_read(&mut cursor), Some(TokenPunct::Backslash));
+        assert_eq!(TokenPunct::try_read(&mut cursor).unwrap(), Some(TokenPunct::Backslash));
         cursor.advance();
-        assert_eq!(TokenPunct::try_read(&mut cursor), Some(TokenPunct::Lt));
+        assert_eq!(TokenPunct::try_read(&mut cursor).unwrap(), Some(TokenPunct::Lt));
         cursor.advance();
-        assert_eq!(TokenPunct::try_read(&mut cursor), Some(TokenPunct::Gt));
+        assert_eq!(TokenPunct::try_read(&mut cursor).unwrap(), Some(TokenPunct::Gt));
         cursor.advance();
-        assert_eq!(TokenPunct::try_read(&mut cursor), Some(TokenPunct::Exclamation));
+        assert_eq!(TokenPunct::try_read(&mut cursor).unwrap(), Some(TokenPunct::Exclamation));
         cursor.advance();
-        assert_eq!(TokenPunct::try_read(&mut cursor), Some(TokenPunct::SemiColon));
+        assert_eq!(TokenPunct::try_read(&mut cursor).unwrap(), Some(TokenPunct::SemiColon));
         cursor.advance();
-        assert_eq!(TokenPunct::try_read(&mut cursor), Some(TokenPunct::Colon));
+        assert_eq!(TokenPunct::try_read(&mut cursor).unwrap(), Some(TokenPunct::Colon));
         cursor.advance();
-        assert_eq!(TokenPunct::try_read(&mut cursor), Some(TokenPunct::Comma));
+        assert_eq!(TokenPunct::try_read(&mut cursor).unwrap(), Some(TokenPunct::Comma));
     }
 
     #[test]
     fn test_complex() {
         let mut cursor = Cursor::new("+= -= *= /= ^= |= <= <<= || && == >>= != => ->");
 
-        assert_eq!(TokenPunct::try_read(&mut cursor), Some(TokenPunct::PlusEq));
+        assert_eq!(TokenPunct::try_read(&mut cursor).unwrap(), Some(TokenPunct::PlusEq));
         cursor.advance();
-        assert_eq!(TokenPunct::try_read(&mut cursor), Some(TokenPunct::MinusEq));
+        assert_eq!(TokenPunct::try_read(&mut cursor).unwrap(), Some(TokenPunct::MinusEq));
         cursor.advance();
-        assert_eq!(TokenPunct::try_read(&mut cursor), Some(TokenPunct::StarEq));
+        assert_eq!(TokenPunct::try_read(&mut cursor).unwrap(), Some(TokenPunct::StarEq));
         cursor.advance();
-        assert_eq!(TokenPunct::try_read(&mut cursor), Some(TokenPunct::SlashEq));
+        assert_eq!(TokenPunct::try_read(&mut cursor).unwrap(), Some(TokenPunct::SlashEq));
         cursor.advance();
-        assert_eq!(TokenPunct::try_read(&mut cursor), Some(TokenPunct::CaretEq));
+        assert_eq!(TokenPunct::try_read(&mut cursor).unwrap(), Some(TokenPunct::CaretEq));
         cursor.advance();
-        assert_eq!(TokenPunct::try_read(&mut cursor), Some(TokenPunct::PipeEq));
+        assert_eq!(TokenPunct::try_read(&mut cursor).unwrap(), Some(TokenPunct::PipeEq));
         cursor.advance();
-        assert_eq!(TokenPunct::try_read(&mut cursor), Some(TokenPunct::LtEq));
+        assert_eq!(TokenPunct::try_read(&mut cursor).unwrap(), Some(TokenPunct::LtEq));
         cursor.advance();
-        assert_eq!(TokenPunct::try_read(&mut cursor), Some(TokenPunct::LeftShiftEq));
+        assert_eq!(TokenPunct::try_read(&mut cursor).unwrap(), Some(TokenPunct::LeftShiftEq));
         cursor.advance();
-        assert_eq!(TokenPunct::try_read(&mut cursor), Some(TokenPunct::DoublePipe));
+        assert_eq!(TokenPunct::try_read(&mut cursor).unwrap(), Some(TokenPunct::DoublePipe));
         cursor.advance();
-        assert_eq!(TokenPunct::try_read(&mut cursor), Some(TokenPunct::DoubleAmpersand));
+        assert_eq!(TokenPunct::try_read(&mut cursor).unwrap(), Some(TokenPunct::DoubleAmpersand));
         cursor.advance();
-        assert_eq!(TokenPunct::try_read(&mut cursor), Some(TokenPunct::DoubleEq));
+        assert_eq!(TokenPunct::try_read(&mut cursor).unwrap(), Some(TokenPunct::DoubleEq));
         cursor.advance();
-        assert_eq!(TokenPunct::try_read(&mut cursor), Some(TokenPunct::RightShiftEq));
+        assert_eq!(TokenPunct::try_read(&mut cursor).unwrap(), Some(TokenPunct::RightShiftEq));
         cursor.advance();
-        assert_eq!(TokenPunct::try_read(&mut cursor), Some(TokenPunct::NotEq));
+        assert_eq!(TokenPunct::try_read(&mut cursor).unwrap(), Some(TokenPunct::NotEq));
         cursor.advance();
-        assert_eq!(TokenPunct::try_read(&mut cursor), Some(TokenPunct::FatArrow));
+        assert_eq!(TokenPunct::try_read(&mut cursor).unwrap(), Some(TokenPunct::FatArrow));
         cursor.advance();
-        assert_eq!(TokenPunct::try_read(&mut cursor), Some(TokenPunct::Arrow));
+        assert_eq!(TokenPunct::try_read(&mut cursor).unwrap(), Some(TokenPunct::Arrow));
     }
 }
