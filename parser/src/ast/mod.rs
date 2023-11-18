@@ -3,6 +3,7 @@ use crate::tokens::{ Span, Token };
 pub mod keywords;
 pub mod number;
 pub mod stream;
+pub mod expr;
 
 pub struct Ast;
 
@@ -10,6 +11,12 @@ pub trait Spanned {
     fn span(&self) -> Span;
 }
 
-pub trait Expr: Spanned {
-    fn from_token(token: &Token) -> Option<Self> where Self: Sized;
+pub enum ParseError {
+    UnexpectedToken(String, Token),
+}
+
+type ParseResult<T> = Result<T, ParseError>;
+
+pub trait Parse: Spanned {
+    fn parse(stream: &Token) -> ParseResult<Self> where Self: Sized;
 }
