@@ -80,7 +80,6 @@ fn read_decimal(cursor: &mut Cursor) -> Result<String, TokenError> {
     let mut decimal = false;
 
     loop {
-        reject_eof!(cursor);
         let current = cursor.current();
         if matches!(current, '0'..='9') {
             //Digit
@@ -111,7 +110,11 @@ fn read_binary(cursor: &mut Cursor) -> Result<String, TokenError> {
     }
 
     if number.is_empty() {
-        Err(TokenError::InvalidChar(cursor.current()))
+        if cursor.eof() {
+            Err(TokenError::UnexpectedEof)
+        } else {
+            Err(TokenError::InvalidChar(cursor.current()))
+        }
     } else {
         Ok(number)
     }
@@ -127,7 +130,11 @@ fn read_hexadecimal(cursor: &mut Cursor<'_>) -> Result<String, TokenError> {
     }
 
     if number.is_empty() {
-        Err(TokenError::InvalidChar(cursor.current()))
+        if cursor.eof() {
+            Err(TokenError::UnexpectedEof)
+        } else {
+            Err(TokenError::InvalidChar(cursor.current()))
+        }
     } else {
         Ok(number)
     }

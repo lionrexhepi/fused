@@ -36,7 +36,7 @@ impl TokenContent for TokenGroup {
 
         while cursor.current() != close && !cursor.eof() {
             reject_eof!(cursor);
-            tokens.push(Token::try_read(cursor)?.unwrap());
+            tokens.push(Token::try_read(cursor)?);
         }
 
         cursor.advance();

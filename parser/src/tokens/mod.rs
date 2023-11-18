@@ -10,6 +10,7 @@ pub mod spacing;
 pub mod punct;
 pub mod comment;
 pub mod group;
+pub mod stream;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Span {
@@ -39,33 +40,33 @@ pub struct Token {
 }
 
 impl Token {
-    pub fn try_read(cursor: &mut Cursor) -> TokenResult<Self> {
+    pub fn try_read(cursor: &mut Cursor) -> Result<Self, TokenError> {
         let start = cursor.pos();
         let content = if let Some(literal) = TokenLiteral::try_read(cursor)? {
-            Some(TokenType::Literal(literal))
+            TokenType::Literal(literal)
         } else if let Some(ident) = ident::TokenIdent::try_read(cursor)? {
-            Some(TokenType::Ident(ident))
+            TokenType::Ident(ident)
         } else if spacing::read_newline(cursor) {
-            Some(TokenType::Newline)
+            TokenType::Newline
         } else if let Some(punct) = punct::TokenPunct::try_read(cursor)? {
-            Some(TokenType::Punct(punct))
+            TokenType::Punct(punct)
         } else if let Some(comment) = comment::TokenComment::try_read(cursor)? {
-            Some(TokenType::Comment(comment))
+            TokenType::Comment(comment)
         } else if let Some(group) = TokenGroup::try_read(cursor)? {
-            Some(TokenType::Group(group))
+            TokenType::Group(group)
         } else if cursor.eof() {
-            Some(TokenType::EOF)
+            TokenType::EOF
         } else {
             let spaces = spacing::count_spaces(cursor);
             if spaces > 0 {
-                Some(TokenType::Space(spaces))
+                TokenType::Space(spaces)
             } else {
                 cursor.advance();
                 return Err(TokenError::InvalidChar(cursor.current()));
             }
         };
 
-        Ok(content.map(|content| Self { content, span: Span { start, end: cursor.pos() } }))
+        Ok(Self { content, span: Span { start, end: cursor.pos() } })
     }
 }
 
@@ -81,7 +82,7 @@ pub enum TokenType {
     EOF,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum TokenError {
     InvalidChar(char),
     UnexpectedEof,
@@ -100,14 +101,14 @@ mod test {
     #[test]
     fn test_span_start() {
         let mut cursor = Cursor::new("test");
-        let token = super::Token::try_read(&mut cursor).unwrap().unwrap();
+        let token = super::Token::try_read(&mut cursor).unwrap();
         assert_eq!(token.span.start, 0);
     }
 
     #[test]
     fn test_span_end() {
         let mut cursor = Cursor::new("test");
-        let token = super::Token::try_read(&mut cursor).unwrap().unwrap();
+        let token = super::Token::try_read(&mut cursor).unwrap();
         assert_eq!(token.span.end, 4);
     }
 
@@ -115,14 +116,14 @@ mod test {
     fn test_nonzero_start() {
         let mut cursor = Cursor::new(" test");
         cursor.advance(); //Skip the whitespace
-        let token = super::Token::try_read(&mut cursor).unwrap().unwrap();
+        let token = super::Token::try_read(&mut cursor).unwrap();
         assert_eq!(token.span.start, 1);
     }
 
     #[test]
     fn test_length() {
         let mut cursor = Cursor::new("test");
-        let token = super::Token::try_read(&mut cursor).unwrap().unwrap();
+        let token = super::Token::try_read(&mut cursor).unwrap();
         assert_eq!(token.span.len(), 4);
     }
 }
