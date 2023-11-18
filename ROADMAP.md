@@ -2,7 +2,7 @@
 
 ## Tokenization
 * [x] Cursor
-* [] TokenStream
+* [x] TokenStream
 * [x] Identifiers
 * [x] Operators
     * [x] Single-char (+, -, etc.)
@@ -22,7 +22,6 @@
     * [x] Delimiters
     * [x] Content
 * [x] Span
-* [ ] Files
 
 ## Parsing/AST
 * [ ] Keywords
