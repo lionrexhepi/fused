@@ -2,13 +2,13 @@ use crate::tokens::{ Token, Span, TokenType };
 
 use super::{ Spanned, Expr };
 
-pub trait Keyword {
+pub trait Keyword: Spanned {
     fn name() -> &'static str;
 
     fn new(span: Span) -> Self;
 }
 
-impl<K: Keyword + Spanned> Expr for K {
+impl<K: Keyword> Expr for K {
     fn from_token(token: &Token) -> Option<Self> {
         let Token { span, content } = token;
         if let TokenType::Ident(ident) = content {
