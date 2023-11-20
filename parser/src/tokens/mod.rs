@@ -41,13 +41,14 @@ pub struct Token {
 
 impl Token {
     pub fn try_read(cursor: &mut Cursor) -> Result<Self, TokenError> {
+        cursor.skip_whitespaces();
         let start = cursor.pos();
         let content = if let Some(literal) = TokenLiteral::try_read(cursor)? {
             TokenType::Literal(literal)
         } else if let Some(ident) = ident::TokenIdent::try_read(cursor)? {
             TokenType::Ident(ident)
         } else if spacing::read_newline(cursor) {
-            TokenType::Newline
+            TokenType::Newline(spacing::count_spaces(cursor))
         } else if let Some(punct) = punct::TokenPunct::try_read(cursor)? {
             TokenType::Punct(punct)
         } else if let Some(comment) = comment::TokenComment::try_read(cursor)? {
@@ -57,13 +58,8 @@ impl Token {
         } else if cursor.eof() {
             TokenType::EOF
         } else {
-            let spaces = spacing::count_spaces(cursor);
-            if spaces > 0 {
-                TokenType::Space(spaces)
-            } else {
-                cursor.advance();
-                return Err(TokenError::InvalidChar(cursor.current()));
-            }
+            cursor.advance();
+            return Err(TokenError::InvalidChar(cursor.current()));
         };
 
         Ok(Self { content, span: Span { start, end: cursor.pos() } })
@@ -76,8 +72,7 @@ pub enum TokenType {
     Ident(ident::TokenIdent),
     Group(TokenGroup),
     Punct(punct::TokenPunct),
-    Space(usize),
-    Newline,
+    Newline(usize),
     Comment(TokenComment),
     EOF,
 }

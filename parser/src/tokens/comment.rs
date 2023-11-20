@@ -40,7 +40,6 @@ impl TokenContent for TokenComment {
                     _ => {
                         cursor.advance();
                         while cursor.current() != '\n' && !cursor.eof() {
-                            reject_eof!(cursor);
                             content.push(cursor.current());
                             cursor.advance();
                         }

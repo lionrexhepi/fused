@@ -34,7 +34,7 @@ impl TokenContent for TokenGroup {
 
         let mut tokens = Vec::new();
 
-        while cursor.current() != close && !cursor.eof() {
+        while cursor.current() != close {
             reject_eof!(cursor);
             tokens.push(Token::try_read(cursor)?);
         }
@@ -49,7 +49,13 @@ impl TokenContent for TokenGroup {
 mod test {
     use crate::{
         file::Cursor,
-        tokens::{ group::{ TokenGroup, Delim }, ident::TokenIdent, TokenType, TokenContent },
+        tokens::{
+            group::{ TokenGroup, Delim },
+            ident::TokenIdent,
+            TokenType,
+            TokenContent,
+            TokenError,
+        },
     };
 
     #[test]
@@ -103,7 +109,7 @@ mod test {
     #[test]
     fn test_nonterminated() {
         let mut cursor = Cursor::new("(test");
-        let group = TokenGroup::try_read(&mut cursor).unwrap();
-        assert_eq!(group, None);
+        let group = TokenGroup::try_read(&mut cursor).unwrap_err();
+        assert_eq!(group, TokenError::UnexpectedEof);
     }
 }

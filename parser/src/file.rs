@@ -2,11 +2,9 @@ use std::str::Chars;
 
 pub const EOF: char = '\0';
 
-
-
 pub struct Cursor<'a> {
     content: Chars<'a>,
-    
+
     absolute: usize,
 }
 
@@ -14,11 +12,10 @@ impl<'a> Cursor<'a> {
     pub fn new(data: &'a str) -> Self {
         Self {
             content: data.chars(),
-            
+
             absolute: 0,
         }
     }
-
 
     pub fn eof(&self) -> bool {
         self.content.as_str().is_empty()
@@ -40,8 +37,13 @@ impl<'a> Cursor<'a> {
         self.content.clone().nth(n).unwrap_or(EOF)
     }
 
+    pub fn skip_whitespaces(&mut self) {
+        while matches!(self.current(), ' ' | '\t') {
+            self.advance();
+        }
+    }
+
     pub fn advance(&mut self) -> char {
-        
         self.absolute += 1;
 
         self.content.next().unwrap_or(EOF)

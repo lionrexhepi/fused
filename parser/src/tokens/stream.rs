@@ -70,9 +70,8 @@ mod test {
     #[test]
     fn test_from_string() {
         let mut stream = super::TokenStream::from_string("test 1".to_string()).unwrap();
-        assert_eq!(stream.len(), 4); //Ident, Space, Literal, EOF
+        assert_eq!(stream.len(), 3); //Ident, Literal, EOF
         assert!(matches!(stream.advance().unwrap().content, super::TokenType::Ident(_)));
-        assert!(matches!(stream.advance().unwrap().content, super::TokenType::Space(_)));
         assert!(matches!(stream.advance().unwrap().content, super::TokenType::Literal(_)));
         assert!(matches!(stream.advance().unwrap().content, super::TokenType::EOF));
         assert!(stream.advance().is_none());
