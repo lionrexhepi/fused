@@ -1,6 +1,6 @@
 use crate::tokens::Span;
 
-use super::{ Parse, Spanned, ParseResult };
+use super::{ Parse, Spanned, ParseResult, stream::ParseStream };
 
 #[derive(Debug, Clone)]
 enum Number {
@@ -35,7 +35,7 @@ impl Spanned for LitNumber {
 }
 
 impl Parse for LitNumber {
-    fn parse(token: &crate::tokens::Token) -> ParseResult<Self> where Self: Sized {
+    fn parse(token: &mut ParseStream) -> ParseResult<Self> where Self: Sized {
         todo!()
     }
 }

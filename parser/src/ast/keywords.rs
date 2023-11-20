@@ -1,23 +1,27 @@
 use crate::tokens::{ Token, Span, TokenType };
 
-use super::{ Spanned, Parse, ParseResult, ParseError };
+use super::{ Spanned, Parse, ParseResult, ParseError, stream::ParseStream };
 
 pub trait Keyword: Spanned {
     fn name() -> &'static str;
 
     fn new(span: Span) -> Self;
-}
 
-impl<K: Keyword> Parse for K {
-    fn parse(token: &Token) -> ParseResult<Self> {
+    fn from_token(token: &Token) -> Option<Self> where Self: Sized {
         let Token { span, content } = token;
         if let TokenType::Ident(ident) = content {
             if !ident.escaped && ident.name == Self::name() {
-                return Ok(Self::new(*span));
+                return Some(Self::new(*span));
             }
         }
 
-        Err(ParseError::UnexpectedToken(Self::name().to_string(), token.clone()))
+        None
+    }
+}
+
+impl<K: Keyword> Parse for K {
+    fn parse(token: &mut ParseStream) -> ParseResult<Self> {
+        token.keyword()
     }
 }
 
@@ -39,6 +43,8 @@ macro_rules! define_keyword {
             fn name() -> &'static str {
                 $name
             }
+
+    
         }
     };
 }

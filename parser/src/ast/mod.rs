@@ -1,5 +1,7 @@
 use crate::tokens::{ Span, Token };
 
+use self::stream::ParseStream;
+
 pub mod keywords;
 pub mod number;
 pub mod stream;
@@ -18,5 +20,5 @@ pub enum ParseError {
 type ParseResult<T> = Result<T, ParseError>;
 
 pub trait Parse: Spanned {
-    fn parse(stream: &Token) -> ParseResult<Self> where Self: Sized;
+    fn parse(stream: &mut ParseStream) -> ParseResult<Self> where Self: Sized;
 }
