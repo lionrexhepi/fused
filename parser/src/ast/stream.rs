@@ -21,4 +21,36 @@ impl ParseStream {
             ParseError::UnexpectedToken(K::name().to_string(), token)
         )
     }
+
+    pub fn advance(&mut self) -> Option<Token> {
+        self.tokens.advance()
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::{
+        ast::{ keywords::{ If, Else }, stream::ParseStream },
+        tokens::{ stream::TokenStream, Span },
+    };
+
+    #[test]
+    fn test_is_keyword() {
+        let mut stream = ParseStream {
+            tokens: TokenStream::from_string("if else".to_string()).unwrap(),
+        };
+        assert!(stream.is_keyword::<If>());
+        stream.advance();
+        assert!(!stream.is_keyword::<If>());
+    }
+
+    #[test]
+    fn test_keyword() {
+        let mut stream = ParseStream {
+            tokens: TokenStream::from_string("if else else".to_string()).unwrap(),
+        };
+        assert!(stream.keyword::<If>().is_ok());
+        assert!(stream.keyword::<If>().is_err());
+        assert_eq!(stream.keyword::<Else>(), Ok(Else((8..12).into())));
+    }
 }

@@ -27,7 +27,8 @@ impl<K: Keyword> Parse for K {
 
 macro_rules! define_keyword {
     ($kw:ident, $name:expr) => {
-        pub struct $kw($crate::tokens::Span);
+        #[derive(Debug, PartialEq, Eq, Clone)]
+        pub struct $kw(pub(crate) $crate::tokens::Span);
 
         impl $crate::ast::Spanned for $kw {
             fn span(&self) -> $crate::tokens::Span {

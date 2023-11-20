@@ -13,6 +13,7 @@ pub trait Spanned {
     fn span(&self) -> Span;
 }
 
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum ParseError {
     UnexpectedToken(String, Token),
 }

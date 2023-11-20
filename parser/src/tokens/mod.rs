@@ -1,4 +1,4 @@
-use std::fmt::Debug;
+use std::{ fmt::Debug, ops::Range };
 
 use crate::file::Cursor;
 
@@ -16,6 +16,12 @@ pub mod stream;
 pub struct Span {
     pub start: usize,
     pub end: usize,
+}
+
+impl From<Range<usize>> for Span {
+    fn from(range: Range<usize>) -> Self {
+        Self { start: range.start, end: range.end }
+    }
 }
 
 impl Span {
