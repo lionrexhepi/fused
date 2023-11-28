@@ -4,15 +4,15 @@ use crate::file::Cursor;
 
 use self::{ literal::TokenLiteral, comment::TokenComment, group::TokenGroup };
 
-mod literal;
-mod ident;
+pub mod literal;
+pub mod ident;
 pub mod spacing;
 pub mod punct;
 pub mod comment;
 pub mod group;
 pub mod stream;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct Span {
     pub start: usize,
     pub end: usize,

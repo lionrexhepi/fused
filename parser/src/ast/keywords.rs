@@ -1,6 +1,6 @@
 use crate::tokens::{ Token, Span, TokenType };
 
-use super::{ Spanned, Parse, ParseResult, ParseError, stream::ParseStream };
+use super::{ Spanned, Parse, ParseResult, ParseError, stream::{ ParseStream, Cursor } };
 
 pub trait Keyword: Spanned {
     fn name() -> &'static str;
@@ -21,7 +21,15 @@ pub trait Keyword: Spanned {
 
 impl<K: Keyword> Parse for K {
     fn parse(token: &mut ParseStream) -> ParseResult<Self> {
-        token.keyword()
+        token.parse_with(|cursor: &mut Cursor| {
+            let token = cursor.current();
+            if let Some(keyword) = Self::from_token(token) {
+                cursor.advance();
+                Ok(keyword)
+            } else {
+                Err(ParseError::UnexpectedToken(Self::name().to_string(), token.clone()))
+            }
+        })
     }
 }
 

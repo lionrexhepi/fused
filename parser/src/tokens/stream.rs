@@ -1,10 +1,10 @@
 use crate::file::Cursor;
 
-use super::{ Token, TokenResult, TokenType };
+use super::{ Token, TokenType, Span };
 
-#[derive(Default)]
 pub struct TokenStream {
     inner: Vec<Token>,
+    eof: Token,
 }
 
 impl TokenStream {
@@ -12,36 +12,37 @@ impl TokenStream {
         let mut cursor = Cursor::new(&string);
 
         let mut vec = Vec::new();
-
-        loop {
+        let eof = loop {
             let token = Token::try_read(&mut cursor)?;
 
-            let eof = token.content == TokenType::EOF;
+            if token.content == TokenType::EOF {
+                break token;
+            }
 
             vec.push(token);
+        };
 
-            if eof {
-                break;
-            }
-        }
-
-        Ok(Self { inner: vec })
+        Ok(Self { inner: vec, eof: eof })
     }
 
     pub fn push(&mut self, token: Token) {
         self.inner.push(token);
     }
 
-    pub fn current(&self) -> Option<&Token> {
-        self.inner.first()
+    pub fn current(&self) -> &Token {
+        self.inner.first().unwrap_or(&self.eof)
     }
 
-    pub fn next(&self) -> Option<&Token> {
-        self.inner.get(1)
+    pub fn next(&self) -> &Token {
+        self.inner.get(1).unwrap_or(&self.eof)
     }
 
-    pub fn advance(&mut self) -> Option<Token> {
-        if self.inner.is_empty() { None } else { Some(self.inner.remove(0)) }
+    pub fn nth(&self, n: usize) -> &Token {
+        self.inner.get(n).unwrap_or(&self.eof)
+    }
+
+    pub fn advance(&mut self) -> Token {
+        if self.inner.is_empty() { self.eof.clone() } else { self.inner.remove(0) }
     }
 
     pub fn advance_to(&mut self, n: usize) -> Vec<Token> {
@@ -70,11 +71,10 @@ mod test {
     #[test]
     fn test_from_string() {
         let mut stream = super::TokenStream::from_string("test 1".to_string()).unwrap();
-        assert_eq!(stream.len(), 3); //Ident, Literal, EOF
-        assert!(matches!(stream.advance().unwrap().content, super::TokenType::Ident(_)));
-        assert!(matches!(stream.advance().unwrap().content, super::TokenType::Literal(_)));
-        assert!(matches!(stream.advance().unwrap().content, super::TokenType::EOF));
-        assert!(stream.advance().is_none());
+        assert_eq!(stream.len(), 2); //Ident, Literal
+        assert!(matches!(stream.advance().content, super::TokenType::Ident(_)));
+        assert!(matches!(stream.advance().content, super::TokenType::Literal(_)));
+        assert!(matches!(stream.advance().content, super::TokenType::EOF));
     }
 
     #[test]

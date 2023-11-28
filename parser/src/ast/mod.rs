@@ -16,6 +16,7 @@ pub trait Spanned {
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum ParseError {
     UnexpectedToken(String, Token),
+    BadLiteral(String),
 }
 
 type ParseResult<T> = Result<T, ParseError>;

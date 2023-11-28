@@ -1,4 +1,6 @@
-use crate::tokens::{ stream::TokenStream, Token };
+use std::result;
+
+use crate::tokens::{ stream::TokenStream, Token, TokenType };
 
 use super::{ keywords::Keyword, Parse, ParseResult, ParseError };
 
@@ -9,48 +11,74 @@ pub struct ParseStream {
 pub struct UnexpectedToken(String, Token);
 
 impl ParseStream {
-    pub fn is_keyword<K: Keyword>(&self) -> bool {
-        self.tokens.current().map_or(false, |token| K::from_token(token).is_some())
+    pub fn parse<T: Parse>(&mut self) -> ParseResult<T> {
+        T::parse(self)
     }
 
-    pub fn keyword<K: Keyword>(&mut self) -> ParseResult<K> {
-        let token = self.tokens
-            .advance()
-            .expect("A ParseStream shouldn't be read after an EOF has been detected!");
-        K::from_token(&token).ok_or_else(||
-            ParseError::UnexpectedToken(K::name().to_string(), token)
-        )
+    pub fn parse_with<T>(&mut self, parser: impl Parser<T>) -> ParseResult<T> {
+        let mut cursor = Cursor::new(&self.tokens);
+        let result = parser.parse(&mut cursor);
+        self.tokens.advance_to(cursor.moved);
+        result
     }
 
-    pub fn advance(&mut self) -> Option<Token> {
+    pub fn take<T>(&mut self) -> Token {
         self.tokens.advance()
     }
 }
 
-#[cfg(test)]
-mod test {
-    use crate::{
-        ast::{ keywords::{ If, Else }, stream::ParseStream },
-        tokens::{ stream::TokenStream, Span },
-    };
+pub trait Parser<T> {
+    fn parse(self, stream: &mut Cursor) -> ParseResult<T>;
+}
 
-    #[test]
-    fn test_is_keyword() {
-        let mut stream = ParseStream {
-            tokens: TokenStream::from_string("if else".to_string()).unwrap(),
-        };
-        assert!(stream.is_keyword::<If>());
-        stream.advance();
-        assert!(!stream.is_keyword::<If>());
+impl<T, F> Parser<T> for F where F: FnOnce(&mut Cursor) -> ParseResult<T> {
+    fn parse(self, stream: &mut Cursor) -> ParseResult<T> {
+        self(stream)
+    }
+}
+
+#[derive(Clone)]
+pub struct Cursor<'a> {
+    tokenstream: &'a TokenStream,
+    moved: usize,
+}
+
+impl<'a> Cursor<'a> {
+    fn new(tokenstream: &'a TokenStream) -> Self {
+        Self {
+            tokenstream,
+            moved: 0,
+        }
     }
 
-    #[test]
-    fn test_keyword() {
-        let mut stream = ParseStream {
-            tokens: TokenStream::from_string("if else else".to_string()).unwrap(),
-        };
-        assert!(stream.keyword::<If>().is_ok());
-        assert!(stream.keyword::<If>().is_err());
-        assert_eq!(stream.keyword::<Else>(), Ok(Else((8..12).into())));
+    pub fn current(&self) -> &Token {
+        self.tokenstream.nth(self.moved)
+    }
+
+    pub fn next(&self) -> &Token {
+        self.tokenstream.nth(self.moved + 1)
+    }
+
+    pub fn nth(&self, n: usize) -> &Token {
+        self.tokenstream.nth(self.moved + n)
+    }
+
+    pub fn advance(&mut self) -> bool {
+        self.moved += 1;
+        self.current().content != TokenType::EOF
+    }
+
+    pub fn split<T>(&mut self, parser: impl Parser<T>) -> ParseResult<T> {
+        let mut cursor = self.clone();
+        let result = parser.parse(&mut cursor);
+        if result.is_ok() {
+            self.moved = cursor.moved;
+        }
+
+        result
+    }
+
+    pub fn reset(&mut self) {
+        self.moved = 0;
     }
 }
