@@ -1,13 +1,11 @@
-use super::number::LitNumber;
+use super::{number::LitNumber, ident::ExprIdent};
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Expr {
-    Literal,
+    Literal(ExprLit),
     Ident(ExprIdent),
 }
 
-#[derive(Debug, PartialEq, Eq, Clone)]
-pub struct ExprIdent(String);
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum ExprLit {

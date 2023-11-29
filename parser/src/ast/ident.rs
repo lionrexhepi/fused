@@ -2,18 +2,19 @@ use crate::tokens::Span;
 
 use super::{Parse, stream::Cursor, ParseResult, ParseError};
 
-pub struct Ident {
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub struct ExprIdent {
     pub name: String,
-     span: Span,
+    span: Span,
 }
 
-impl super::Spanned for Ident {
+impl super::Spanned for ExprIdent {
     fn span(&self) -> Span {
         self.span
     }
 }
 
-impl Parse for Ident {
+impl Parse for ExprIdent {
     fn parse(stream: &mut super::stream::ParseStream) -> super::ParseResult<Self> where Self: Sized {
         stream.parse_with(|cursor: &mut Cursor| {
             let token = cursor.current().clone();
@@ -57,7 +58,7 @@ mod test {
         let tokens = TokenStream::from_string("name".to_string()).unwrap();
         let mut stream = super::super::stream::ParseStream::new(tokens);
 
-        let ident = super::Ident::parse(&mut stream).unwrap();
+        let ident = super::ExprIdent::parse(&mut stream).unwrap();
         assert_eq!(ident.name, "name");
     }
 
@@ -66,7 +67,7 @@ mod test {
         let tokens = TokenStream::from_string("let".to_string()).unwrap();
         let mut stream = super::super::stream::ParseStream::new(tokens);
 
-        let ident = super::Ident::parse(&mut stream);
+        let ident = super::ExprIdent::parse(&mut stream);
         assert!(ident.is_err());
     }
 
@@ -75,7 +76,7 @@ mod test {
         let tokens = TokenStream::from_string("@let".to_string()).unwrap();
         let mut stream = super::super::stream::ParseStream::new(tokens);
 
-        let ident = super::Ident::parse(&mut stream).unwrap();
+        let ident = super::ExprIdent::parse(&mut stream).unwrap();
         assert_eq!(ident.name, "let");
     }
 }
