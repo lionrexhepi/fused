@@ -6,6 +6,7 @@ pub mod keywords;
 pub mod number;
 pub mod stream;
 pub mod expr;
+pub mod ident;
 
 pub struct Ast;
 
