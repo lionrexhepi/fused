@@ -7,6 +7,7 @@ pub mod number;
 pub mod stream;
 pub mod expr;
 pub mod ident;
+pub mod string;
 
 pub struct Ast;
 

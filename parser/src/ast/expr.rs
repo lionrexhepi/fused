@@ -1,4 +1,4 @@
-use super::{number::LitNumber, ident::ExprIdent};
+use super::{number::LitNumber, ident::ExprIdent, string::LitString};
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Expr {
@@ -9,6 +9,6 @@ pub enum Expr {
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum ExprLit {
-    String,
+    String(LitString),
     Number(LitNumber),
 }
