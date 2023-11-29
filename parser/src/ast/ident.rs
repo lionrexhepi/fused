@@ -21,7 +21,7 @@ impl Parse for Ident {
                 
                 if is_keyword(&ident.name) && !ident.escaped {
                     return Err(super::ParseError::UnexpectedToken(
-                        "identifier".to_string(),
+                        "identifier",
                         token,
                     ));
                 }
@@ -33,7 +33,7 @@ impl Parse for Ident {
                 })
             } else {
                 Err(super::ParseError::UnexpectedToken(
-                    "identifier".to_string(),
+                    "identifier",
                     token,
                 ))
             }
