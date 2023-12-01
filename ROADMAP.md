@@ -24,11 +24,12 @@
 * [x] Span
 
 ## Parsing/AST
-* [ ] Keywords
-* [ ] Actual literals
-    * [ ] Bools
-    * [ ] Strings
-    * [ ] Numbers
+* [x] Keywords
+* [x] Idents
+* [x] Actual literals
+    * [x] Bools (through true, false keywords)
+    * [x] Strings
+    * [x] Numbers
 * [ ] Blocks
 * [ ] Expressions
     * [ ] Operations
