@@ -79,3 +79,46 @@ define_keyword!(Super, "super");
 
 define_keyword!(True, "true");
 define_keyword!(False, "false");
+
+#[cfg(test)]
+mod test {
+    use crate::ast::keywords::*;
+
+    #[test]
+    fn test_keywords() {
+        let stream = crate::tokens::stream::TokenStream
+            ::from_string(
+                "if else elif while for in break continue return fn let class enum struct impl this super true false".to_string()
+            )
+            .unwrap();
+        let mut stream = crate::ast::stream::ParseStream::new(stream);
+
+        assert_eq!(stream.parse::<If>().unwrap(), If((0..2).into()));
+        assert_eq!(stream.parse::<Else>().unwrap(), Else((3..7).into()));
+        assert_eq!(stream.parse::<ElseIf>().unwrap(), ElseIf((8..12).into()));
+        assert_eq!(stream.parse::<While>().unwrap(), While((13..18).into()));
+        assert_eq!(stream.parse::<For>().unwrap(), For((19..22).into()));
+        assert_eq!(stream.parse::<In>().unwrap(), In((23..25).into()));
+        assert_eq!(stream.parse::<Break>().unwrap(), Break((26..31).into()));
+        assert_eq!(stream.parse::<Continue>().unwrap(), Continue((32..39).into()));
+        assert_eq!(stream.parse::<Return>().unwrap(), Return((40..46).into()));
+        assert_eq!(stream.parse::<Fn>().unwrap(), Fn((47..49).into()));
+        assert_eq!(stream.parse::<Let>().unwrap(), Let((50..53).into()));
+        assert_eq!(stream.parse::<Class>().unwrap(), Class((54..59).into()));
+        assert_eq!(stream.parse::<Enum>().unwrap(), Enum((60..64).into()));
+        assert_eq!(stream.parse::<Struct>().unwrap(), Struct((65..71).into()));
+        assert_eq!(stream.parse::<Impl>().unwrap(), Impl((72..76).into()));
+        assert_eq!(stream.parse::<This>().unwrap(), This((77..81).into()));
+        assert_eq!(stream.parse::<Super>().unwrap(), Super((82..87).into()));
+        assert_eq!(stream.parse::<True>().unwrap(), True((88..92).into()));
+        assert_eq!(stream.parse::<False>().unwrap(), False((93..98).into()));
+    }
+
+    #[test]
+    fn test_regular_ident() {
+        let stream = crate::tokens::stream::TokenStream::from_string("test".to_string()).unwrap();
+        let mut stream = crate::ast::stream::ParseStream::new(stream);
+
+        assert!(matches!(stream.parse::<If>(), Err(_)));
+    }
+}

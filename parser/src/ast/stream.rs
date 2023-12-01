@@ -11,6 +11,12 @@ pub struct ParseStream {
 pub struct UnexpectedToken(String, Token);
 
 impl ParseStream {
+    pub fn new(tokens: TokenStream) -> Self {
+        Self {
+            tokens,
+        }
+    }
+
     pub fn parse<T: Parse>(&mut self) -> ParseResult<T> {
         T::parse(self)
     }
