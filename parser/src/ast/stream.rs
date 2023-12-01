@@ -16,7 +16,6 @@ impl ParseStream {
             tokens,
         }
     }
-
     pub fn parse<T: Parse>(&mut self) -> ParseResult<T> {
         T::parse(self)
     }

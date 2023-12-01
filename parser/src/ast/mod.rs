@@ -6,6 +6,8 @@ pub mod keywords;
 pub mod number;
 pub mod stream;
 pub mod expr;
+pub mod ident;
+pub mod string;
 
 pub struct Ast;
 
@@ -15,7 +17,7 @@ pub trait Spanned {
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum ParseError {
-    UnexpectedToken(String, Token),
+    UnexpectedToken(&'static str, Token),
     BadLiteral(String),
 }
 
