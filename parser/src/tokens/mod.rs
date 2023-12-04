@@ -25,11 +25,15 @@ impl From<Range<usize>> for Span {
 }
 
 impl Span {
+    pub fn new(start: usize, end: usize) -> Self {
+        Self { start, end }
+    }
+
     pub fn len(&self) -> usize {
         self.end - self.start
     }
 
-    pub fn join(&self, other: &Self) -> Self {
+    pub fn join(&self, other: Self) -> Self {
         Self { start: self.start, end: other.end }
     }
 }

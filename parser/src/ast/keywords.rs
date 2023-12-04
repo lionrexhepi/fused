@@ -77,9 +77,6 @@ define_keyword!(Impl, "impl");
 define_keyword!(This, "this");
 define_keyword!(Super, "super");
 
-define_keyword!(True, "true");
-define_keyword!(False, "false");
-
 #[cfg(test)]
 mod test {
     use crate::ast::keywords::*;
@@ -88,7 +85,7 @@ mod test {
     fn test_keywords() {
         let stream = crate::tokens::stream::TokenStream
             ::from_string(
-                "if else elif while for in break continue return fn let class enum struct impl this super true false".to_string()
+                "if else elif while for in break continue return fn let class enum struct impl this super".to_string()
             )
             .unwrap();
         let mut stream = crate::ast::stream::ParseStream::new(stream);
@@ -110,8 +107,6 @@ mod test {
         assert_eq!(stream.parse::<Impl>().unwrap(), Impl((72..76).into()));
         assert_eq!(stream.parse::<This>().unwrap(), This((77..81).into()));
         assert_eq!(stream.parse::<Super>().unwrap(), Super((82..87).into()));
-        assert_eq!(stream.parse::<True>().unwrap(), True((88..92).into()));
-        assert_eq!(stream.parse::<False>().unwrap(), False((93..98).into()));
     }
 
     #[test]
