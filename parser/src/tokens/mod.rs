@@ -28,6 +28,10 @@ impl Span {
     pub fn len(&self) -> usize {
         self.end - self.start
     }
+
+    pub fn join(&self, other: &Self) -> Self {
+        Self { start: self.start, end: other.end }
+    }
 }
 
 #[macro_export]
