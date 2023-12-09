@@ -20,15 +20,21 @@ impl ParseStream {
         T::parse(self)
     }
 
+    pub fn cursor(&self) -> Cursor {
+        Cursor::new(&self.tokens)
+    }
+
     pub fn parse_with<T>(&mut self, parser: impl Parser<T>) -> ParseResult<T> {
         let mut cursor = Cursor::new(&self.tokens);
         let result = parser.parse(&mut cursor);
-        self.tokens.advance_to(cursor.moved);
+        if result.is_ok() {
+            self.tokens.advance_to(cursor.moved);
+        }
         result
     }
 
-    pub fn take<T>(&mut self) -> Token {
-        self.tokens.advance()
+    pub fn current(&self) -> &Token {
+        self.tokens.current()
     }
 }
 

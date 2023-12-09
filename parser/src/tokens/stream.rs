@@ -2,6 +2,7 @@ use crate::file::Cursor;
 
 use super::{ Token, TokenType, Span };
 
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TokenStream {
     inner: Vec<Token>,
     eof: Token,

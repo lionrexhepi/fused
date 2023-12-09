@@ -1,4 +1,4 @@
-use crate::tokens::Span;
+use crate::tokens::{ Span, Token };
 
 use super::{
     expr::Expr,
@@ -7,6 +7,7 @@ use super::{
     Spanned,
     Parse,
     block::ExprBlock,
+    keywords::{ If, self, Keyword },
 };
 
 pub struct ExprIf {
@@ -24,7 +25,7 @@ impl Spanned for ExprIf {
 
 impl Parse for ExprIf {
     fn parse(token: &mut ParseStream) -> ParseResult<Self> where Self: Sized {
-        let r#if = token.parse::<ExprIf>()?;
+        let r#if = token.parse::<If>()?;
         let condition = token.parse::<Expr>()?;
         let body = token.parse::<Expr>()?;
         let r#else = token.parse().ok();
@@ -60,8 +61,8 @@ impl Spanned for Else {
 
 impl Parse for Else {
     fn parse(stream: &mut ParseStream) -> ParseResult<Self> where Self: Sized {
-        stream.parse::<Else>()?;
-        if stream.parse::<ExprIf>().is_ok() {
+        stream.parse::<keywords::Else>()?;
+        if If::from_token(stream.cursor().current()).is_some() {
             Ok(Self::If(Box::new(stream.parse()?)))
         } else {
             Ok(Self::Body(Box::new(stream.parse()?)))
@@ -71,5 +72,48 @@ impl Parse for Else {
 
 #[cfg(test)]
 mod test {
-    use crate::file::Cursor;
+    use crate::{
+        tokens::stream::TokenStream,
+        ast::{ stream::ParseStream, conditionals::ExprIf, expr::{ ExprLit, Expr } },
+    };
+
+    #[test]
+    fn test_if() {
+        let tokens = TokenStream::from_string("if true:\n    1".to_string()).unwrap();
+
+        let mut stream = ParseStream::new(tokens);
+
+        let r#if = stream.parse::<ExprIf>().unwrap();
+
+        assert!(matches!(*r#if.condition, Expr::Literal(ExprLit::Bool(_))));
+        assert!(matches!(*r#if.body, Expr::Block(_)));
+    }
+
+    #[test]
+    fn test_if_else() {
+        let tokens = TokenStream::from_string("if true:\n    1\nelse:\n    2".to_string()).unwrap();
+
+        let mut stream = ParseStream::new(tokens);
+
+        let r#if = stream.parse::<ExprIf>().unwrap();
+
+        assert!(matches!(*r#if.condition, Expr::Literal(ExprLit::Bool(_))));
+        assert!(matches!(*r#if.body, Expr::Block(_)));
+        assert!(matches!(r#if.r#else.unwrap(), super::Else::Body(_)));
+    }
+
+    #[test]
+    fn test_if_else_if() {
+        let tokens = TokenStream::from_string(
+            "if true:\n    1\nelse if false:\n    2".to_string()
+        ).unwrap();
+
+        let mut stream = ParseStream::new(tokens);
+
+        let r#if = stream.parse::<ExprIf>().unwrap();
+
+        assert!(matches!(*r#if.condition, Expr::Literal(ExprLit::Bool(_))));
+        assert!(matches!(*r#if.body, Expr::Block(_)));
+        assert!(matches!(r#if.r#else.unwrap(), super::Else::If(_)));
+    }
 }

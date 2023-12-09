@@ -1,11 +1,20 @@
 use crate::tokens::{ Span, TokenType };
 
-use super::{ number::LitNumber, ident::ExprIdent, string::LitString, Spanned, Parse };
+use super::{
+    number::LitNumber,
+    ident::ExprIdent,
+    string::LitString,
+    Spanned,
+    Parse,
+    ParseError,
+    block::ExprBlock,
+};
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Expr {
     Literal(ExprLit),
     Ident(ExprIdent),
+    Block(ExprBlock),
 }
 
 impl Spanned for Expr {
@@ -13,18 +22,25 @@ impl Spanned for Expr {
         match self {
             Self::Literal(lit) => lit.span(),
             Self::Ident(ident) => ident.span(),
+            Self::Block(block) => block.span(),
         }
     }
 }
 
 impl Parse for Expr {
     fn parse(stream: &mut super::stream::ParseStream) -> super::ParseResult<Self> where Self: Sized {
+        println!("{:?}", stream.cursor().current());
         if let Ok(lit) = stream.parse::<ExprLit>() {
             Ok(Self::Literal(lit))
-        } else if let Ok(ident) = stream.parse::<ExprIdent>() {
-            Ok(Self::Ident(ident))
         } else {
-            todo!()
+            println!("{:?}", stream.cursor().current());
+            if let Ok(ident) = stream.parse::<ExprIdent>() {
+                Ok(Self::Ident(ident))
+            } else {
+                println!("{:?}", stream.cursor().current());
+                let block = stream.parse::<ExprBlock>();
+                Ok(Self::Block(block?))
+            }
         }
     }
 }
@@ -50,12 +66,19 @@ impl Parse for ExprLit {
     fn parse(stream: &mut super::stream::ParseStream) -> super::ParseResult<Self> where Self: Sized {
         if let Ok(bool) = stream.parse::<LitBool>() {
             Ok(Self::Bool(bool))
-        } else if let Ok(number) = stream.parse::<LitNumber>() {
-            Ok(Self::Number(number))
-        } else if let Ok(string) = stream.parse::<LitString>() {
-            Ok(Self::String(string))
         } else {
-            todo!()
+            println!("lit 1{:?}", stream.cursor().current());
+            if let Ok(number) = stream.parse::<LitNumber>() {
+                Ok(Self::Number(number))
+            } else {
+                println!("lit 2{:?}", stream.cursor().current());
+                if let Ok(string) = stream.parse::<LitString>() {
+                    Ok(Self::String(string))
+                } else {
+                    println!("lit 3{:?}", stream.cursor().current());
+                    Err(ParseError::UnexpectedToken("literal", stream.current().clone()))
+                }
+            }
         }
     }
 }
@@ -95,7 +118,7 @@ impl Parse for LitBool {
 
 #[cfg(test)]
 mod test {
-    use crate::{ file::Cursor, tokens::stream::TokenStream, ast::Parse };
+    use crate::{ tokens::stream::TokenStream, ast::Parse };
 
     #[test]
     fn test_bools() {

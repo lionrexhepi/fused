@@ -24,6 +24,8 @@ pub enum ParseError {
     BadLiteral(String),
 }
 
+
+
 type ParseResult<T> = Result<T, ParseError>;
 
 pub trait Parse: Spanned {
