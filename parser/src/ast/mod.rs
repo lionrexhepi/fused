@@ -11,6 +11,7 @@ pub mod string;
 pub mod punct;
 mod conditionals;
 mod block;
+pub mod loops;
 
 pub struct Ast;
 

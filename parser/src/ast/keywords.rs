@@ -76,6 +76,7 @@ define_keyword!(Struct, "struct");
 define_keyword!(Impl, "impl");
 define_keyword!(This, "this");
 define_keyword!(Super, "super");
+define_keyword!(Loop, "loop");
 
 #[cfg(test)]
 mod test {
