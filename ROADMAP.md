@@ -30,7 +30,7 @@
     * [x] Bools (through true, false keywords)
     * [x] Strings
     * [x] Numbers
-* [ ] Blocks
+* [x] Blocks
 * [ ] Expressions
     * [ ] Operations
         * [ ] Addition/Subtraction/Multiplication
@@ -38,13 +38,13 @@
     * [ ] Assignment/Declaration
         * [ ] Typing
         * [ ] Mutability
-    * [ ] If
-        * [ ] Else
-        * [ ] Else if
-    * [ ] Loops
-        * [ ] While
-        * [ ] For
-        * [ ] Unconditional
+    * [x] If
+        * [x] Else
+        * [x] Else if
+    * [x] Loops
+        * [x] While
+        * [x] For
+        * [x] Unconditional
     * [ ] Functions
         * [ ] Params
             * [ ] Types
