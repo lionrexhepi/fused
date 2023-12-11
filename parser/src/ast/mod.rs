@@ -8,6 +8,7 @@ pub mod stream;
 pub mod expr;
 pub mod ident;
 pub mod string;
+pub mod operations;
 pub mod punct;
 mod conditionals;
 mod block;

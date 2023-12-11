@@ -1,6 +1,6 @@
 use crate::{ file::Cursor, reject_eof };
 
-use super::{ TokenResult, TokenContent };
+            use super::{ TokenResult, TokenContent };
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum TokenComment {
