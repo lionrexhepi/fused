@@ -98,16 +98,16 @@ mod test {
         assert_eq!(stream.parse::<For>().unwrap(), For((19..22).into()));
         assert_eq!(stream.parse::<In>().unwrap(), In((23..25).into()));
         assert_eq!(stream.parse::<Break>().unwrap(), Break((26..31).into()));
-        assert_eq!(stream.parse::<Continue>().unwrap(), Continue((32..39).into()));
-        assert_eq!(stream.parse::<Return>().unwrap(), Return((40..46).into()));
-        assert_eq!(stream.parse::<Fn>().unwrap(), Fn((47..49).into()));
-        assert_eq!(stream.parse::<Let>().unwrap(), Let((50..53).into()));
-        assert_eq!(stream.parse::<Class>().unwrap(), Class((54..59).into()));
-        assert_eq!(stream.parse::<Enum>().unwrap(), Enum((60..64).into()));
-        assert_eq!(stream.parse::<Struct>().unwrap(), Struct((65..71).into()));
-        assert_eq!(stream.parse::<Impl>().unwrap(), Impl((72..76).into()));
-        assert_eq!(stream.parse::<This>().unwrap(), This((77..81).into()));
-        assert_eq!(stream.parse::<Super>().unwrap(), Super((82..87).into()));
+        assert_eq!(stream.parse::<Continue>().unwrap(), Continue((32..40).into()));
+        assert_eq!(stream.parse::<Return>().unwrap(), Return((41..47).into()));
+        assert_eq!(stream.parse::<Fn>().unwrap(), Fn((48..50).into()));
+        assert_eq!(stream.parse::<Let>().unwrap(), Let((51..54).into()));
+        assert_eq!(stream.parse::<Class>().unwrap(), Class((55..60).into()));
+        assert_eq!(stream.parse::<Enum>().unwrap(), Enum((61..65).into()));
+        assert_eq!(stream.parse::<Struct>().unwrap(), Struct((66..72).into()));
+        assert_eq!(stream.parse::<Impl>().unwrap(), Impl((73..77).into()));
+        assert_eq!(stream.parse::<This>().unwrap(), This((78..82).into()));
+        assert_eq!(stream.parse::<Super>().unwrap(), Super((83..88).into()));
     }
 
     #[test]

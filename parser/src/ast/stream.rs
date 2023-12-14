@@ -4,6 +4,7 @@ use crate::tokens::{ stream::TokenStream, Token, TokenType };
 
 use super::{ keywords::Keyword, Parse, ParseResult, ParseError };
 
+#[derive(Clone)]
 pub struct ParseStream {
     tokens: TokenStream,
 }
