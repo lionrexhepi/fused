@@ -1,6 +1,6 @@
 use std::any::TypeId;
 
-use crate::tokens::{ Span, TokenType };
+use crate::tokens::{ Span, TokenType, group };
 
 use super::{
     number::LitNumber,
@@ -11,6 +11,7 @@ use super::{
     ParseError,
     block::ExprBlock,
     operations::{ ExprUnary, ExprBinary },
+    grouped::ExprGrouped,
 };
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -20,6 +21,7 @@ pub enum Expr {
     Block(ExprBlock),
     Unary(ExprUnary),
     Binary(ExprBinary),
+    Grouped(ExprGrouped),
 }
 
 impl Spanned for Expr {
@@ -30,15 +32,18 @@ impl Spanned for Expr {
             Self::Block(block) => block.span(),
             Self::Unary(unary) => unary.span(),
             Self::Binary(binary) => binary.span(),
+            Expr::Grouped(grouped) => grouped.span(),
         }
     }
 }
 
 impl Parse for Expr {
-    fn parse(stream: &mut super::stream::ParseStream) -> super::ParseResult<Self> where Self: Sized {
+    fn parse(stream: &mut super::stream::ParseStream) -> super::ParseResult<Self> {
         stream.skip_newlines();
         let result = if let Ok(op) = stream.parse::<ExprUnary>() {
             Ok(Self::Unary(op))
+        } else if let Ok(group) = stream.parse::<ExprGrouped>() {
+            Ok(Self::Grouped(group))
         } else if let Ok(op) = stream.parse::<ExprBinary>() {
             Ok(Self::Binary(op))
         } else if let Ok(lit) = stream.parse::<ExprLit>() {

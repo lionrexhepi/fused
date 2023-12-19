@@ -257,6 +257,8 @@ impl ExprBinary {
             Some(Expr::Literal(literal))
         } else if let Ok(ident) = stream.parse() {
             Some(Expr::Ident(ident))
+        } else if let Ok(parenthesized) = stream.parse() {
+            Some(Expr::Grouped(parenthesized))
         } else {
             None
         }

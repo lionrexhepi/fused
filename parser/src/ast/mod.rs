@@ -13,6 +13,7 @@ mod conditionals;
 mod block;
 pub mod loops;
 pub mod operations;
+pub mod grouped;
 
 pub struct Ast;
 
