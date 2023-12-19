@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{ collections::HashMap, mem::MaybeUninit };
 
 use crate::{
     tokens::{ Span, TokenType, punct::TokenPunct },
@@ -219,21 +219,26 @@ impl Parse for ExprBinary {
                 lookup.insert(right_index, left_index); //The left and right are now merged and should point to the same expr
 
                 let right = arguments.remove(right_index);
-                let left = arguments.remove(left_index);
+
+                //SAFETY: left_index will immediately be set to a value again, making this safe
+                #[allow(invalid_value)]
+                let left = unsafe {
+                    std::mem::replace(
+                        &mut arguments[left_index],
+                        MaybeUninit::uninit().assume_init()
+                    )
+                };
                 let span = left.span().join(right.span());
-                arguments.insert(
-                    left_index,
-                    Expr::Binary(Self {
-                        left: Box::new(left),
-                        right: Box::new(right),
-                        span,
-                        ty: operator,
-                    })
-                );
+                arguments[left_index] = Expr::Binary(Self {
+                    left: Box::new(left),
+                    right: Box::new(right),
+                    span,
+                    ty: operator,
+                });
             }
 
             debug_assert!(arguments.len() == 1);
-            Ok(match arguments[0].clone() {
+            Ok(match arguments.remove(0) {
                 Expr::Binary(binary) => {
                     *stream = split;
                     binary
