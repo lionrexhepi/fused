@@ -20,7 +20,9 @@ pub enum TokenPunct {
     PercentEq, // %=
     CaretEq, // ^=
     AmpersandEq, // &=
+    DoubleAmpersandEq, // &&=
     PipeEq, // |=
+    DoublePipeEq, // ||=
     Tilde, // ~
     Question, // ?
     Exclamation, // !
@@ -32,12 +34,12 @@ pub enum TokenPunct {
     DoubleEq, // ==
     NotEq, // !=
     Lt, // <
-    LeftShift, // <<
-    LeftShiftEq, // <<=
+    DoubleLt, // <<
+    DoubleLtEq, // <<=
     LtEq, // <=
     Gt, // >
-    RightShift, // >>
-    RightShiftEq, // >>=
+    DoubleGt, // >>
+    DoubleGtEq, // >>=
     GtEq, // >=
     Arrow, // ->
     FatArrow, // =>
@@ -106,7 +108,12 @@ impl TokenContent for TokenPunct {
                     Some(Self::AmpersandEq)
                 } else if cursor.next() == '&' {
                     cursor.advance();
-                    Some(Self::DoubleAmpersand)
+                    if cursor.next() == '=' {
+                        cursor.advance();
+                        Some(Self::DoubleAmpersandEq)
+                    } else {
+                        Some(Self::DoubleAmpersand)
+                    }
                 } else {
                     Some(Self::Ampersand)
                 }
@@ -117,7 +124,12 @@ impl TokenContent for TokenPunct {
                     Some(Self::PipeEq)
                 } else if cursor.next() == '|' {
                     cursor.advance();
-                    Some(Self::DoublePipe)
+                    if cursor.next() == '=' {
+                        cursor.advance();
+                        Some(Self::DoublePipeEq)
+                    } else {
+                        Some(Self::DoublePipe)
+                    }
                 } else {
                     Some(Self::Pipe)
                 }
@@ -149,9 +161,9 @@ impl TokenContent for TokenPunct {
                     cursor.advance();
                     if cursor.next() == '=' {
                         cursor.advance();
-                        Some(Self::LeftShiftEq)
+                        Some(Self::DoubleLtEq)
                     } else {
-                        Some(Self::LeftShift)
+                        Some(Self::DoubleLt)
                     }
                 } else {
                     Some(Self::Lt)
@@ -165,9 +177,9 @@ impl TokenContent for TokenPunct {
                     cursor.advance();
                     if cursor.next() == '=' {
                         cursor.advance();
-                        Some(Self::RightShiftEq)
+                        Some(Self::DoubleGtEq)
                     } else {
-                        Some(Self::RightShift)
+                        Some(Self::DoubleGt)
                     }
                 } else {
                     Some(Self::Gt)
@@ -244,7 +256,7 @@ mod test {
 
     #[test]
     fn test_complex() {
-        let mut cursor = Cursor::new("+= -= *= /= ^= |= <= <<= || && == >>= != => ->");
+        let mut cursor = Cursor::new("+= -= *= /= ^= |= <= <<= || && == >>= != => -> &&= ||=");
 
         assert_eq!(TokenPunct::try_read(&mut cursor).unwrap(), Some(TokenPunct::PlusEq));
         cursor.advance();
@@ -260,7 +272,7 @@ mod test {
         cursor.advance();
         assert_eq!(TokenPunct::try_read(&mut cursor).unwrap(), Some(TokenPunct::LtEq));
         cursor.advance();
-        assert_eq!(TokenPunct::try_read(&mut cursor).unwrap(), Some(TokenPunct::LeftShiftEq));
+        assert_eq!(TokenPunct::try_read(&mut cursor).unwrap(), Some(TokenPunct::DoubleLtEq));
         cursor.advance();
         assert_eq!(TokenPunct::try_read(&mut cursor).unwrap(), Some(TokenPunct::DoublePipe));
         cursor.advance();
@@ -268,12 +280,17 @@ mod test {
         cursor.advance();
         assert_eq!(TokenPunct::try_read(&mut cursor).unwrap(), Some(TokenPunct::DoubleEq));
         cursor.advance();
-        assert_eq!(TokenPunct::try_read(&mut cursor).unwrap(), Some(TokenPunct::RightShiftEq));
+        assert_eq!(TokenPunct::try_read(&mut cursor).unwrap(), Some(TokenPunct::DoubleGtEq));
         cursor.advance();
         assert_eq!(TokenPunct::try_read(&mut cursor).unwrap(), Some(TokenPunct::NotEq));
         cursor.advance();
         assert_eq!(TokenPunct::try_read(&mut cursor).unwrap(), Some(TokenPunct::FatArrow));
         cursor.advance();
         assert_eq!(TokenPunct::try_read(&mut cursor).unwrap(), Some(TokenPunct::Arrow));
+
+        cursor.advance();
+        assert_eq!(TokenPunct::try_read(&mut cursor).unwrap(), Some(TokenPunct::DoubleAmpersandEq));
+        cursor.advance();
+        assert_eq!(TokenPunct::try_read(&mut cursor).unwrap(), Some(TokenPunct::DoublePipeEq));
     }
 }

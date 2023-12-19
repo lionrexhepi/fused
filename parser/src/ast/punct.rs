@@ -66,12 +66,12 @@ define_punct!(
     DoubleEq, // ==
     NotEq, // !=
     Lt, // <
-    LeftShift, // <<
-    LeftShiftEq, // <<=
+    DoubleLt, // <<
+    DoubleLtEq, // <<=
     LtEq, // <=
     Gt, // >
-    RightShift, // >>
-    RightShiftEq, // >>=
+    DoubleGt, // >>
+    DoubleGtEq, // >>=
     GtEq, // >=
     Arrow, // ->
     FatArrow, // =>

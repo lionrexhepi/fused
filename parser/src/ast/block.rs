@@ -15,7 +15,7 @@ impl Spanned for ExprBlock {
 
 impl Parse for ExprBlock {
     fn parse(token: &mut ParseStream) -> ParseResult<Self> where Self: Sized {
-        println!("{:?}", token.cursor().current());
+        
         token.parse::<Colon>()?;
 
         let width = token.parse::<Newline>()?.follwing_spaces;
@@ -25,8 +25,6 @@ impl Parse for ExprBlock {
             if follwing_spaces != width {
                 break;
             }
-            println!("eae");
-            println!("{:?}", token.cursor().current());
             let expr = token.parse::<Expr>();
             exprs.push(expr?);
         }

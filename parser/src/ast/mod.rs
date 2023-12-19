@@ -8,11 +8,11 @@ pub mod stream;
 pub mod expr;
 pub mod ident;
 pub mod string;
-pub mod operations;
 pub mod punct;
 mod conditionals;
 mod block;
 pub mod loops;
+pub mod operations;
 
 pub struct Ast;
 
@@ -25,8 +25,6 @@ pub enum ParseError {
     UnexpectedToken(&'static str, Token),
     BadLiteral(String),
 }
-
-
 
 type ParseResult<T> = Result<T, ParseError>;
 
