@@ -1,6 +1,6 @@
 use crate::{ file::Cursor, reject_eof };
 
-use super::{ Token, TokenContent, TokenResult };
+use super::{ Token, TokenContent, TokenResult, stream::TokenStream };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Delim {
@@ -13,7 +13,7 @@ pub enum Delim {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TokenGroup {
     pub delim: Delim,
-    pub tokens: Vec<Token>,
+    pub tokens: Box<TokenStream>,
 }
 
 impl TokenContent for TokenGroup {
@@ -41,7 +41,7 @@ impl TokenContent for TokenGroup {
 
         cursor.advance();
 
-        Ok(Some(Self { delim, tokens }))
+        Ok(Some(Self { delim, tokens: Box::new(TokenStream::from_vec(tokens)) }))
     }
 }
 
@@ -65,7 +65,7 @@ mod test {
         assert_eq!(group.delim, Delim::Paren);
         assert_eq!(group.tokens.len(), 1);
         assert_eq!(
-            group.tokens.first().unwrap().content,
+            group.tokens.current().content,
             TokenType::Ident(TokenIdent::new("test".to_string()))
         );
     }
@@ -77,7 +77,7 @@ mod test {
         assert_eq!(group.delim, Delim::Bracket);
         assert_eq!(group.tokens.len(), 1);
         assert_eq!(
-            group.tokens.first().unwrap().content,
+            group.tokens.current().content,
             TokenType::Ident(TokenIdent::new("test".to_string()))
         );
     }
@@ -89,7 +89,7 @@ mod test {
         assert_eq!(group.delim, Delim::Brace);
         assert_eq!(group.tokens.len(), 1);
         assert_eq!(
-            group.tokens.first().unwrap().content,
+            group.tokens.current().content,
             TokenType::Ident(TokenIdent::new("test".to_string()))
         );
     }
@@ -101,7 +101,7 @@ mod test {
         assert_eq!(group.delim, Delim::Angle);
         assert_eq!(group.tokens.len(), 1);
         assert_eq!(
-            group.tokens.first().unwrap().content,
+            group.tokens.current().content,
             TokenType::Ident(TokenIdent::new("test".to_string()))
         );
     }

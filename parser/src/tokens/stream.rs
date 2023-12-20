@@ -9,6 +9,19 @@ pub struct TokenStream {
 }
 
 impl TokenStream {
+    pub fn from_vec(vec: Vec<Token>) -> Self {
+        let last = vec.last().map_or(0, |token| token.span.start);
+        let eof = Token {
+            span: (last..last + 1).into(),
+            content: TokenType::EOF,
+        };
+
+        Self {
+            inner: vec,
+            eof,
+        }
+    }
+
     pub fn from_string(string: String) -> Result<Self, super::TokenError> {
         let mut cursor = Cursor::new(&string);
 

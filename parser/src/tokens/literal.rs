@@ -180,7 +180,6 @@ fn read_string(cursor: &mut Cursor, quotes: usize) -> Result<String, TokenError>
     loop {
         reject_eof!(cursor);
         let current = cursor.current();
-        println!("current: {}", current);
         if current == '"' {
             let mut quotes_found = 0;
             while cursor.current() == '"' {
@@ -252,7 +251,6 @@ mod test {
 
     #[test]
     fn test_string() {
-        println!("yo");
         let mut cursor = Cursor::new("\"Hello, world!\"");
 
         let string = LiteralString::try_read(&mut cursor).unwrap().unwrap();

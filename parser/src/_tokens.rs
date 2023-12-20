@@ -391,7 +391,7 @@ impl TokenStream {
     pub fn new(mut file: SourceFile<'_>) -> Result<Self> {
         let mut tokens = VecDeque::new();
 
-        let eof = loop { 
+        let eof = loop {
             let (c, pos) = match file.peek() {
                 (Some(c), pos) => (c, pos),
                 (None, pos) => {
@@ -402,7 +402,6 @@ impl TokenStream {
             let token_type = match c {
                 '0'..='9' => TokenType::Literal(Literal::parse_number(&mut file)?),
                 quote @ ('"' | '\'') => {
-                    println!("String");
                     TokenType::Literal(Literal::parse_string(&mut file, quote)?)
                 }
 

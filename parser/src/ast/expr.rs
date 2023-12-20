@@ -1,4 +1,6 @@
-use crate::tokens::{ Span, TokenType };
+use std::any::TypeId;
+
+use crate::tokens::{ Span, TokenType, group };
 
 use super::{
     number::LitNumber,
@@ -8,6 +10,8 @@ use super::{
     Parse,
     ParseError,
     block::ExprBlock,
+    operations::{ ExprUnary, ExprBinary },
+    grouped::ExprGrouped,
 };
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -15,6 +19,9 @@ pub enum Expr {
     Literal(ExprLit),
     Ident(ExprIdent),
     Block(ExprBlock),
+    Unary(ExprUnary),
+    Binary(ExprBinary),
+    Grouped(ExprGrouped),
 }
 
 impl Spanned for Expr {
@@ -23,25 +30,32 @@ impl Spanned for Expr {
             Self::Literal(lit) => lit.span(),
             Self::Ident(ident) => ident.span(),
             Self::Block(block) => block.span(),
+            Self::Unary(unary) => unary.span(),
+            Self::Binary(binary) => binary.span(),
+            Expr::Grouped(grouped) => grouped.span(),
         }
     }
 }
 
 impl Parse for Expr {
-    fn parse(stream: &mut super::stream::ParseStream) -> super::ParseResult<Self> where Self: Sized {
-        println!("{:?}", stream.cursor().current());
-        if let Ok(lit) = stream.parse::<ExprLit>() {
+    fn parse(stream: &mut super::stream::ParseStream) -> super::ParseResult<Self> {
+        stream.skip_newlines();
+        let result = if let Ok(op) = stream.parse::<ExprUnary>() {
+            Ok(Self::Unary(op))
+        } else if let Ok(group) = stream.parse::<ExprGrouped>() {
+            Ok(Self::Grouped(group))
+        } else if let Ok(op) = stream.parse::<ExprBinary>() {
+            Ok(Self::Binary(op))
+        } else if let Ok(lit) = stream.parse::<ExprLit>() {
             Ok(Self::Literal(lit))
+        } else if let Ok(ident) = stream.parse::<ExprIdent>() {
+            Ok(Self::Ident(ident))
         } else {
-            println!("{:?}", stream.cursor().current());
-            if let Ok(ident) = stream.parse::<ExprIdent>() {
-                Ok(Self::Ident(ident))
-            } else {
-                println!("{:?}", stream.cursor().current());
-                let block = stream.parse::<ExprBlock>();
-                Ok(Self::Block(block?))
-            }
-        }
+            let block = stream.parse::<ExprBlock>();
+            Ok(Self::Block(block?))
+        };
+
+        result
     }
 }
 
@@ -66,19 +80,12 @@ impl Parse for ExprLit {
     fn parse(stream: &mut super::stream::ParseStream) -> super::ParseResult<Self> where Self: Sized {
         if let Ok(bool) = stream.parse::<LitBool>() {
             Ok(Self::Bool(bool))
+        } else if let Ok(number) = stream.parse::<LitNumber>() {
+            Ok(Self::Number(number))
+        } else if let Ok(string) = stream.parse::<LitString>() {
+            Ok(Self::String(string))
         } else {
-            println!("lit 1{:?}", stream.cursor().current());
-            if let Ok(number) = stream.parse::<LitNumber>() {
-                Ok(Self::Number(number))
-            } else {
-                println!("lit 2{:?}", stream.cursor().current());
-                if let Ok(string) = stream.parse::<LitString>() {
-                    Ok(Self::String(string))
-                } else {
-                    println!("lit 3{:?}", stream.cursor().current());
-                    Err(ParseError::UnexpectedToken("literal", stream.current().clone()))
-                }
-            }
+            Err(ParseError::UnexpectedToken("literal", stream.current().clone()))
         }
     }
 }

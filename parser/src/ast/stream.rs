@@ -34,6 +34,12 @@ impl ParseStream {
         result
     }
 
+    pub fn skip_newlines(&mut self) {
+        while let TokenType::Newline(_) = self.tokens.current().content {
+            self.tokens.advance();
+        }
+    }
+
     pub fn current(&self) -> &Token {
         self.tokens.current()
     }
