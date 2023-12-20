@@ -38,15 +38,15 @@ impl Parse for ExprGrouped {
 macro_rules! group {
     ($name:ident, $delim:ident) => {
         #[derive(Debug, PartialEq, Eq, Clone)]
-        pub struct $name<C: Parse + Sized = Expr>(Box<C>);
+        pub struct $name<C: Parse + Sized = Expr>(pub Box<C>);
 
-        impl Spanned  for $name {
+        impl<C: Parse + Sized> Spanned  for $name<C> {
             fn span(&self) -> Span {
                 self.0.span()
             }
         }
 
-        impl Parse for $name {
+        impl<C: Parse + Sized> Parse for $name<C> {
             fn parse(stream: &mut ParseStream) -> ParseResult<Self> {
                 let mut inner = stream.parse_with(|cursor: &mut Cursor| {
                     match cursor.current().content.clone() {

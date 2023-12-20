@@ -2,7 +2,7 @@ use std::marker::PhantomData;
 
 use crate::tokens::Span;
 
-use super::{punct::{Comma, Punct}, Parse, Spanned, stream::ParseStream, ParseResult};
+use super::{ punct::{ Comma, Punct }, Parse, Spanned, stream::ParseStream, ParseResult };
 
 pub struct Separated<T: Parse, P: Punct = Comma> {
     inner: Vec<T>,
@@ -16,17 +16,27 @@ impl<T: Parse, P: Punct> Spanned for Separated<T, P> {
     }
 }
 
+impl<T: Parse, P: Punct> IntoIterator for Separated<T, P> {
+    type Item = T;
+    type IntoIter = std::vec::IntoIter<Self::Item>;
 
+    fn into_iter(self) -> Self::IntoIter {
+        self.inner.into_iter()
+    }
+}
+
+impl<T: Parse, P: Punct> Separated<T, P> {
+    pub fn iter(&self) -> std::slice::Iter<'_, T> {
+        self.inner.iter()
+    }
+}
 
 impl<T: Parse, P: Punct> Parse for Separated<T, P> {
     fn parse(stream: &mut ParseStream) -> ParseResult<Self> where Self: Sized {
         let mut inner = Vec::new();
 
-        loop {
-            let item = stream.parse::<T>()?;
+        while let Ok(item) = stream.parse::<T>() {
             inner.push(item);
-
-            
 
             if stream.parse::<P>().is_err() {
                 break;
@@ -42,11 +52,7 @@ impl<T: Parse, P: Punct> Parse for Separated<T, P> {
 
 #[cfg(test)]
 mod test {
-    use crate::{
-        tokens::stream::TokenStream,
-        ast::{Parse, ParseStream, separated::Separated,},
-        
-    };
+    use crate::{ tokens::stream::TokenStream, ast::{ Parse, ParseStream, separated::Separated } };
 
     #[test]
     fn test_separated() {
