@@ -4,7 +4,7 @@ use crate::tokens::{ Span, TokenType, group };
 
 use super::{
     number::LitNumber,
-    ident::ExprIdent,
+    ident::Ident,
     string::LitString,
     Spanned,
     Parse,
@@ -12,16 +12,24 @@ use super::{
     block::ExprBlock,
     operations::{ ExprUnary, ExprBinary },
     grouped::ExprGrouped,
+    functions::ExprFunction,
+    conditionals::ExprIf,
+    loops::{ ExprWhile, ExprFor, ExprLoop },
 };
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Expr {
     Literal(ExprLit),
-    Ident(ExprIdent),
+    Ident(Ident),
     Block(ExprBlock),
     Unary(ExprUnary),
     Binary(ExprBinary),
     Grouped(ExprGrouped),
+    Function(ExprFunction),
+    If(ExprIf),
+    While(ExprWhile),
+    For(ExprFor),
+    Loop(ExprLoop),
 }
 
 impl Spanned for Expr {
@@ -33,6 +41,11 @@ impl Spanned for Expr {
             Self::Unary(unary) => unary.span(),
             Self::Binary(binary) => binary.span(),
             Expr::Grouped(grouped) => grouped.span(),
+            Expr::Function(function) => function.span(),
+            Expr::If(r#if) => r#if.span(),
+            Expr::While(r#while) => r#while.span(),
+            Expr::For(r#for) => r#for.span(),
+            Expr::Loop(r#loop) => r#loop.span(),
         }
     }
 }
@@ -42,17 +55,28 @@ impl Parse for Expr {
         stream.skip_newlines();
         let result = if let Ok(op) = stream.parse::<ExprUnary>() {
             Ok(Self::Unary(op))
-        } else if let Ok(group) = stream.parse::<ExprGrouped>() {
+        } else if let Ok(group) = stream.parse() {
             Ok(Self::Grouped(group))
-        } else if let Ok(op) = stream.parse::<ExprBinary>() {
+        } else if let Ok(op) = stream.parse() {
             Ok(Self::Binary(op))
-        } else if let Ok(lit) = stream.parse::<ExprLit>() {
+        } else if let Ok(lit) = stream.parse() {
             Ok(Self::Literal(lit))
-        } else if let Ok(ident) = stream.parse::<ExprIdent>() {
+        } else if let Ok(ident) = stream.parse() {
             Ok(Self::Ident(ident))
+        } else if let Ok(function) = stream.parse() {
+            Ok(Self::Function(function))
+        } else if let Ok(block) = stream.parse() {
+            Ok(Self::Block(block))
+        } else if let Ok(r#if) = stream.parse() {
+            Ok(Self::If(r#if))
+        } else if let Ok(r#while) = stream.parse() {
+            Ok(Self::While(r#while))
+        } else if let Ok(r#for) = stream.parse() {
+            Ok(Self::For(r#for))
+        } else if let Ok(r#loop) = stream.parse() {
+            Ok(Self::Loop(r#loop))
         } else {
-            let block = stream.parse::<ExprBlock>();
-            Ok(Self::Block(block?))
+            Err(ParseError::UnexpectedToken("expression", stream.current().clone()))
         };
 
         result

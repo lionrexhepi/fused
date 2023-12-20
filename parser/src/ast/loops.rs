@@ -6,9 +6,10 @@ use super::{
     Spanned,
     Parse,
     keywords::{ Loop, While, In, For },
-    ident::ExprIdent,
+    ident::Ident,
 };
 
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct ExprLoop {
     pub body: Box<ExprBlock>,
     span: Span,
@@ -34,6 +35,7 @@ impl Parse for ExprLoop {
     }
 }
 
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct ExprWhile {
     pub condition: Box<Expr>,
     pub body: Box<ExprBlock>,
@@ -62,8 +64,9 @@ impl Parse for ExprWhile {
     }
 }
 
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct ExprFor {
-    pub ident: Box<ExprIdent>,
+    pub ident: Box<Ident>,
     pub iter: Box<Expr>,
     pub body: Box<ExprBlock>,
     span: Span,
@@ -78,7 +81,7 @@ impl Spanned for ExprFor {
 impl Parse for ExprFor {
     fn parse(token: &mut super::stream::ParseStream) -> super::ParseResult<Self> where Self: Sized {
         let _for = token.parse::<For>()?;
-        let ident = token.parse::<ExprIdent>()?;
+        let ident = token.parse::<Ident>()?;
         let _in = token.parse::<In>()?;
         let iter = token.parse::<Expr>()?;
         let body = token.parse::<ExprBlock>()?;
@@ -96,7 +99,7 @@ impl Parse for ExprFor {
 
 #[cfg(test)]
 mod test {
-    use crate::ast::{ expr::ExprLit, ident::ExprIdent };
+    use crate::ast::{ expr::ExprLit, ident::Ident };
 
     #[test]
     fn test_loop() {
@@ -137,7 +140,7 @@ mod test {
 
         assert_eq!(r#for.ident.name, "i");
         assert!(
-            matches!(*r#for.iter, super::Expr::Ident(ExprIdent { name, .. }) if name == "array".to_string())
+            matches!(*r#for.iter, super::Expr::Ident(Ident { name, .. }) if name == "array".to_string())
         );
         assert_eq!(r#for.body.exprs.len(), 1);
     }

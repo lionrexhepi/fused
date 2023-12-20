@@ -1,7 +1,7 @@
 use crate::tokens::Span;
 
 use super::{
-    ident::ExprIdent,
+    ident::Ident,
     block::ExprBlock,
     Spanned,
     Parse,
@@ -12,8 +12,8 @@ use super::{
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct ExprFunction {
-    pub name: ExprIdent,
-    pub args: Vec<ExprIdent>,
+    pub name: Ident,
+    pub args: Vec<Ident>,
     pub body: Box<ExprBlock>,
 }
 
@@ -26,8 +26,8 @@ impl Spanned for ExprFunction {
 impl Parse for ExprFunction {
     fn parse(stream: &mut super::stream::ParseStream) -> super::ParseResult<Self> {
         stream.parse::<Fn>()?;
-        let name = stream.parse::<ExprIdent>()?;
-        let args = stream.parse::<Parenthesized<Separated<ExprIdent>>>()?;
+        let name = stream.parse::<Ident>()?;
+        let args = stream.parse::<Parenthesized<Separated<Ident>>>()?;
         print!("Got here");
         let body = stream.parse::<ExprBlock>()?;
 
@@ -50,7 +50,7 @@ mod test {
 
         let func = stream.parse::<crate::ast::functions::ExprFunction>().unwrap();
 
-        assert!(matches!(func.name, crate::ast::ident::ExprIdent { .. }));
+        assert!(matches!(func.name, crate::ast::ident::Ident { .. }));
         assert!(func.args.is_empty());
         assert!(matches!(*func.body, crate::ast::block::ExprBlock { .. }));
     }
@@ -64,7 +64,7 @@ mod test {
 
         let func = stream.parse::<crate::ast::functions::ExprFunction>().unwrap();
 
-        assert!(matches!(func.name, crate::ast::ident::ExprIdent { .. }));
+        assert!(matches!(func.name, crate::ast::ident::Ident { .. }));
         assert_eq!(func.args.len(), 3);
         assert!(matches!(*func.body, crate::ast::block::ExprBlock { .. }));
     }

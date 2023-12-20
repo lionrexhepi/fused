@@ -10,6 +10,7 @@ use super::{
     keywords::{ If, self, Keyword },
 };
 
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct ExprIf {
     pub condition: Box<Expr>,
     pub body: Box<Expr>,
@@ -45,6 +46,7 @@ impl Parse for ExprIf {
     }
 }
 
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Else {
     If(Box<ExprIf>),
     Body(Box<ExprBlock>),

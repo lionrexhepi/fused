@@ -1,11 +1,11 @@
 use crate::tokens::Span;
 
-use super::{ ident::ExprIdent, expr::Expr, Spanned, Parse, keywords::Mut };
+use super::{ ident::Ident, expr::Expr, Spanned, Parse, keywords::Mut };
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct ExprDecl {
-    pub name: ExprIdent,
-    pub ty: Option<ExprIdent>,
+    pub name: Ident,
+    pub ty: Option<Ident>,
     pub value: Option<Box<Expr>>,
     pub mutable: bool,
 }
@@ -19,9 +19,9 @@ impl Spanned for ExprDecl {
 impl Parse for ExprDecl {
     fn parse(stream: &mut super::stream::ParseStream) -> super::ParseResult<Self> where Self: Sized {
         let mutable = stream.parse::<Mut>().is_ok();
-        let name = stream.parse::<ExprIdent>()?;
+        let name = stream.parse::<Ident>()?;
         let ty = stream
-            .parse::<super::grouped::Bracketed<ExprIdent>>()
+            .parse::<super::grouped::Bracketed<Ident>>()
             .ok()
             .map(|bracket| *bracket.0);
         let value = if stream.parse::<super::punct::Eq>().is_ok() {

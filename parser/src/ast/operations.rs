@@ -12,7 +12,7 @@ use super::{
     stream::{ ParseStream, Cursor },
     ParseError,
     ParseResult,
-    ident::ExprIdent,
+    ident::Ident,
 };
 
 #[derive(Debug, PartialEq, Eq, Clone)]
