@@ -99,7 +99,7 @@ impl Parse for ExprFor {
 
 #[cfg(test)]
 mod test {
-    use crate::ast::{ expr::ExprLit, ident::Ident };
+    use crate::ast::{ expr::ExprLit, ident::Ident, path::ExprPath };
 
     #[test]
     fn test_loop() {
@@ -139,9 +139,7 @@ mod test {
         let r#for = stream.parse::<super::ExprFor>().unwrap();
 
         assert_eq!(r#for.ident.name, "i");
-        assert!(
-            matches!(*r#for.iter, super::Expr::Ident(Ident { name, .. }) if name == "array".to_string())
-        );
+        assert!(matches!(*r#for.iter, super::Expr::Path(ExprPath { .. })));
         assert_eq!(r#for.body.exprs.len(), 1);
     }
 }

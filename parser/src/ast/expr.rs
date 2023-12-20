@@ -15,12 +15,13 @@ use super::{
     functions::ExprFunction,
     conditionals::ExprIf,
     loops::{ ExprWhile, ExprFor, ExprLoop },
+    path::ExprPath,
 };
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Expr {
     Literal(ExprLit),
-    Ident(Ident),
+    Path(ExprPath),
     Block(ExprBlock),
     Unary(ExprUnary),
     Binary(ExprBinary),
@@ -36,7 +37,7 @@ impl Spanned for Expr {
     fn span(&self) -> Span {
         match self {
             Self::Literal(lit) => lit.span(),
-            Self::Ident(ident) => ident.span(),
+            Self::Path(path) => path.span(),
             Self::Block(block) => block.span(),
             Self::Unary(unary) => unary.span(),
             Self::Binary(binary) => binary.span(),
@@ -61,8 +62,8 @@ impl Parse for Expr {
             Ok(Self::Binary(op))
         } else if let Ok(lit) = stream.parse() {
             Ok(Self::Literal(lit))
-        } else if let Ok(ident) = stream.parse() {
-            Ok(Self::Ident(ident))
+        } else if let Ok(path) = stream.parse() {
+            Ok(Self::Path(path))
         } else if let Ok(function) = stream.parse() {
             Ok(Self::Function(function))
         } else if let Ok(block) = stream.parse() {
