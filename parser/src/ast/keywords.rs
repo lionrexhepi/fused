@@ -59,7 +59,7 @@ macro_rules! define_keyword {
 }
 
 define_keyword!(If, "if");
-
+define_keyword!(Mut, "mut");
 define_keyword!(Else, "else");
 define_keyword!(ElseIf, "elif");
 define_keyword!(While, "while");

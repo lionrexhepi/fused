@@ -32,10 +32,10 @@
     * [x] Numbers
 * [x] Blocks
 * [ ] Expressions
-    * [ ] Operations
-        * [ ] Addition/Subtraction/Multiplication
-        * [ ] Subtraction
-    * [ ] Assignment/Declaration
+    * [x] Operations
+        * [x] Addition/Subtraction/Multiplication
+        * [x] Subtraction
+    * [] Assignment/Declaration
         * [ ] Typing
         * [ ] Mutability
     * [x] If
@@ -45,8 +45,8 @@
         * [x] While
         * [x] For
         * [x] Unconditional
-    * [ ] Functions
-        * [ ] Params
+    * [x] Functions
+        * [x] Params
             * [ ] Types
         * [ ] Return types
 * [ ] Modules
