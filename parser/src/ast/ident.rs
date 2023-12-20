@@ -37,8 +37,17 @@ impl Parse for Ident {
 
 fn is_keyword(ident: &str) -> bool {
     match ident {
-        "let" | "fn" | "if" | "else" | "while" | "for" | "in" | "return" | "break" | "continue" =>
-            true,
+        | "let"
+        | "fn"
+        | "if"
+        | "else"
+        | "while"
+        | "for"
+        | "in"
+        | "return"
+        | "break"
+        | "continue"
+        | "mut" => true,
         _ => false,
     }
 }
