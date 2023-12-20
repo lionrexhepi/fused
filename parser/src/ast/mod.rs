@@ -17,6 +17,7 @@ pub mod grouped;
 pub mod separated;
 pub mod functions;
 pub mod declarations;
+pub mod path;
 
 pub struct Ast;
 

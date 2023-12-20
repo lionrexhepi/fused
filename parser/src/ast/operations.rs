@@ -381,4 +381,20 @@ mod test {
             )
         );
     }
+
+    #[test]
+    fn test_comparison() {
+        let stream = crate::tokens::stream::TokenStream::from_string("1 < 2".to_string()).unwrap();
+        let mut stream = crate::ast::stream::ParseStream::new(stream);
+        let binary = stream.parse::<crate::ast::operations::ExprBinary>().unwrap();
+
+        assert_eq!(binary.ty, crate::ast::operations::BinaryType::Gt);
+        assert!(matches!(*binary.right, crate::ast::expr::Expr::Binary(_)));
+        assert!(
+            matches!(
+                *binary.left,
+                crate::ast::expr::Expr::Literal(crate::ast::expr::ExprLit::Number(_))
+            )
+        );
+    }
 }

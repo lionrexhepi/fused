@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use crate::{ tokens::{ Span, Token, TokenType, literal::{ TokenLiteral, LiteralNumber } } };
+use crate::tokens::{ Span, Token, TokenType, literal::{ TokenLiteral, LiteralNumber } };
 
 use super::{
     Parse,

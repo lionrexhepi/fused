@@ -7,7 +7,6 @@ pub enum Delim {
     Paren,
     Bracket,
     Brace,
-    Angle,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -24,8 +23,6 @@ impl TokenContent for TokenGroup {
             (Delim::Bracket, ']')
         } else if cursor.current() == '{' {
             (Delim::Brace, '}')
-        } else if cursor.current() == '<' {
-            (Delim::Angle, '>')
         } else {
             return Ok(None);
         };
@@ -87,18 +84,6 @@ mod test {
         let mut cursor = Cursor::new("{test}");
         let group = TokenGroup::try_read(&mut cursor).unwrap().unwrap();
         assert_eq!(group.delim, Delim::Brace);
-        assert_eq!(group.tokens.len(), 1);
-        assert_eq!(
-            group.tokens.current().content,
-            TokenType::Ident(TokenIdent::new("test".to_string()))
-        );
-    }
-
-    #[test]
-    fn test_angle() {
-        let mut cursor = Cursor::new("<test>");
-        let group = TokenGroup::try_read(&mut cursor).unwrap().unwrap();
-        assert_eq!(group.delim, Delim::Angle);
         assert_eq!(group.tokens.len(), 1);
         assert_eq!(
             group.tokens.current().content,
