@@ -2,16 +2,17 @@ use crate::tokens::Span;
 
 use super::{
     expr::Expr,
-    block::ExprBlock,
+    block::Block,
     Spanned,
     Parse,
     keywords::{ Loop, While, In, For },
     ident::Ident,
+    punct::Colon,
 };
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct ExprLoop {
-    pub body: Box<ExprBlock>,
+    pub body: Box<Block>,
     span: Span,
 }
 
@@ -24,7 +25,8 @@ impl Spanned for ExprLoop {
 impl Parse for ExprLoop {
     fn parse(token: &mut super::stream::ParseStream) -> super::ParseResult<Self> where Self: Sized {
         let _loop = token.parse::<Loop>()?;
-        let body = token.parse::<ExprBlock>()?;
+        token.parse::<Colon>()?;
+        let body = token.parse::<Block>()?;
 
         let span = _loop.span().join(body.span());
 
@@ -38,7 +40,7 @@ impl Parse for ExprLoop {
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct ExprWhile {
     pub condition: Box<Expr>,
-    pub body: Box<ExprBlock>,
+    pub body: Box<Block>,
     span: Span,
 }
 
@@ -52,7 +54,9 @@ impl Parse for ExprWhile {
     fn parse(token: &mut super::stream::ParseStream) -> super::ParseResult<Self> where Self: Sized {
         let _while = token.parse::<While>()?;
         let condition = token.parse::<Expr>()?;
-        let body = token.parse::<ExprBlock>()?;
+
+        token.parse::<Colon>()?;
+        let body = token.parse::<Block>()?;
 
         let span = _while.span().join(body.span());
 
@@ -68,7 +72,7 @@ impl Parse for ExprWhile {
 pub struct ExprFor {
     pub ident: Box<Ident>,
     pub iter: Box<Expr>,
-    pub body: Box<ExprBlock>,
+    pub body: Box<Block>,
     span: Span,
 }
 
@@ -84,7 +88,8 @@ impl Parse for ExprFor {
         let ident = token.parse::<Ident>()?;
         let _in = token.parse::<In>()?;
         let iter = token.parse::<Expr>()?;
-        let body = token.parse::<ExprBlock>()?;
+        token.parse::<Colon>()?;
+        let body = token.parse::<Block>()?;
 
         let span = _for.span().join(body.span());
 
@@ -111,7 +116,7 @@ mod test {
 
         let r#loop = stream.parse::<super::ExprLoop>().unwrap();
 
-        assert_eq!(r#loop.body.exprs.len(), 1);
+        assert_eq!((*r#loop.body).0.len(), 1);
     }
 
     #[test]
@@ -125,7 +130,7 @@ mod test {
         let r#while = stream.parse::<super::ExprWhile>().unwrap();
 
         assert!(matches!(*r#while.condition, super::Expr::Literal(ExprLit::Bool(_))));
-        assert_eq!(r#while.body.exprs.len(), 1);
+        assert_eq!(r#while.body.0.len(), 1);
     }
 
     #[test]
@@ -140,6 +145,6 @@ mod test {
 
         assert_eq!(r#for.ident.name, "i");
         assert!(matches!(*r#for.iter, super::Expr::Path(ExprPath { .. })));
-        assert_eq!(r#for.body.exprs.len(), 1);
+        assert_eq!(r#for.body.0.len(), 1);
     }
 }

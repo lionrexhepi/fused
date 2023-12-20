@@ -9,7 +9,7 @@ use super::{
     Spanned,
     Parse,
     ParseError,
-    block::ExprBlock,
+    block::Block,
     operations::{ ExprUnary, ExprBinary },
     grouped::ExprGrouped,
     functions::ExprFunction,
@@ -18,11 +18,10 @@ use super::{
     path::ExprPath,
 };
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone, Default)]
 pub enum Expr {
     Literal(ExprLit),
     Path(ExprPath),
-    Block(ExprBlock),
     Unary(ExprUnary),
     Binary(ExprBinary),
     Grouped(ExprGrouped),
@@ -31,6 +30,8 @@ pub enum Expr {
     While(ExprWhile),
     For(ExprFor),
     Loop(ExprLoop),
+    #[default]
+    Empty,
 }
 
 impl Spanned for Expr {
@@ -38,7 +39,6 @@ impl Spanned for Expr {
         match self {
             Self::Literal(lit) => lit.span(),
             Self::Path(path) => path.span(),
-            Self::Block(block) => block.span(),
             Self::Unary(unary) => unary.span(),
             Self::Binary(binary) => binary.span(),
             Expr::Grouped(grouped) => grouped.span(),
@@ -47,6 +47,7 @@ impl Spanned for Expr {
             Expr::While(r#while) => r#while.span(),
             Expr::For(r#for) => r#for.span(),
             Expr::Loop(r#loop) => r#loop.span(),
+            Expr::Empty => Span::default(),
         }
     }
 }
@@ -66,8 +67,6 @@ impl Parse for Expr {
             Ok(Self::Path(path))
         } else if let Ok(function) = stream.parse() {
             Ok(Self::Function(function))
-        } else if let Ok(block) = stream.parse() {
-            Ok(Self::Block(block))
         } else if let Ok(r#if) = stream.parse() {
             Ok(Self::If(r#if))
         } else if let Ok(r#while) = stream.parse() {

@@ -8,6 +8,7 @@ use super::{
     grouped::Parenthesized,
     separated::Separated,
     punct::{ Lt, Gt },
+    stream::UnexpectedToken,
 };
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -23,12 +24,17 @@ impl Spanned for ExprPath {
 
 impl Parse for ExprPath {
     fn parse(stream: &mut super::stream::ParseStream) -> super::ParseResult<Self> where Self: Sized {
-        let segments = stream.parse::<
-            super::separated::Separated<PathSegment, super::punct::Dot>
-        >()?;
+        let segments: Vec<_> = stream
+            .parse::<super::separated::Separated<PathSegment, super::punct::Dot>>()?
+            .into_iter()
+            .collect();
+
+        if segments.is_empty() {
+            return Err(super::ParseError::UnexpectedToken("path", stream.current().clone()));
+        }
 
         Ok(Self {
-            segments: segments.into_iter().collect(),
+            segments: segments,
         })
     }
 }

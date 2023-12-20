@@ -222,12 +222,7 @@ impl Parse for ExprBinary {
 
                 //SAFETY: left_index will immediately be set to a value again, making this safe
                 #[allow(invalid_value)]
-                let left = unsafe {
-                    std::mem::replace(
-                        &mut arguments[left_index],
-                        MaybeUninit::uninit().assume_init()
-                    )
-                };
+                let left = std::mem::take(&mut arguments[left_index]);
                 let span = left.span().join(right.span());
                 arguments[left_index] = Expr::Binary(Self {
                     left: Box::new(left),
@@ -384,11 +379,13 @@ mod test {
 
     #[test]
     fn test_comparison() {
-        let stream = crate::tokens::stream::TokenStream::from_string("1 < 2".to_string()).unwrap();
+        let stream = crate::tokens::stream::TokenStream
+            ::from_string("1 < 2 + 2".to_string())
+            .unwrap();
         let mut stream = crate::ast::stream::ParseStream::new(stream);
         let binary = stream.parse::<crate::ast::operations::ExprBinary>().unwrap();
 
-        assert_eq!(binary.ty, crate::ast::operations::BinaryType::Gt);
+        assert_eq!(binary.ty, crate::ast::operations::BinaryType::Lt);
         assert!(matches!(*binary.right, crate::ast::expr::Expr::Binary(_)));
         assert!(
             matches!(
