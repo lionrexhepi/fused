@@ -74,7 +74,10 @@ impl Parse for Expr {
         } else if let Ok(r#loop) = stream.parse() {
             Ok(Self::Loop(r#loop))
         } else {
-            Err(ParseError::UnexpectedToken("expression", stream.current().clone()))
+            Err(ParseError::UnexpectedToken {
+                expected: "expression",
+                got: stream.current().clone(),
+            })
         };
 
         result
@@ -107,7 +110,10 @@ impl Parse for ExprLit {
         } else if let Ok(string) = stream.parse::<LitString>() {
             Ok(Self::String(string))
         } else {
-            Err(ParseError::UnexpectedToken("literal", stream.current().clone()))
+            Err(ParseError::UnexpectedToken {
+                expected: "literal",
+                got: stream.current().clone(),
+            })
         }
     }
 }
@@ -136,10 +142,10 @@ impl Parse for LitBool {
                         span: token.span,
                     })
                 } else {
-                    Err(ParseError::UnexpectedToken("bool", token))
+                    Err(ParseError::UnexpectedToken { expected: "bool", got: token })
                 }
             } else {
-                Err(ParseError::UnexpectedToken("bool", token))
+                Err(ParseError::UnexpectedToken { expected: "bool", got: token })
             }
         })
     }

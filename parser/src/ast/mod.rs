@@ -1,3 +1,5 @@
+use thiserror::Error;
+
 use crate::{ Span, tokens::{ TokenType, Token } };
 
 use self::stream::{ ParseStream, TokenCursor };
@@ -27,10 +29,13 @@ pub trait Spanned {
     fn span(&self) -> Span;
 }
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone, Error)]
 pub enum ParseError {
-    UnexpectedToken(&'static str, Token),
-    BadLiteral(String),
+    #[error("Unexpected `{}`. Expected `{expected}`", got.content)] UnexpectedToken {
+        expected: &'static str,
+        got: Token,
+    },
+    #[error("Invalid literal `{0}`")] BadLiteral(String),
 }
 
 type ParseResult<T> = Result<T, ParseError>;
@@ -61,7 +66,7 @@ impl Parse for Newline {
                     span: token.span,
                 })
             } else {
-                Err(ParseError::UnexpectedToken("newline", token.clone()))
+                Err(ParseError::UnexpectedToken { expected: "newline", got: token.clone() })
             }
         })
     }

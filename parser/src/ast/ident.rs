@@ -20,7 +20,10 @@ impl Parse for Ident {
             let token = cursor.current().clone();
             if let TokenType::Ident(ident) = &token.content {
                 if is_keyword(&ident.name) && !ident.escaped {
-                    return Err(ParseError::UnexpectedToken("identifier", token));
+                    return Err(ParseError::UnexpectedToken {
+                        expected: "identifier",
+                        got: token,
+                    });
                 }
 
                 cursor.advance();
@@ -29,7 +32,7 @@ impl Parse for Ident {
                     span: token.span,
                 })
             } else {
-                Err(ParseError::UnexpectedToken("identifier", token))
+                Err(ParseError::UnexpectedToken { expected: "identifier", got: token })
             }
         })
     }

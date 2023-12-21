@@ -56,9 +56,15 @@ macro_rules! group {
                                 cursor.advance();
                                 Ok(ParseStream::new(*group.tokens))
                             }
-                            _ => return Err(ParseError::UnexpectedToken(stringify!($name), cursor.current().clone()))
+                            _ => return Err(ParseError::UnexpectedToken {
+                                expected: stringify!($name),
+                                got: cursor.current().clone(),
+                            })
                         },
-                        _ => return Err(ParseError::UnexpectedToken(stringify!($name), cursor.current().clone()))
+                        _ => return Err(ParseError::UnexpectedToken {
+                            expected: stringify!($name),
+                            got: cursor.current().clone(),
+                        })
                     }
                 })?;
 

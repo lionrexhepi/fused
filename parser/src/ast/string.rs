@@ -25,7 +25,7 @@ impl Parse for LitString {
                     span: token.span,
                 })
             } else {
-                Err(ParseError::UnexpectedToken("string literal", token))
+                Err(ParseError::UnexpectedToken { expected: "string literal", got: token })
             }
         })
     }

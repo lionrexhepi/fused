@@ -91,7 +91,10 @@ impl Parse for LitNumber {
 
                 Ok(Self { number: value, span })
             } else {
-                Err(ParseError::UnexpectedToken("number", cursor.current().clone()))
+                Err(ParseError::UnexpectedToken {
+                    expected: "number",
+                    got: cursor.current().clone(),
+                })
             }
         })
     }

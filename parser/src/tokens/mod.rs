@@ -1,4 +1,6 @@
-use std::fmt::Debug;
+use std::{ fmt::{ Debug, Display }, io::Error, error };
+
+use thiserror::Error;
 
 use crate::{ file::SourceCursor, Span };
 
@@ -65,9 +67,25 @@ pub enum TokenType {
     EOF,
 }
 
-#[derive(Debug, PartialEq, Eq)]
+impl Display for TokenType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            TokenType::Ident(_) => write!(f, "<identifier>"),
+            TokenType::Literal(_) => write!(f, "<literal>"),
+            TokenType::Group(_) => write!(f, "<group>"),
+            TokenType::Punct(_) => write!(f, "<punct>"),
+            TokenType::Newline(_) => write!(f, "<newline>"),
+            TokenType::Comment(_) => write!(f, "<comment>"),
+
+            TokenType::EOF => write!(f, "EOF"),
+        }
+    }
+}
+
+#[derive(Debug, PartialEq, Eq, Error)]
 pub enum TokenError {
-    InvalidChar(char),
+    #[error("Invalid character: {0}")] InvalidChar(char),
+    #[error("Unexpected end of file")]
     UnexpectedEof,
 }
 

@@ -27,7 +27,7 @@ impl<K: Keyword> Parse for K {
                 cursor.advance();
                 Ok(keyword)
             } else {
-                Err(ParseError::UnexpectedToken(Self::name(), token.clone()))
+                Err(ParseError::UnexpectedToken { expected: Self::name(), got: token.clone() })
             }
         })
     }

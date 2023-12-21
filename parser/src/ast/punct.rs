@@ -24,10 +24,17 @@ macro_rules! define_punct {
                             cursor.advance();
                             Ok(Self(token.span))
                         } else {
-                            Err(ParseError::UnexpectedToken(stringify!($name), token.clone()))
+                            Err(ParseError::UnexpectedToken {
+                                expected: stringify!($name),
+                                got: token,
+                            })
+                            
                         }
                     } else {
-                        Err(ParseError::UnexpectedToken(stringify!($name), token.clone()))
+                        Err(ParseError::UnexpectedToken {
+                            expected: stringify!($name),
+                            got: token,
+                        })
                     }
                 })
             }

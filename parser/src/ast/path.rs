@@ -31,7 +31,10 @@ impl Parse for ExprPath {
             .collect();
 
         if segments.is_empty() {
-            return Err(super::ParseError::UnexpectedToken("path", stream.current().clone()));
+            return Err(super::ParseError::UnexpectedToken {
+                expected: "path",
+                got: stream.current().clone(),
+            });
         }
 
         Ok(Self {

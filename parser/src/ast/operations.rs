@@ -48,9 +48,13 @@ impl Parse for ExprUnary {
                             Ok(UnaryType::Deref)
                         }
 
-                        _ => Err(ParseError::UnexpectedToken("unary operator", token)),
+                        _ =>
+                            Err(ParseError::UnexpectedToken {
+                                expected: "unary operator",
+                                got: token,
+                            }),
                     }
-                _ => Err(ParseError::UnexpectedToken("unary operator", token)),
+                _ => Err(ParseError::UnexpectedToken { expected: "unary operator", got: token }),
             }
         })?;
 
@@ -173,7 +177,10 @@ impl Parse for ExprBinary {
         loop {
             arguments.push(
                 Self::read_fragment(&mut split).ok_or_else(|| {
-                    ParseError::UnexpectedToken("expression", split.current().clone())
+                    ParseError::UnexpectedToken {
+                        expected: "expression",
+                        got: split.current().clone(),
+                    }
                 })?
             );
 
@@ -186,9 +193,15 @@ impl Parse for ExprBinary {
         }
 
         if operators.is_empty() {
-            return Err(ParseError::UnexpectedToken("", split.current().clone()));
+            return Err(ParseError::UnexpectedToken {
+                expected: "",
+                got: split.current().clone(),
+            });
         } else if arguments.len() < operators.len() + 1 {
-            return Err(ParseError::UnexpectedToken("Expression", split.current().clone()));
+            return Err(ParseError::UnexpectedToken {
+                expected: "Expression",
+                got: split.current().clone(),
+            });
         } else {
             operators.sort_by(|(arg_left, left), (arg_right, right)| {
                 let precedences = right.precedence().cmp(&left.precedence());
@@ -295,18 +308,17 @@ impl ExprBinary {
                             TokenPunct::DoubleGtEq => BinaryType::RightShiftAssign,
 
                             _ => {
-                                return Err(
-                                    ParseError::UnexpectedToken(
-                                        "operator",
-                                        cursor.current().clone()
-                                    )
-                                );
+                                return Err(ParseError::UnexpectedToken {
+                                    expected: "operator",
+                                    got: cursor.current().clone(),
+                                });
                             }
                         }
                     _ => {
-                        return Err(
-                            ParseError::UnexpectedToken("operator", cursor.current().clone())
-                        );
+                        return Err(ParseError::UnexpectedToken {
+                            expected: "operator",
+                            got: cursor.current().clone(),
+                        });
                     }
                 };
                 cursor.advance();
