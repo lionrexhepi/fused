@@ -7,8 +7,9 @@ use super::{
     Parse,
     punct::{ Colon, Dot },
     ident::Ident,
-    grouped::Bracketed,
     separated::Separated,
+    stream::ParseStream,
+    ParseResult,
 };
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -24,7 +25,7 @@ impl Spanned for Module {
 }
 
 impl Parse for Module {
-    fn parse(stream: &mut super::stream::ParseStream) -> super::ParseResult<Self> where Self: Sized {
+    fn parse(stream: &mut ParseStream) -> ParseResult<Self> where Self: Sized {
         stream.parse::<Mod>()?;
         let path = stream.parse::<ExprPath>()?;
         print!("{:#?}", stream.current());
@@ -66,7 +67,7 @@ impl Spanned for UsePath {
 }
 
 impl Parse for UsePath {
-    fn parse(stream: &mut super::stream::ParseStream) -> super::ParseResult<Self> where Self: Sized {
+    fn parse(stream: &mut ParseStream) -> ParseResult<Self> where Self: Sized {
         let mut regular = vec![];
         while let Ok(ident) = stream.parse::<Ident>() {
             regular.push(ident);
@@ -95,12 +96,14 @@ impl Parse for UsePath {
 mod test {
     use crate::tokens::stream::TokenStream;
 
+    use super::{ UsePath, super::stream::ParseStream, Module };
+
     #[test]
     fn test_glob_module() {
         let tokens = TokenStream::from_string("mod test".to_string()).unwrap();
-        let mut stream = super::super::stream::ParseStream::new(tokens);
+        let mut stream = ParseStream::new(tokens);
 
-        let module = stream.parse::<super::Module>().unwrap();
+        let module = stream.parse::<Module>().unwrap();
 
         assert!(module.content.is_none());
         assert!(module.path.segments.len() == 1);
@@ -109,9 +112,9 @@ mod test {
     #[test]
     fn test_module() {
         let tokens = TokenStream::from_string("mod test:\n    1".to_string()).unwrap();
-        let mut stream = super::super::stream::ParseStream::new(tokens);
+        let mut stream = ParseStream::new(tokens);
 
-        let module = stream.parse::<super::Module>().unwrap();
+        let module = stream.parse::<Module>().unwrap();
 
         assert!(module.content.is_some());
         assert!(module.path.segments.len() == 1);
@@ -120,9 +123,9 @@ mod test {
     #[test]
     fn test_use_path() {
         let tokens = TokenStream::from_string("test.test.test".to_string()).unwrap();
-        let mut stream = super::super::stream::ParseStream::new(tokens);
+        let mut stream = ParseStream::new(tokens);
 
-        let path = stream.parse::<super::UsePath>().unwrap();
+        let path = stream.parse::<UsePath>().unwrap();
 
         assert!(path.regular.len() == 3);
         assert!(path.extract.is_none());
@@ -131,9 +134,9 @@ mod test {
     #[test]
     fn test_simple_extract() {
         let tokens = TokenStream::from_string("test.test { test } ".to_string()).unwrap();
-        let mut stream = super::super::stream::ParseStream::new(tokens);
+        let mut stream = ParseStream::new(tokens);
 
-        let path = stream.parse::<super::UsePath>().unwrap();
+        let path = stream.parse::<UsePath>().unwrap();
 
         assert!(path.regular.len() == 2);
         assert!(path.extract.is_some());
@@ -145,9 +148,9 @@ mod test {
         let tokens = TokenStream::from_string(
             "test.test { test.test { test }, test2 }".to_string()
         ).unwrap();
-        let mut stream = super::super::stream::ParseStream::new(tokens);
+        let mut stream = ParseStream::new(tokens);
 
-        let path = stream.parse::<super::UsePath>().unwrap();
+        let path = stream.parse::<UsePath>().unwrap();
 
         assert!(path.regular.len() == 2);
         assert!(path.extract.is_some());

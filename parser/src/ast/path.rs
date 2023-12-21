@@ -8,7 +8,8 @@ use super::{
     grouped::Parenthesized,
     separated::Separated,
     punct::{ Lt, Gt },
-    stream::UnexpectedToken,
+    stream::ParseStream,
+    ParseResult,
 };
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -23,9 +24,9 @@ impl Spanned for ExprPath {
 }
 
 impl Parse for ExprPath {
-    fn parse(stream: &mut super::stream::ParseStream) -> super::ParseResult<Self> where Self: Sized {
+    fn parse(stream: &mut ParseStream) -> ParseResult<Self> where Self: Sized {
         let segments: Vec<_> = stream
-            .parse::<super::separated::Separated<PathSegment, super::punct::Dot>>()?
+            .parse::<Separated<PathSegment, super::punct::Dot>>()?
             .into_iter()
             .collect();
 
@@ -57,7 +58,7 @@ impl Spanned for PathSegment {
 }
 
 impl Parse for PathSegment {
-    fn parse(stream: &mut super::stream::ParseStream) -> super::ParseResult<Self> where Self: Sized {
+    fn parse(stream: &mut ParseStream) -> ParseResult<Self> where Self: Sized {
         let ident = stream.parse::<Ident>()?;
         print!("{:#?}", stream.current());
         let generics = stream.parse::<Generics>().unwrap_or_default();
@@ -86,7 +87,7 @@ impl Spanned for Generics {
 }
 
 impl Parse for Generics {
-    fn parse(stream: &mut super::stream::ParseStream) -> super::ParseResult<Self> where Self: Sized {
+    fn parse(stream: &mut ParseStream) -> ParseResult<Self> where Self: Sized {
         stream.parse::<Lt>()?;
         let mut split = stream.clone();
         let generics = split.parse::<Separated<ExprPath>>()?;
@@ -100,39 +101,41 @@ impl Parse for Generics {
 mod test {
     use crate::tokens::stream::TokenStream;
 
+    use super::{ super::stream::ParseStream, ExprPath, PathSegment };
+
     #[test]
     fn test_simple_path() {
         let tokens = TokenStream::from_string("name.field".to_string()).unwrap();
-        let mut stream = super::super::stream::ParseStream::new(tokens);
-        let path = stream.parse::<super::ExprPath>().unwrap();
+        let mut stream = ParseStream::new(tokens);
+        let path = stream.parse::<ExprPath>().unwrap();
         assert_eq!(path.segments.len(), 2);
     }
 
     #[test]
     fn test_path_with_generics() {
         let tokens = TokenStream::from_string("name<type1, type2>".to_string()).unwrap();
-        let mut stream = super::super::stream::ParseStream::new(tokens);
-        let path = stream.parse::<super::ExprPath>().unwrap();
+        let mut stream = ParseStream::new(tokens);
+        let path = stream.parse::<ExprPath>().unwrap();
         assert_eq!(path.segments.len(), 1);
-        assert!(matches!(path.segments.first().unwrap(), super::PathSegment::Generics(_, _)))
+        assert!(matches!(path.segments.first().unwrap(), PathSegment::Generics(_, _)))
     }
 
     #[test]
     fn test_call() {
         let tokens = TokenStream::from_string("name()".to_string()).unwrap();
-        let mut stream = super::super::stream::ParseStream::new(tokens);
-        let path = stream.parse::<super::ExprPath>().unwrap();
+        let mut stream = ParseStream::new(tokens);
+        let path = stream.parse::<ExprPath>().unwrap();
         assert_eq!(path.segments.len(), 1);
-        assert!(matches!(path.segments.first().unwrap(), super::PathSegment::Call(_, _, _)))
+        assert!(matches!(path.segments.first().unwrap(), PathSegment::Call(_, _, _)))
     }
 
     #[test]
     fn test_call_with_generics() {
         let tokens = TokenStream::from_string("name<type>()".to_string()).unwrap();
-        let mut stream = super::super::stream::ParseStream::new(tokens);
-        let path = stream.parse::<super::ExprPath>().unwrap();
+        let mut stream = ParseStream::new(tokens);
+        let path = stream.parse::<ExprPath>().unwrap();
         assert_eq!(path.segments.len(), 1);
-        assert!(matches!(path.segments.first().unwrap(), super::PathSegment::Call(_, _, _)))
+        assert!(matches!(path.segments.first().unwrap(), PathSegment::Call(_, _, _)))
     }
 
     #[test]
@@ -140,11 +143,11 @@ mod test {
         let tokens = TokenStream::from_string(
             "name<type1, type2>.field.method<type3>()".to_string()
         ).unwrap();
-        let mut stream = super::super::stream::ParseStream::new(tokens);
-        let path = stream.parse::<super::ExprPath>().unwrap();
+        let mut stream = ParseStream::new(tokens);
+        let path = stream.parse::<ExprPath>().unwrap();
         assert_eq!(path.segments.len(), 3);
-        assert!(matches!(path.segments.first().unwrap(), super::PathSegment::Generics(_, _)));
-        assert!(matches!(path.segments.get(1).unwrap(), super::PathSegment::Ident(_)));
-        assert!(matches!(path.segments.last().unwrap(), super::PathSegment::Call(_, _, _)));
+        assert!(matches!(path.segments.first().unwrap(), PathSegment::Generics(_, _)));
+        assert!(matches!(path.segments.get(1).unwrap(), PathSegment::Ident(_)));
+        assert!(matches!(path.segments.last().unwrap(), PathSegment::Call(_, _, _)));
     }
 }

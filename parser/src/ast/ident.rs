@@ -1,6 +1,6 @@
-use crate::tokens::Span;
+use crate::tokens::{ Span, TokenType };
 
-use super::{ Parse, stream::Cursor, ParseResult, ParseError };
+use super::{ Parse, stream::{ Cursor, ParseStream }, ParseError, ParseResult };
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Ident {
@@ -15,12 +15,12 @@ impl super::Spanned for Ident {
 }
 
 impl Parse for Ident {
-    fn parse(stream: &mut super::stream::ParseStream) -> super::ParseResult<Self> where Self: Sized {
+    fn parse(stream: &mut ParseStream) -> ParseResult<Self> where Self: Sized {
         stream.parse_with(|cursor: &mut Cursor| {
             let token = cursor.current().clone();
-            if let crate::tokens::TokenType::Ident(ident) = &token.content {
+            if let TokenType::Ident(ident) = &token.content {
                 if is_keyword(&ident.name) && !ident.escaped {
-                    return Err(super::ParseError::UnexpectedToken("identifier", token));
+                    return Err(ParseError::UnexpectedToken("identifier", token));
                 }
 
                 cursor.advance();
@@ -29,7 +29,7 @@ impl Parse for Ident {
                     span: token.span,
                 })
             } else {
-                Err(super::ParseError::UnexpectedToken("identifier", token))
+                Err(ParseError::UnexpectedToken("identifier", token))
             }
         })
     }
@@ -56,30 +56,32 @@ fn is_keyword(ident: &str) -> bool {
 mod test {
     use crate::{ tokens::stream::TokenStream, ast::Parse };
 
+    use super::{ super::stream::ParseStream, Ident };
+
     #[test]
     fn test_ident() {
         let tokens = TokenStream::from_string("name".to_string()).unwrap();
-        let mut stream = super::super::stream::ParseStream::new(tokens);
+        let mut stream = ParseStream::new(tokens);
 
-        let ident = super::Ident::parse(&mut stream).unwrap();
+        let ident = Ident::parse(&mut stream).unwrap();
         assert_eq!(ident.name, "name");
     }
 
     #[test]
     fn test_keyword() {
         let tokens = TokenStream::from_string("let".to_string()).unwrap();
-        let mut stream = super::super::stream::ParseStream::new(tokens);
+        let mut stream = ParseStream::new(tokens);
 
-        let ident = super::Ident::parse(&mut stream);
+        let ident = Ident::parse(&mut stream);
         assert!(ident.is_err());
     }
 
     #[test]
     fn test_escaped_keyword() {
         let tokens = TokenStream::from_string("@let".to_string()).unwrap();
-        let mut stream = super::super::stream::ParseStream::new(tokens);
+        let mut stream = ParseStream::new(tokens);
 
-        let ident = super::Ident::parse(&mut stream).unwrap();
+        let ident = Ident::parse(&mut stream).unwrap();
         assert_eq!(ident.name, "let");
     }
 }

@@ -1,21 +1,19 @@
-use std::any::TypeId;
-
-use crate::tokens::{ Span, TokenType, group };
+use crate::tokens::{ Span, TokenType };
 
 use super::{
     number::LitNumber,
-    ident::Ident,
     string::LitString,
     Spanned,
     Parse,
     ParseError,
-    block::Block,
     operations::{ ExprUnary, ExprBinary },
     grouped::ExprGrouped,
     functions::ExprFunction,
     conditionals::ExprIf,
     loops::{ ExprWhile, ExprFor, ExprLoop },
     path::ExprPath,
+    stream::ParseStream,
+    ParseResult,
 };
 
 #[derive(Debug, PartialEq, Eq, Clone, Default)]
@@ -53,7 +51,7 @@ impl Spanned for Expr {
 }
 
 impl Parse for Expr {
-    fn parse(stream: &mut super::stream::ParseStream) -> super::ParseResult<Self> {
+    fn parse(stream: &mut ParseStream) -> ParseResult<Self> {
         stream.skip_newlines();
         let result = if let Ok(op) = stream.parse::<ExprUnary>() {
             Ok(Self::Unary(op))
@@ -101,7 +99,7 @@ impl Spanned for ExprLit {
 }
 
 impl Parse for ExprLit {
-    fn parse(stream: &mut super::stream::ParseStream) -> super::ParseResult<Self> where Self: Sized {
+    fn parse(stream: &mut ParseStream) -> ParseResult<Self> where Self: Sized {
         if let Ok(bool) = stream.parse::<LitBool>() {
             Ok(Self::Bool(bool))
         } else if let Ok(number) = stream.parse::<LitNumber>() {
@@ -127,7 +125,7 @@ impl Spanned for LitBool {
 }
 
 impl Parse for LitBool {
-    fn parse(stream: &mut super::stream::ParseStream) -> super::ParseResult<Self> where Self: Sized {
+    fn parse(stream: &mut ParseStream) -> ParseResult<Self> where Self: Sized {
         stream.parse_with(|cursor: &mut super::stream::Cursor| {
             let token = cursor.current().clone();
             if let TokenType::Ident(ident) = &token.content {
@@ -138,10 +136,10 @@ impl Parse for LitBool {
                         span: token.span,
                     })
                 } else {
-                    Err(super::ParseError::UnexpectedToken("bool", token))
+                    Err(ParseError::UnexpectedToken("bool", token))
                 }
             } else {
-                Err(super::ParseError::UnexpectedToken("bool", token))
+                Err(ParseError::UnexpectedToken("bool", token))
             }
         })
     }
@@ -151,14 +149,16 @@ impl Parse for LitBool {
 mod test {
     use crate::{ tokens::stream::TokenStream, ast::Parse };
 
+    use super::{ LitBool, super::stream::ParseStream };
+
     #[test]
     fn test_bools() {
         let stream = TokenStream::from_string("true false".to_string()).unwrap();
-        let mut stream = super::super::stream::ParseStream::new(stream);
-        let token = super::LitBool::parse(&mut stream).unwrap();
+        let mut stream = ParseStream::new(stream);
+        let token = LitBool::parse(&mut stream).unwrap();
         assert_eq!(token.value, true);
         assert_eq!(token.span, (0..4).into());
-        let token = super::LitBool::parse(&mut stream).unwrap();
+        let token = LitBool::parse(&mut stream).unwrap();
         assert_eq!(token.value, false);
         assert_eq!(token.span, (5..10).into());
     }

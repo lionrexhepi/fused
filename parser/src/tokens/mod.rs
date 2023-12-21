@@ -1,4 +1,4 @@
-use std::{ fmt::Debug, ops::Range, thread::current };
+use std::{ fmt::Debug, ops::Range };
 
 use crate::file::Cursor;
 
@@ -57,7 +57,6 @@ impl Token {
     pub fn try_read(cursor: &mut Cursor) -> Result<Self, TokenError> {
         cursor.skip_whitespaces();
         let start = cursor.pos();
-        let current = cursor.current();
         let content = if let Some(literal) = TokenLiteral::try_read(cursor)? {
             TokenType::Literal(literal)
         } else if let Some(ident) = ident::TokenIdent::try_read(cursor)? {
@@ -108,17 +107,19 @@ trait TokenContent: Clone + PartialEq + Eq + Debug {
 mod test {
     use crate::file::Cursor;
 
+    use super::Token;
+
     #[test]
     fn test_span_start() {
         let mut cursor = Cursor::new("test");
-        let token = super::Token::try_read(&mut cursor).unwrap();
+        let token = Token::try_read(&mut cursor).unwrap();
         assert_eq!(token.span.start, 0);
     }
 
     #[test]
     fn test_span_end() {
         let mut cursor = Cursor::new("test");
-        let token = super::Token::try_read(&mut cursor).unwrap();
+        let token = Token::try_read(&mut cursor).unwrap();
         assert_eq!(token.span.end, 4);
     }
 
@@ -126,14 +127,14 @@ mod test {
     fn test_nonzero_start() {
         let mut cursor = Cursor::new(" test");
         cursor.advance(); //Skip the whitespace
-        let token = super::Token::try_read(&mut cursor).unwrap();
+        let token = Token::try_read(&mut cursor).unwrap();
         assert_eq!(token.span.start, 1);
     }
 
     #[test]
     fn test_length() {
         let mut cursor = Cursor::new("test");
-        let token = super::Token::try_read(&mut cursor).unwrap();
+        let token = Token::try_read(&mut cursor).unwrap();
         assert_eq!(token.span.len(), 4);
     }
 }

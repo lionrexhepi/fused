@@ -82,16 +82,14 @@ define_keyword!(Use, "use");
 
 #[cfg(test)]
 mod test {
-    use crate::ast::keywords::*;
+    use crate::{ ast::{ keywords::*, stream::ParseStream }, tokens::stream::TokenStream };
 
     #[test]
     fn test_keywords() {
-        let stream = crate::tokens::stream::TokenStream
-            ::from_string(
-                "if else elif while for in break continue return fn let class enum struct impl this super".to_string()
-            )
-            .unwrap();
-        let mut stream = crate::ast::stream::ParseStream::new(stream);
+        let stream = TokenStream::from_string(
+            "if else elif while for in break continue return fn let class enum struct impl this super".to_string()
+        ).unwrap();
+        let mut stream = ParseStream::new(stream);
 
         assert_eq!(stream.parse::<If>().unwrap(), If((0..2).into()));
         assert_eq!(stream.parse::<Else>().unwrap(), Else((3..7).into()));
@@ -114,8 +112,8 @@ mod test {
 
     #[test]
     fn test_regular_ident() {
-        let stream = crate::tokens::stream::TokenStream::from_string("test".to_string()).unwrap();
-        let mut stream = crate::ast::stream::ParseStream::new(stream);
+        let stream = TokenStream::from_string("test".to_string()).unwrap();
+        let mut stream = ParseStream::new(stream);
 
         assert!(matches!(stream.parse::<If>(), Err(_)));
     }

@@ -1,7 +1,6 @@
-use crate::tokens::{Span, TokenType, literal::TokenLiteral};
+use crate::tokens::{ Span, TokenType, literal::TokenLiteral };
 
-use super::{Spanned, Parse, ParseError, ParseResult, stream::{ParseStream, Cursor}};
-
+use super::{ Spanned, Parse, ParseError, ParseResult, stream::{ ParseStream, Cursor } };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LitString {
@@ -20,18 +19,13 @@ impl Parse for LitString {
         stream.parse_with(|cursor: &mut Cursor| {
             let token = cursor.current().clone();
             if let TokenType::Literal(TokenLiteral::String(string)) = &token.content {
-                
-                
                 cursor.advance();
                 Ok(Self {
                     value: string.content.clone(),
                     span: token.span,
                 })
             } else {
-                Err(ParseError::UnexpectedToken(
-                    "string literal",
-                    token,
-                ))
+                Err(ParseError::UnexpectedToken("string literal", token))
             }
         })
     }
@@ -39,13 +33,15 @@ impl Parse for LitString {
 
 #[cfg(test)]
 mod test {
-    use crate::{tokens::stream::TokenStream, ast::Parse};
+    use crate::{ tokens::stream::TokenStream, ast::Parse };
+
+    use super::{ super::stream::ParseStream, LitString };
 
     #[test]
     fn test_string() {
         let tokens = TokenStream::from_string("\"Hello, world!\"".to_string()).unwrap();
-        let mut stream = super::super::stream::ParseStream::new(tokens);
-        let string = super::LitString::parse(&mut stream).unwrap();
+        let mut stream = ParseStream::new(tokens);
+        let string = LitString::parse(&mut stream).unwrap();
         assert_eq!(string.value, "Hello, world!");
     }
 }

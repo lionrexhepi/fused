@@ -8,6 +8,8 @@ use super::{
     keywords::{ Loop, While, In, For },
     ident::Ident,
     punct::Colon,
+    stream::ParseStream,
+    ParseResult,
 };
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -23,7 +25,7 @@ impl Spanned for ExprLoop {
 }
 
 impl Parse for ExprLoop {
-    fn parse(token: &mut super::stream::ParseStream) -> super::ParseResult<Self> where Self: Sized {
+    fn parse(token: &mut ParseStream) -> ParseResult<Self> where Self: Sized {
         let _loop = token.parse::<Loop>()?;
         token.parse::<Colon>()?;
         let body = token.parse::<Block>()?;
@@ -51,7 +53,7 @@ impl Spanned for ExprWhile {
 }
 
 impl Parse for ExprWhile {
-    fn parse(token: &mut super::stream::ParseStream) -> super::ParseResult<Self> where Self: Sized {
+    fn parse(token: &mut ParseStream) -> ParseResult<Self> where Self: Sized {
         let _while = token.parse::<While>()?;
         let condition = token.parse::<Expr>()?;
 
@@ -83,7 +85,7 @@ impl Spanned for ExprFor {
 }
 
 impl Parse for ExprFor {
-    fn parse(token: &mut super::stream::ParseStream) -> super::ParseResult<Self> where Self: Sized {
+    fn parse(token: &mut ParseStream) -> ParseResult<Self> where Self: Sized {
         let _for = token.parse::<For>()?;
         let ident = token.parse::<Ident>()?;
         let _in = token.parse::<In>()?;
@@ -104,15 +106,18 @@ impl Parse for ExprFor {
 
 #[cfg(test)]
 mod test {
-    use crate::ast::{ expr::ExprLit, ident::Ident, path::ExprPath };
+    use crate::{
+        ast::{ expr::{ ExprLit, Expr }, path::ExprPath, stream::ParseStream },
+        tokens::stream::TokenStream,
+    };
+
+    use super::{ ExprWhile, ExprFor };
 
     #[test]
     fn test_loop() {
-        let tokens = crate::tokens::stream::TokenStream
-            ::from_string("loop:\n    1".to_string())
-            .unwrap();
+        let tokens = TokenStream::from_string("loop:\n    1".to_string()).unwrap();
 
-        let mut stream = crate::ast::stream::ParseStream::new(tokens);
+        let mut stream = ParseStream::new(tokens);
 
         let r#loop = stream.parse::<super::ExprLoop>().unwrap();
 
@@ -121,30 +126,26 @@ mod test {
 
     #[test]
     fn test_while() {
-        let tokens = crate::tokens::stream::TokenStream
-            ::from_string("while true:\n    1".to_string())
-            .unwrap();
+        let tokens = TokenStream::from_string("while true:\n    1".to_string()).unwrap();
 
-        let mut stream = crate::ast::stream::ParseStream::new(tokens);
+        let mut stream = ParseStream::new(tokens);
 
-        let r#while = stream.parse::<super::ExprWhile>().unwrap();
+        let r#while = stream.parse::<ExprWhile>().unwrap();
 
-        assert!(matches!(*r#while.condition, super::Expr::Literal(ExprLit::Bool(_))));
+        assert!(matches!(*r#while.condition, Expr::Literal(ExprLit::Bool(_))));
         assert_eq!(r#while.body.0.len(), 1);
     }
 
     #[test]
     fn test_for() {
-        let tokens = crate::tokens::stream::TokenStream
-            ::from_string("for i in array:\n    1".to_string())
-            .unwrap();
+        let tokens = TokenStream::from_string("for i in array:\n    1".to_string()).unwrap();
 
-        let mut stream = crate::ast::stream::ParseStream::new(tokens);
+        let mut stream = ParseStream::new(tokens);
 
-        let r#for = stream.parse::<super::ExprFor>().unwrap();
+        let r#for = stream.parse::<ExprFor>().unwrap();
 
         assert_eq!(r#for.ident.name, "i");
-        assert!(matches!(*r#for.iter, super::Expr::Path(ExprPath { .. })));
+        assert!(matches!(*r#for.iter, Expr::Path(ExprPath { .. })));
         assert_eq!(r#for.body.0.len(), 1);
     }
 }

@@ -1,9 +1,8 @@
-use crate::tokens::{ Span, TokenType };
+use crate::tokens::Span;
 
 use super::{
-    path::ExprPath,
     expr::Expr,
-    stream::{ ParseStream, Cursor },
+    stream::ParseStream,
     ParseResult,
     Parse,
     Spanned,

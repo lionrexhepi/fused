@@ -1,8 +1,8 @@
-use crate::tokens::{ Span, Token };
+use crate::tokens::Span;
 
 use super::{
     expr::Expr,
-    stream::{ Parser, ParseStream },
+    stream::ParseStream,
     ParseResult,
     Spanned,
     Parse,
@@ -79,7 +79,7 @@ impl Parse for Else {
 mod test {
     use crate::{
         tokens::stream::TokenStream,
-        ast::{ stream::ParseStream, conditionals::ExprIf, expr::{ ExprLit, Expr } },
+        ast::{ stream::ParseStream, conditionals::{ ExprIf, Else }, expr::{ ExprLit, Expr } },
     };
 
     #[test]
@@ -102,7 +102,7 @@ mod test {
         let r#if = stream.parse::<ExprIf>().unwrap();
 
         assert!(matches!(*r#if.condition, Expr::Literal(ExprLit::Bool(_))));
-        assert!(matches!(r#if.r#else.unwrap(), super::Else::Body(_)));
+        assert!(matches!(r#if.r#else.unwrap(), Else::Body(_)));
     }
 
     #[test]
@@ -116,6 +116,6 @@ mod test {
         let r#if = stream.parse::<ExprIf>().unwrap();
 
         assert!(matches!(*r#if.condition, Expr::Literal(ExprLit::Bool(_))));
-        assert!(matches!(r#if.r#else.unwrap(), super::Else::If(_)));
+        assert!(matches!(r#if.r#else.unwrap(), Else::If(_)));
     }
 }

@@ -1,15 +1,6 @@
 use crate::tokens::Span;
 
-use super::{
-    expr::Expr,
-    Parse,
-    punct::Colon,
-    Newline,
-    stream::ParseStream,
-    ParseResult,
-    Spanned,
-    statements::Statement,
-};
+use super::{ Parse, stream::ParseStream, ParseResult, Spanned, statements::Statement };
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Block(pub Vec<Statement>);
@@ -40,10 +31,7 @@ impl Parse for Block {
 
 #[cfg(test)]
 mod test {
-    use crate::{
-        tokens::stream::TokenStream,
-        ast::{ stream::ParseStream, expr::Expr, statements::{ Statement, StatementContent } },
-    };
+    use crate::{ tokens::stream::TokenStream, ast::stream::ParseStream };
     use super::Block;
 
     #[test]

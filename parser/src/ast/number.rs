@@ -1,14 +1,6 @@
-use std::str::FromStr;
+use crate::tokens::{ Span, Token, TokenType, literal::{ TokenLiteral, LiteralNumber, NumberType } };
 
-use crate::tokens::{ Span, Token, TokenType, literal::{ TokenLiteral, LiteralNumber } };
-
-use super::{
-    Parse,
-    Spanned,
-    ParseResult,
-    stream::{ ParseStream, Cursor, UnexpectedToken },
-    ParseError,
-};
+use super::{ Parse, Spanned, ParseResult, stream::{ ParseStream, Cursor }, ParseError };
 
 #[derive(Debug, Clone)]
 enum Number {
@@ -52,7 +44,7 @@ impl Parse for LitNumber {
             {
                 cursor.advance();
                 let value = match r#type {
-                    crate::tokens::literal::NumberType::Decimal => {
+                    NumberType::Decimal => {
                         let signed = if matches!(digits.chars().next(), Some('-') | Some('+')) {
                             true
                         } else {
@@ -84,11 +76,11 @@ impl Parse for LitNumber {
                             Number::UInt(number)
                         }
                     }
-                    crate::tokens::literal::NumberType::Hexadecimal => {
+                    NumberType::Hexadecimal => {
                         let number = u64::from_str_radix(&digits, 16).unwrap();
                         Number::UInt(number)
                     }
-                    crate::tokens::literal::NumberType::Binary => {
+                    NumberType::Binary => {
                         let number = u64::from_str_radix(&digits, 2).unwrap();
                         Number::UInt(number)
                     }

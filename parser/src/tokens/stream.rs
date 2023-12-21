@@ -1,6 +1,6 @@
 use crate::file::Cursor;
 
-use super::{ Token, TokenType, Span };
+use super::{ Token, TokenType };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TokenStream {
@@ -80,20 +80,19 @@ impl IntoIterator for TokenStream {
 
 #[cfg(test)]
 mod test {
-    use crate::tokens::{ ident::TokenIdent, literal::LiteralNumber, Token, TokenError };
-
+    use crate::tokens::{ TokenError, TokenType, stream::TokenStream };
     #[test]
     fn test_from_string() {
-        let mut stream = super::TokenStream::from_string("test 1".to_string()).unwrap();
+        let mut stream = TokenStream::from_string("test 1".to_string()).unwrap();
         assert_eq!(stream.len(), 2); //Ident, Literal
-        assert!(matches!(stream.advance().content, super::TokenType::Ident(_)));
-        assert!(matches!(stream.advance().content, super::TokenType::Literal(_)));
-        assert!(matches!(stream.advance().content, super::TokenType::EOF));
+        assert!(matches!(stream.advance().content, TokenType::Ident(_)));
+        assert!(matches!(stream.advance().content, TokenType::Literal(_)));
+        assert!(matches!(stream.advance().content, TokenType::EOF));
     }
 
     #[test]
     fn test_invalid_eof() {
-        let stream = super::TokenStream::from_string("0x".to_string());
+        let stream = TokenStream::from_string("0x".to_string());
         assert_eq!(stream.err(), Some(TokenError::UnexpectedEof));
     }
 }

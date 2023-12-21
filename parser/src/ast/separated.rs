@@ -55,12 +55,14 @@ impl<T: Parse, P: Punct> Parse for Separated<T, P> {
 mod test {
     use crate::{ tokens::stream::TokenStream, ast::{ Parse, ParseStream, separated::Separated } };
 
+    use super::super::expr::ExprLit;
+
     #[test]
     fn test_separated() {
         let tokens = TokenStream::from_string("1, 2, 3, 4".to_string()).unwrap();
         let mut stream = ParseStream::new(tokens);
 
-        let separated = Separated::<super::super::expr::ExprLit>::parse(&mut stream).unwrap();
+        let separated = Separated::<ExprLit>::parse(&mut stream).unwrap();
         assert_eq!(separated.inner.len(), 4);
     }
 
@@ -69,7 +71,7 @@ mod test {
         let tokens = TokenStream::from_string("1".to_string()).unwrap();
         let mut stream = ParseStream::new(tokens);
 
-        let separated = Separated::<super::super::expr::ExprLit>::parse(&mut stream).unwrap();
+        let separated = Separated::<ExprLit>::parse(&mut stream).unwrap();
         assert_eq!(separated.inner.len(), 1);
     }
 }

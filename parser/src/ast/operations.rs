@@ -1,19 +1,8 @@
-use std::{ collections::HashMap, mem::MaybeUninit };
+use std::collections::HashMap;
 
-use crate::{
-    tokens::{ Span, TokenType, punct::TokenPunct },
-    ast::{ stream::UnexpectedToken, punct::StarEq },
-};
+use crate::tokens::{ Span, TokenType, punct::TokenPunct };
 
-use super::{
-    expr::{ Expr, ExprLit },
-    Spanned,
-    Parse,
-    stream::{ ParseStream, Cursor },
-    ParseError,
-    ParseResult,
-    ident::Ident,
-};
+use super::{ expr::Expr, Spanned, Parse, stream::{ ParseStream, Cursor }, ParseError, ParseResult };
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct ExprUnary {
@@ -321,77 +310,57 @@ impl ExprBinary {
 }
 
 mod test {
-    use crate::ast::number::LitNumber;
+    #[allow(unused_imports)] //Because it wont recognize these are needed for some reason
+    use crate::{
+        ast::{
+            operations::{ ExprBinary, ExprUnary, UnaryType, BinaryType },
+            expr::{ Expr, ExprLit },
+            stream::ParseStream,
+        },
+        tokens::stream::TokenStream,
+    };
 
     #[test]
     fn test_unary() {
-        let stream = crate::tokens::stream::TokenStream::from_string("*1 !2".to_string()).unwrap();
-        let mut stream = crate::ast::stream::ParseStream::new(stream);
-        let unary = stream.parse::<crate::ast::operations::ExprUnary>().unwrap();
-        assert_eq!(unary.ty, crate::ast::operations::UnaryType::Deref);
-        let unary = stream.parse::<crate::ast::operations::ExprUnary>().unwrap();
-        assert_eq!(unary.ty, crate::ast::operations::UnaryType::Not);
-        assert!(
-            matches!(
-                *unary.arg,
-                crate::ast::expr::Expr::Literal(crate::ast::expr::ExprLit::Number(_))
-            )
-        );
+        let stream = TokenStream::from_string("*1 !2".to_string()).unwrap();
+        let mut stream = ParseStream::new(stream);
+        let unary = stream.parse::<ExprUnary>().unwrap();
+        assert_eq!(unary.ty, UnaryType::Deref);
+        let unary = stream.parse::<ExprUnary>().unwrap();
+        assert_eq!(unary.ty, UnaryType::Not);
+
+        assert!(matches!(*unary.arg, Expr::Literal(ExprLit::Number(_))));
     }
 
     #[test]
     fn test_binary() {
-        let stream = crate::tokens::stream::TokenStream::from_string("1 + 2".to_string()).unwrap();
-        let mut stream = crate::ast::stream::ParseStream::new(stream);
-        let binary = stream.parse::<crate::ast::operations::ExprBinary>().unwrap();
-        assert_eq!(binary.ty, crate::ast::operations::BinaryType::Add);
-        assert!(
-            matches!(
-                *binary.left,
-                crate::ast::expr::Expr::Literal(crate::ast::expr::ExprLit::Number(_))
-            )
-        );
-        assert!(
-            matches!(
-                *binary.right,
-                crate::ast::expr::Expr::Literal(crate::ast::expr::ExprLit::Number(_))
-            )
-        );
+        let stream = TokenStream::from_string("1 + 2".to_string()).unwrap();
+        let mut stream = ParseStream::new(stream);
+        let binary = stream.parse::<ExprBinary>().unwrap();
+        assert_eq!(binary.ty, BinaryType::Add);
+        assert!(matches!(*binary.left, Expr::Literal(ExprLit::Number(_))));
+        assert!(matches!(*binary.right, Expr::Literal(ExprLit::Number(_))));
     }
 
     #[test]
     fn test_binary_precedence() {
-        let stream = crate::tokens::stream::TokenStream
-            ::from_string("1 + 2 * 3".to_string())
-            .unwrap();
-        let mut stream = crate::ast::stream::ParseStream::new(stream);
-        let binary = stream.parse::<crate::ast::operations::ExprBinary>().unwrap();
+        let stream = TokenStream::from_string("1 + 2 * 3".to_string()).unwrap();
+        let mut stream = ParseStream::new(stream);
+        let binary = stream.parse::<ExprBinary>().unwrap();
 
-        assert_eq!(binary.ty, crate::ast::operations::BinaryType::Add);
-        assert!(matches!(*binary.right, crate::ast::expr::Expr::Binary(_)));
-        assert!(
-            matches!(
-                *binary.left,
-                crate::ast::expr::Expr::Literal(crate::ast::expr::ExprLit::Number(_))
-            )
-        );
+        assert_eq!(binary.ty, BinaryType::Add);
+        assert!(matches!(*binary.right, Expr::Binary(_)));
+        assert!(matches!(*binary.left, Expr::Literal(ExprLit::Number(_))));
     }
 
     #[test]
     fn test_comparison() {
-        let stream = crate::tokens::stream::TokenStream
-            ::from_string("1 < 2 + 2".to_string())
-            .unwrap();
-        let mut stream = crate::ast::stream::ParseStream::new(stream);
-        let binary = stream.parse::<crate::ast::operations::ExprBinary>().unwrap();
+        let stream = TokenStream::from_string("1 < 2 + 2".to_string()).unwrap();
+        let mut stream = ParseStream::new(stream);
+        let binary = stream.parse::<ExprBinary>().unwrap();
 
-        assert_eq!(binary.ty, crate::ast::operations::BinaryType::Lt);
-        assert!(matches!(*binary.right, crate::ast::expr::Expr::Binary(_)));
-        assert!(
-            matches!(
-                *binary.left,
-                crate::ast::expr::Expr::Literal(crate::ast::expr::ExprLit::Number(_))
-            )
-        );
+        assert_eq!(binary.ty, BinaryType::Lt);
+        assert!(matches!(*binary.right, Expr::Binary(_)));
+        assert!(matches!(*binary.left, Expr::Literal(ExprLit::Number(_))));
     }
 }

@@ -1,5 +1,5 @@
 use crate::ast::{ Parse, ParseResult, Spanned, ParseStream, stream::Cursor, ParseError };
-use crate::tokens::{ Token, TokenType, punct::TokenPunct };
+use crate::tokens::{ TokenType, punct::TokenPunct };
 pub trait Punct: Parse {}
 
 macro_rules! define_punct {

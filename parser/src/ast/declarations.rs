@@ -1,6 +1,16 @@
 use crate::tokens::Span;
 
-use super::{ ident::Ident, expr::Expr, Spanned, Parse, keywords::Mut };
+use super::{
+    ident::Ident,
+    expr::Expr,
+    Spanned,
+    Parse,
+    keywords::{ Mut, Let },
+    punct::{ Ampersand, Eq },
+    stream::ParseStream,
+    ParseResult,
+    grouped::Bracketed,
+};
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct ExprDecl {
@@ -17,14 +27,14 @@ impl Spanned for ExprDecl {
 }
 
 impl Parse for ExprDecl {
-    fn parse(stream: &mut super::stream::ParseStream) -> super::ParseResult<Self> where Self: Sized {
+    fn parse(stream: &mut ParseStream) -> ParseResult<Self> where Self: Sized {
         let mutable = stream.parse::<Mut>().is_ok();
         let name = stream.parse::<Ident>()?;
         let ty = stream
-            .parse::<super::grouped::Bracketed<Ident>>()
+            .parse::<Bracketed<Ident>>()
             .ok()
             .map(|bracket| *bracket.0);
-        let value = if stream.parse::<super::punct::Eq>().is_ok() {
+        let value = if stream.parse::<Eq>().is_ok() {
             Some(Box::new(stream.parse::<Expr>()?))
         } else {
             None
@@ -48,8 +58,8 @@ impl Spanned for ExprLet {
 }
 
 impl Parse for ExprLet {
-    fn parse(stream: &mut super::stream::ParseStream) -> super::ParseResult<Self> where Self: Sized {
-        stream.parse::<super::keywords::Let>()?;
+    fn parse(stream: &mut ParseStream) -> ParseResult<Self> where Self: Sized {
+        stream.parse::<Let>()?;
         let decl = stream.parse::<ExprDecl>()?;
         Ok(Self(decl))
     }
@@ -68,8 +78,8 @@ impl Spanned for FnArg {
 }
 
 impl Parse for FnArg {
-    fn parse(stream: &mut super::stream::ParseStream) -> super::ParseResult<Self> where Self: Sized {
-        let reference = stream.parse::<super::punct::Ampersand>().is_ok();
+    fn parse(stream: &mut ParseStream) -> ParseResult<Self> where Self: Sized {
+        let reference = stream.parse::<Ampersand>().is_ok();
         let decl = stream.parse::<ExprDecl>()?;
         Ok(Self {
             reference,
@@ -82,17 +92,19 @@ impl Parse for FnArg {
 mod test {
     use crate::tokens::stream::TokenStream;
 
+    use super::{ super::stream::ParseStream, FnArg, ExprLet, ExprDecl };
+
     #[test]
     fn test_simple_untyped() {
         let tokens = TokenStream::from_string("a = 1 \n mut b = 2".to_string()).unwrap();
-        let mut stream = super::super::stream::ParseStream::new(tokens);
-        let decl = stream.parse::<super::ExprDecl>().unwrap();
+        let mut stream = ParseStream::new(tokens);
+        let decl = stream.parse::<ExprDecl>().unwrap();
         assert_eq!(decl.name.name, "a");
         assert!(decl.value.is_some());
         assert!(decl.ty.is_none());
         assert_eq!(decl.mutable, false);
         stream.skip_newlines();
-        let decl = stream.parse::<super::ExprDecl>().unwrap();
+        let decl = stream.parse::<ExprDecl>().unwrap();
         assert_eq!(decl.name.name, "b");
         assert!(decl.value.is_some());
         assert!(decl.ty.is_none());
@@ -102,14 +114,14 @@ mod test {
     #[test]
     fn test_simple_typed() {
         let tokens = TokenStream::from_string("a[i32] = 1 \n mut b[i32] = 2".to_string()).unwrap();
-        let mut stream = super::super::stream::ParseStream::new(tokens);
-        let decl = stream.parse::<super::ExprDecl>().unwrap();
+        let mut stream = ParseStream::new(tokens);
+        let decl = stream.parse::<ExprDecl>().unwrap();
         assert_eq!(decl.name.name, "a");
         assert!(decl.value.is_some());
         assert_eq!(decl.mutable, false);
         assert_eq!(decl.ty.unwrap().name, "i32");
         stream.skip_newlines();
-        let decl = stream.parse::<super::ExprDecl>().unwrap();
+        let decl = stream.parse::<ExprDecl>().unwrap();
         assert_eq!(decl.name.name, "b");
         assert!(decl.value.is_some());
         assert_eq!(decl.mutable, true);
@@ -119,14 +131,14 @@ mod test {
     #[test]
     fn test_simple_unassigned() {
         let tokens = TokenStream::from_string("a[i32] \n mut b[i32]".to_string()).unwrap();
-        let mut stream = super::super::stream::ParseStream::new(tokens);
-        let decl = stream.parse::<super::ExprDecl>().unwrap();
+        let mut stream = ParseStream::new(tokens);
+        let decl = stream.parse::<ExprDecl>().unwrap();
         assert_eq!(decl.name.name, "a");
         assert!(decl.value.is_none());
         assert_eq!(decl.mutable, false);
         assert_eq!(decl.ty.unwrap().name, "i32");
         stream.skip_newlines();
-        let decl = stream.parse::<super::ExprDecl>().unwrap();
+        let decl = stream.parse::<ExprDecl>().unwrap();
         assert_eq!(decl.name.name, "b");
         assert!(decl.value.is_none());
         assert_eq!(decl.mutable, true);
@@ -136,14 +148,14 @@ mod test {
     #[test]
     fn test_let_untyped() {
         let tokens = TokenStream::from_string("let a = 1 \n let mut b = 2".to_string()).unwrap();
-        let mut stream = super::super::stream::ParseStream::new(tokens);
-        let decl = stream.parse::<super::ExprLet>().unwrap();
+        let mut stream = ParseStream::new(tokens);
+        let decl = stream.parse::<ExprLet>().unwrap();
         assert_eq!(decl.0.name.name, "a");
         assert!(decl.0.value.is_some());
         assert!(decl.0.ty.is_none());
         assert_eq!(decl.0.mutable, false);
         stream.skip_newlines();
-        let decl = stream.parse::<super::ExprLet>().unwrap();
+        let decl = stream.parse::<ExprLet>().unwrap();
         assert_eq!(decl.0.name.name, "b");
         assert!(decl.0.value.is_some());
         assert!(decl.0.ty.is_none());
@@ -155,14 +167,14 @@ mod test {
         let tokens = TokenStream::from_string(
             "let a[i32] = 1 \n let mut b[i32] = 2".to_string()
         ).unwrap();
-        let mut stream = super::super::stream::ParseStream::new(tokens);
-        let decl = stream.parse::<super::ExprLet>().unwrap();
+        let mut stream = ParseStream::new(tokens);
+        let decl = stream.parse::<ExprLet>().unwrap();
         assert_eq!(decl.0.name.name, "a");
         assert!(decl.0.value.is_some());
         assert_eq!(decl.0.mutable, false);
         assert_eq!(decl.0.ty.unwrap().name, "i32");
         stream.skip_newlines();
-        let decl = stream.parse::<super::ExprLet>().unwrap();
+        let decl = stream.parse::<ExprLet>().unwrap();
         assert_eq!(decl.0.name.name, "b");
         assert!(decl.0.value.is_some());
         assert_eq!(decl.0.mutable, true);
@@ -172,14 +184,14 @@ mod test {
     #[test]
     fn test_let_unassigned() {
         let tokens = TokenStream::from_string("let a[i32] \n let mut b[i32]".to_string()).unwrap();
-        let mut stream = super::super::stream::ParseStream::new(tokens);
-        let decl = stream.parse::<super::ExprLet>().unwrap();
+        let mut stream = ParseStream::new(tokens);
+        let decl = stream.parse::<ExprLet>().unwrap();
         assert_eq!(decl.0.name.name, "a");
         assert!(decl.0.value.is_none());
         assert_eq!(decl.0.mutable, false);
         assert_eq!(decl.0.ty.unwrap().name, "i32");
         stream.skip_newlines();
-        let decl = stream.parse::<super::ExprLet>().unwrap();
+        let decl = stream.parse::<ExprLet>().unwrap();
         assert_eq!(decl.0.name.name, "b");
         assert!(decl.0.value.is_none());
         assert_eq!(decl.0.mutable, true);
@@ -189,8 +201,8 @@ mod test {
     #[test]
     fn test_fn_arg_untyped() {
         let tokens = TokenStream::from_string("a".to_string()).unwrap();
-        let mut stream = super::super::stream::ParseStream::new(tokens);
-        let arg = stream.parse::<super::FnArg>().unwrap();
+        let mut stream = ParseStream::new(tokens);
+        let arg = stream.parse::<FnArg>().unwrap();
         assert_eq!(arg.decl.name.name, "a");
         assert!(arg.decl.value.is_none());
         assert_eq!(arg.decl.mutable, false);
@@ -201,8 +213,8 @@ mod test {
     #[test]
     fn test_fn_arg_typed() {
         let tokens = TokenStream::from_string("a[i32]".to_string()).unwrap();
-        let mut stream = super::super::stream::ParseStream::new(tokens);
-        let arg = stream.parse::<super::FnArg>().unwrap();
+        let mut stream = ParseStream::new(tokens);
+        let arg = stream.parse::<FnArg>().unwrap();
         assert_eq!(arg.decl.name.name, "a");
         assert!(arg.decl.value.is_none());
         assert_eq!(arg.decl.mutable, false);
@@ -213,8 +225,8 @@ mod test {
     #[test]
     fn test_fn_arg_defaulted() {
         let tokens = TokenStream::from_string("a[i32] = 1".to_string()).unwrap();
-        let mut stream = super::super::stream::ParseStream::new(tokens);
-        let arg = stream.parse::<super::FnArg>().unwrap();
+        let mut stream = ParseStream::new(tokens);
+        let arg = stream.parse::<FnArg>().unwrap();
         assert_eq!(arg.decl.name.name, "a");
         assert!(arg.decl.value.is_some());
         assert_eq!(arg.decl.mutable, false);
@@ -225,8 +237,8 @@ mod test {
     #[test]
     fn test_fn_arg_ref() {
         let tokens = TokenStream::from_string("&a[i32]".to_string()).unwrap();
-        let mut stream = super::super::stream::ParseStream::new(tokens);
-        let arg = stream.parse::<super::FnArg>().unwrap();
+        let mut stream = ParseStream::new(tokens);
+        let arg = stream.parse::<FnArg>().unwrap();
         assert_eq!(arg.decl.name.name, "a");
         assert!(arg.decl.value.is_none());
         assert_eq!(arg.decl.mutable, false);

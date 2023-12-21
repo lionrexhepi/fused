@@ -74,49 +74,48 @@ group!(Braced, Brace);
 
 #[cfg(test)]
 mod test {
-    use crate::ast::expr::Expr;
+    use crate::{
+        ast::{ expr::{ Expr, ExprLit }, grouped::ExprGrouped, stream::ParseStream },
+        tokens::stream::TokenStream,
+    };
+
+    use super::Parenthesized;
 
     #[test]
     fn test_paren() {
-        let tokens = crate::tokens::stream::TokenStream::from_string("(1)".to_string()).unwrap();
-        let mut stream = crate::ast::stream::ParseStream::new(tokens);
-        let parens = stream.parse::<super::Parenthesized>().unwrap();
-        assert!(matches!(*parens.0, super::Expr::Literal(crate::ast::expr::ExprLit::Number(_))));
+        let tokens = TokenStream::from_string("(1)".to_string()).unwrap();
+        let mut stream = ParseStream::new(tokens);
+        let parens = stream.parse::<Parenthesized>().unwrap();
+        assert!(matches!(*parens.0, super::Expr::Literal(ExprLit::Number(_))));
     }
 
     #[test]
     fn test_bracket() {
-        let tokens = crate::tokens::stream::TokenStream::from_string("[1]".to_string()).unwrap();
-        let mut stream = crate::ast::stream::ParseStream::new(tokens);
+        let tokens = TokenStream::from_string("[1]".to_string()).unwrap();
+        let mut stream = ParseStream::new(tokens);
         let brackets = stream.parse::<super::Bracketed>().unwrap();
-        assert!(matches!(*brackets.0, super::Expr::Literal(crate::ast::expr::ExprLit::Number(_))));
+        assert!(matches!(*brackets.0, super::Expr::Literal(ExprLit::Number(_))));
     }
 
     #[test]
     fn test_brace() {
-        let tokens = crate::tokens::stream::TokenStream::from_string("{1}".to_string()).unwrap();
-        let mut stream = crate::ast::stream::ParseStream::new(tokens);
+        let tokens = TokenStream::from_string("{1}".to_string()).unwrap();
+        let mut stream = ParseStream::new(tokens);
         let braces = stream.parse::<super::Braced>().unwrap();
-        assert!(matches!(*braces.0, super::Expr::Literal(crate::ast::expr::ExprLit::Number(_))));
+        assert!(matches!(*braces.0, super::Expr::Literal(ExprLit::Number(_))));
     }
 
     #[test]
     fn test_nested() {
-        let tokens = crate::tokens::stream::TokenStream
-            ::from_string("(1 + [2])".to_string())
-            .unwrap();
-        let mut stream = crate::ast::stream::ParseStream::new(tokens);
+        let tokens = TokenStream::from_string("(1 + [2])".to_string()).unwrap();
+        let mut stream = ParseStream::new(tokens);
 
-        let parens = stream.parse::<super::Parenthesized<Expr>>().unwrap();
+        let parens = stream.parse::<Parenthesized<Expr>>().unwrap();
         print!("{:#?}", parens.0);
-        assert!(matches!(*parens.0, super::Expr::Binary(_)));
-        if let super::Expr::Binary(binary) = *parens.0 {
-            assert!(
-                matches!(*binary.left, super::Expr::Literal(crate::ast::expr::ExprLit::Number(_)))
-            );
-            assert!(
-                matches!(*binary.right, super::Expr::Grouped(super::ExprGrouped::Bracketed(_)))
-            );
+        assert!(matches!(*parens.0, Expr::Binary(_)));
+        if let Expr::Binary(binary) = *parens.0 {
+            assert!(matches!(*binary.left, Expr::Literal(ExprLit::Number(_))));
+            assert!(matches!(*binary.right, Expr::Grouped(ExprGrouped::Bracketed(_))));
         } else {
             panic!("No binary expression found")
         }
