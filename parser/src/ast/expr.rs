@@ -126,7 +126,7 @@ impl Spanned for LitBool {
 
 impl Parse for LitBool {
     fn parse(stream: &mut ParseStream) -> ParseResult<Self> where Self: Sized {
-        stream.parse_with(|cursor: &mut super::stream::Cursor| {
+        stream.parse_with(|cursor: &mut super::stream::TokenCursor| {
             let token = cursor.current().clone();
             if let TokenType::Ident(ident) = &token.content {
                 if !ident.escaped && (ident.name == "true" || ident.name == "false") {

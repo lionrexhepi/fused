@@ -1,6 +1,6 @@
 use std::{ fmt::Debug, ops::Range };
 
-use crate::file::Cursor;
+use crate::file::SourceCursor;
 
 use self::{ literal::TokenLiteral, comment::TokenComment, group::TokenGroup };
 
@@ -54,7 +54,7 @@ pub struct Token {
 }
 
 impl Token {
-    pub fn try_read(cursor: &mut Cursor) -> Result<Self, TokenError> {
+    pub fn try_read(cursor: &mut SourceCursor) -> Result<Self, TokenError> {
         cursor.skip_whitespaces();
         let start = cursor.pos();
         let content = if let Some(literal) = TokenLiteral::try_read(cursor)? {
@@ -100,32 +100,32 @@ pub enum TokenError {
 pub type TokenResult<T> = std::result::Result<Option<T>, TokenError>;
 
 trait TokenContent: Clone + PartialEq + Eq + Debug {
-    fn try_read(cursor: &mut Cursor) -> TokenResult<Self> where Self: Sized;
+    fn try_read(cursor: &mut SourceCursor) -> TokenResult<Self> where Self: Sized;
 }
 
 #[cfg(test)]
 mod test {
-    use crate::file::Cursor;
+    use crate::file::SourceCursor;
 
     use super::Token;
 
     #[test]
     fn test_span_start() {
-        let mut cursor = Cursor::new("test");
+        let mut cursor = SourceCursor::new("test");
         let token = Token::try_read(&mut cursor).unwrap();
         assert_eq!(token.span.start, 0);
     }
 
     #[test]
     fn test_span_end() {
-        let mut cursor = Cursor::new("test");
+        let mut cursor = SourceCursor::new("test");
         let token = Token::try_read(&mut cursor).unwrap();
         assert_eq!(token.span.end, 4);
     }
 
     #[test]
     fn test_nonzero_start() {
-        let mut cursor = Cursor::new(" test");
+        let mut cursor = SourceCursor::new(" test");
         cursor.advance(); //Skip the whitespace
         let token = Token::try_read(&mut cursor).unwrap();
         assert_eq!(token.span.start, 1);
@@ -133,7 +133,7 @@ mod test {
 
     #[test]
     fn test_length() {
-        let mut cursor = Cursor::new("test");
+        let mut cursor = SourceCursor::new("test");
         let token = Token::try_read(&mut cursor).unwrap();
         assert_eq!(token.span.len(), 4);
     }

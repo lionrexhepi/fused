@@ -1,4 +1,4 @@
-use crate::file::Cursor;
+use crate::file::SourceCursor;
 
 use super::{ Token, TokenType };
 
@@ -23,7 +23,7 @@ impl TokenStream {
     }
 
     pub fn from_string(string: String) -> Result<Self, super::TokenError> {
-        let mut cursor = Cursor::new(&string);
+        let mut cursor = SourceCursor::new(&string);
 
         let mut vec = Vec::new();
         let eof = loop {

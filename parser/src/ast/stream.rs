@@ -19,12 +19,12 @@ impl ParseStream {
         T::parse(self)
     }
 
-    pub fn cursor(&self) -> Cursor {
-        Cursor::new(&self.tokens)
+    pub fn cursor(&self) -> TokenCursor {
+        TokenCursor::new(&self.tokens)
     }
 
     pub fn parse_with<T>(&mut self, parser: impl Parser<T>) -> ParseResult<T> {
-        let mut cursor = Cursor::new(&self.tokens);
+        let mut cursor = TokenCursor::new(&self.tokens);
         let result = parser.parse(&mut cursor);
         if result.is_ok() {
             self.tokens.advance_to(cursor.moved);
@@ -44,22 +44,22 @@ impl ParseStream {
 }
 
 pub trait Parser<T> {
-    fn parse(self, stream: &mut Cursor) -> ParseResult<T>;
+    fn parse(self, stream: &mut TokenCursor) -> ParseResult<T>;
 }
 
-impl<T, F> Parser<T> for F where F: FnOnce(&mut Cursor) -> ParseResult<T> {
-    fn parse(self, stream: &mut Cursor) -> ParseResult<T> {
+impl<T, F> Parser<T> for F where F: FnOnce(&mut TokenCursor) -> ParseResult<T> {
+    fn parse(self, stream: &mut TokenCursor) -> ParseResult<T> {
         self(stream)
     }
 }
 
 #[derive(Clone)]
-pub struct Cursor<'a> {
+pub struct TokenCursor<'a> {
     tokenstream: &'a TokenStream,
     moved: usize,
 }
 
-impl<'a> Cursor<'a> {
+impl<'a> TokenCursor<'a> {
     fn new(tokenstream: &'a TokenStream) -> Self {
         Self {
             tokenstream,

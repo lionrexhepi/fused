@@ -2,13 +2,13 @@ use std::str::Chars;
 
 pub const EOF: char = '\0';
 
-pub struct Cursor<'a> {
+pub struct SourceCursor<'a> {
     content: Chars<'a>,
 
     absolute: usize,
 }
 
-impl<'a> Cursor<'a> {
+impl<'a> SourceCursor<'a> {
     pub fn new(data: &'a str) -> Self {
         Self {
             content: data.chars(),

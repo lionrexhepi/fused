@@ -1,6 +1,6 @@
 use crate::tokens::{ Span, TokenType, literal::TokenLiteral };
 
-use super::{ Spanned, Parse, ParseError, ParseResult, stream::{ ParseStream, Cursor } };
+use super::{ Spanned, Parse, ParseError, ParseResult, stream::{ ParseStream, TokenCursor } };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LitString {
@@ -16,7 +16,7 @@ impl Spanned for LitString {
 
 impl Parse for LitString {
     fn parse(stream: &mut ParseStream) -> ParseResult<Self> where Self: Sized {
-        stream.parse_with(|cursor: &mut Cursor| {
+        stream.parse_with(|cursor: &mut TokenCursor| {
             let token = cursor.current().clone();
             if let TokenType::Literal(TokenLiteral::String(string)) = &token.content {
                 cursor.advance();

@@ -1,6 +1,6 @@
 use crate::tokens::{ Span, Token, TokenType };
 
-use self::stream::{ ParseStream, Cursor };
+use self::stream::{ ParseStream, TokenCursor };
 
 pub mod keywords;
 pub mod number;
@@ -52,7 +52,7 @@ impl Spanned for Newline {
 
 impl Parse for Newline {
     fn parse(stream: &mut ParseStream) -> ParseResult<Self> where Self: Sized {
-        stream.parse_with(|cursor: &mut Cursor| {
+        stream.parse_with(|cursor: &mut TokenCursor| {
             let token = cursor.current().clone();
             if let TokenType::Newline(spaces) = &token.content {
                 cursor.advance();

@@ -1,4 +1,4 @@
-use crate::ast::{ Parse, ParseResult, Spanned, ParseStream, stream::Cursor, ParseError };
+use crate::ast::{ Parse, ParseResult, Spanned, ParseStream, stream::TokenCursor, ParseError };
 use crate::tokens::{ TokenType, punct::TokenPunct };
 pub trait Punct: Parse {}
 
@@ -17,7 +17,7 @@ macro_rules! define_punct {
 
         impl Parse for $name {
             fn parse(token: &mut ParseStream) -> ParseResult<Self> {
-                token.parse_with(|cursor: &mut Cursor| {
+                token.parse_with(|cursor: &mut TokenCursor| {
                     let token = cursor.current().clone();
                     if let TokenType::Punct(punct) = &token.content {
                         if punct == &TokenPunct::$name {

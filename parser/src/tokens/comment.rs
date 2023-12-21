@@ -1,6 +1,6 @@
-use crate::{ file::Cursor, reject_eof };
+use crate::{ file::SourceCursor, reject_eof };
 
-            use super::{ TokenResult, TokenContent };
+use super::{ TokenResult, TokenContent };
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum TokenComment {
@@ -10,7 +10,7 @@ pub enum TokenComment {
 }
 
 impl TokenContent for TokenComment {
-    fn try_read(cursor: &mut Cursor) -> TokenResult<Self> {
+    fn try_read(cursor: &mut SourceCursor) -> TokenResult<Self> {
         if cursor.current() == '#' {
             let mut content = String::new();
             Ok(
@@ -56,11 +56,11 @@ impl TokenContent for TokenComment {
 
 #[cfg(test)]
 mod test {
-    use crate::{ file::Cursor, tokens::TokenContent };
+    use crate::{ file::SourceCursor, tokens::TokenContent };
 
     #[test]
     fn test_singleline() {
-        let mut cursor = Cursor::new("# Hello, world!\n");
+        let mut cursor = SourceCursor::new("# Hello, world!\n");
         let comment = super::TokenComment::try_read(&mut cursor).unwrap().unwrap();
         assert_eq!(comment, super::TokenComment::Line(" Hello, world!".to_string()));
         assert_eq!(cursor.current(), '\0'); //Artifcially added to make sure the current character isn't the #
@@ -68,7 +68,7 @@ mod test {
 
     #[test]
     pub fn test_multiline() {
-        let mut cursor = Cursor::new("#- Hello,\n world! -#");
+        let mut cursor = SourceCursor::new("#- Hello,\n world! -#");
         let comment = super::TokenComment::try_read(&mut cursor).unwrap().unwrap();
         assert_eq!(comment, super::TokenComment::Block(" Hello,\n world! ".to_string()));
         assert_eq!(cursor.current(), '\0'); //Artifcially added to make sure the current character isn't the #

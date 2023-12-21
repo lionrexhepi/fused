@@ -1,4 +1,4 @@
-use crate::{ file::Cursor, reject_eof };
+use crate::{ file::SourceCursor, reject_eof };
 
 use super::{ Token, TokenContent, TokenResult, stream::TokenStream };
 
@@ -16,7 +16,7 @@ pub struct TokenGroup {
 }
 
 impl TokenContent for TokenGroup {
-    fn try_read(cursor: &mut Cursor) -> TokenResult<Self> {
+    fn try_read(cursor: &mut SourceCursor) -> TokenResult<Self> {
         let (delim, close) = if cursor.current() == '(' {
             (Delim::Paren, ')')
         } else if cursor.current() == '[' {
@@ -46,7 +46,7 @@ impl TokenContent for TokenGroup {
 #[cfg(test)]
 mod test {
     use crate::{
-        file::Cursor,
+        file::SourceCursor,
         tokens::{
             group::{ TokenGroup, Delim },
             ident::TokenIdent,
@@ -58,7 +58,7 @@ mod test {
 
     #[test]
     fn test_paren() {
-        let mut cursor = Cursor::new("(test)");
+        let mut cursor = SourceCursor::new("(test)");
         let group = TokenGroup::try_read(&mut cursor).unwrap().unwrap();
         assert_eq!(group.delim, Delim::Paren);
         assert_eq!(group.tokens.len(), 1);
@@ -70,7 +70,7 @@ mod test {
 
     #[test]
     fn test_bracket() {
-        let mut cursor = Cursor::new("[test]");
+        let mut cursor = SourceCursor::new("[test]");
         let group = TokenGroup::try_read(&mut cursor).unwrap().unwrap();
         assert_eq!(group.delim, Delim::Bracket);
         assert_eq!(group.tokens.len(), 1);
@@ -82,7 +82,7 @@ mod test {
 
     #[test]
     fn test_braces() {
-        let mut cursor = Cursor::new("{test}");
+        let mut cursor = SourceCursor::new("{test}");
         let group = TokenGroup::try_read(&mut cursor).unwrap().unwrap();
         assert_eq!(group.delim, Delim::Brace);
         assert_eq!(group.tokens.len(), 1);
@@ -94,7 +94,7 @@ mod test {
 
     #[test]
     fn test_nonterminated() {
-        let mut cursor = Cursor::new("(test");
+        let mut cursor = SourceCursor::new("(test");
         let group = TokenGroup::try_read(&mut cursor).unwrap_err();
         assert_eq!(group, TokenError::UnexpectedEof);
     }

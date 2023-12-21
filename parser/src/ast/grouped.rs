@@ -3,7 +3,7 @@ use crate::tokens::group::Delim;
 
 use super::expr::Expr;
 use super::{ Spanned, ParseResult, Parse, ParseError };
-use super::stream::{ Cursor, ParseStream };
+use super::stream::{ TokenCursor, ParseStream };
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum ExprGrouped<C: Parse + Sized = Expr> {
@@ -48,7 +48,7 @@ macro_rules! group {
 
         impl<C: Parse + Sized> Parse for $name<C> {
             fn parse(stream: &mut ParseStream) -> ParseResult<Self> {
-                let mut inner = stream.parse_with(|cursor: &mut Cursor| {
+                let mut inner = stream.parse_with(|cursor: &mut TokenCursor| {
                     match cursor.current().content.clone() {
                         TokenType::Group(group) => match group.delim {
                             Delim::$delim => {

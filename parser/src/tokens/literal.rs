@@ -1,4 +1,4 @@
-use crate::{ file::Cursor, reject_eof };
+use crate::{ file::SourceCursor, reject_eof };
 
 use super::{ TokenContent, TokenResult, TokenError };
 
@@ -12,7 +12,7 @@ pub enum TokenLiteral {
 }
 
 impl TokenContent for TokenLiteral {
-    fn try_read(cursor: &mut Cursor) -> TokenResult<Self> {
+    fn try_read(cursor: &mut SourceCursor) -> TokenResult<Self> {
         Ok(
             if let Some(number) = LiteralNumber::try_read(cursor)? {
                 Some(Self::Number(number))
@@ -31,7 +31,7 @@ pub struct LiteralNumber {
 }
 
 impl TokenContent for LiteralNumber {
-    fn try_read(cursor: &mut Cursor) -> TokenResult<Self> {
+    fn try_read(cursor: &mut SourceCursor) -> TokenResult<Self> {
         if is_digit(cursor.current()) {
             let mut num_type = NumberType::Decimal;
             let digits = if cursor.current() == '0' && matches!(cursor.next(), 'x' | 'b') {
@@ -75,7 +75,7 @@ pub enum NumberType {
     Binary,
 }
 
-fn read_decimal(cursor: &mut Cursor) -> Result<String, TokenError> {
+fn read_decimal(cursor: &mut SourceCursor) -> Result<String, TokenError> {
     let mut number = String::new();
     let mut decimal = false;
 
@@ -99,7 +99,7 @@ fn read_decimal(cursor: &mut Cursor) -> Result<String, TokenError> {
     Ok(number)
 }
 
-fn read_binary(cursor: &mut Cursor) -> Result<String, TokenError> {
+fn read_binary(cursor: &mut SourceCursor) -> Result<String, TokenError> {
     let mut number = String::new();
 
     //Read all digits
@@ -120,7 +120,7 @@ fn read_binary(cursor: &mut Cursor) -> Result<String, TokenError> {
     }
 }
 
-fn read_hexadecimal(cursor: &mut Cursor<'_>) -> Result<String, TokenError> {
+fn read_hexadecimal(cursor: &mut SourceCursor<'_>) -> Result<String, TokenError> {
     let mut number = String::new();
 
     while matches!(cursor.current(), '0'..='9' | 'a'..='f' | 'A'..='F') {
@@ -146,7 +146,7 @@ pub struct LiteralString {
 }
 
 impl TokenContent for LiteralString {
-    fn try_read(cursor: &mut Cursor) -> TokenResult<Self> {
+    fn try_read(cursor: &mut SourceCursor) -> TokenResult<Self> {
         if cursor.current() == '"' {
             cursor.advance();
 
@@ -174,7 +174,7 @@ impl TokenContent for LiteralString {
     }
 }
 
-fn read_string(cursor: &mut Cursor, quotes: usize) -> Result<String, TokenError> {
+fn read_string(cursor: &mut SourceCursor, quotes: usize) -> Result<String, TokenError> {
     let mut content = String::new();
 
     loop {
@@ -213,13 +213,13 @@ pub enum StringType {
 #[cfg(test)]
 mod test {
     use crate::{
-        file::Cursor,
+        file::SourceCursor,
         tokens::{ literal::{ LiteralNumber, NumberType, LiteralString, StringType }, TokenContent },
     };
 
     #[test]
     fn test_integer() {
-        let mut cursor = Cursor::new("123");
+        let mut cursor = SourceCursor::new("123");
         let number = LiteralNumber::try_read(&mut cursor).unwrap().unwrap();
         assert_eq!(number.r#type, NumberType::Decimal);
         assert_eq!(number.digits, "123".to_string());
@@ -227,7 +227,7 @@ mod test {
 
     #[test]
     fn test_decimals() {
-        let mut cursor = Cursor::new("123.456");
+        let mut cursor = SourceCursor::new("123.456");
         let number = LiteralNumber::try_read(&mut cursor).unwrap().unwrap();
         assert_eq!(number.r#type, NumberType::Decimal);
         assert_eq!(number.digits, "123.456".to_string());
@@ -235,7 +235,7 @@ mod test {
 
     #[test]
     fn test_binary() {
-        let mut cursor = Cursor::new("0b1010");
+        let mut cursor = SourceCursor::new("0b1010");
         let number = LiteralNumber::try_read(&mut cursor).unwrap().unwrap();
         assert_eq!(number.r#type, NumberType::Binary);
         assert_eq!(number.digits, "1010".to_string());
@@ -243,7 +243,7 @@ mod test {
 
     #[test]
     fn test_hexadecimal() {
-        let mut cursor = Cursor::new("0x123abc");
+        let mut cursor = SourceCursor::new("0x123abc");
         let number = LiteralNumber::try_read(&mut cursor).unwrap().unwrap();
         assert_eq!(number.r#type, NumberType::Hexadecimal);
         assert_eq!(number.digits, "123abc".to_string());
@@ -251,7 +251,7 @@ mod test {
 
     #[test]
     fn test_string() {
-        let mut cursor = Cursor::new("\"Hello, world!\"");
+        let mut cursor = SourceCursor::new("\"Hello, world!\"");
 
         let string = LiteralString::try_read(&mut cursor).unwrap().unwrap();
         assert_eq!(string.r#type, StringType::Regular);
@@ -262,7 +262,7 @@ mod test {
     fn escaped_string() {
         for n in 1..5 {
             let test_str = format!("@{q}Hello, world!{q}", q = "\"".repeat(n));
-            let mut cursor = Cursor::new(&test_str);
+            let mut cursor = SourceCursor::new(&test_str);
             let string = LiteralString::try_read(&mut cursor).unwrap().unwrap();
             assert_eq!(string.r#type, StringType::Raw(n));
             assert_eq!(string.content, "Hello, world!".to_string());
@@ -272,7 +272,7 @@ mod test {
     #[test]
     fn contains_quotes() {
         let test_string = r#" @""Hello,"World" """#.to_string();
-        let mut cursor = Cursor::new(&test_string);
+        let mut cursor = SourceCursor::new(&test_string);
         cursor.advance(); //Skip the whitespace
         let string = LiteralString::try_read(&mut cursor).unwrap().unwrap();
         assert_eq!(string.r#type, StringType::Raw(2));

@@ -1,6 +1,6 @@
 use crate::tokens::{ Span, TokenType };
 
-use super::{ Parse, stream::{ Cursor, ParseStream }, ParseError, ParseResult };
+use super::{ Parse, stream::{ TokenCursor, ParseStream }, ParseError, ParseResult };
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Ident {
@@ -16,7 +16,7 @@ impl super::Spanned for Ident {
 
 impl Parse for Ident {
     fn parse(stream: &mut ParseStream) -> ParseResult<Self> where Self: Sized {
-        stream.parse_with(|cursor: &mut Cursor| {
+        stream.parse_with(|cursor: &mut TokenCursor| {
             let token = cursor.current().clone();
             if let TokenType::Ident(ident) = &token.content {
                 if is_keyword(&ident.name) && !ident.escaped {

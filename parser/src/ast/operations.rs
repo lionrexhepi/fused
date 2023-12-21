@@ -2,7 +2,14 @@ use std::collections::HashMap;
 
 use crate::tokens::{ Span, TokenType, punct::TokenPunct };
 
-use super::{ expr::Expr, Spanned, Parse, stream::{ ParseStream, Cursor }, ParseError, ParseResult };
+use super::{
+    expr::Expr,
+    Spanned,
+    Parse,
+    stream::{ ParseStream, TokenCursor },
+    ParseError,
+    ParseResult,
+};
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct ExprUnary {
@@ -27,7 +34,7 @@ impl Spanned for ExprUnary {
 
 impl Parse for ExprUnary {
     fn parse(stream: &mut ParseStream) -> ParseResult<Self> where Self: Sized {
-        let ty = stream.parse_with(|cursor: &mut Cursor| {
+        let ty = stream.parse_with(|cursor: &mut TokenCursor| {
             let token = cursor.current().clone();
             match &token.content {
                 TokenType::Punct(punct) =>
@@ -250,7 +257,7 @@ impl ExprBinary {
 
     fn read_operator(stream: &mut ParseStream) -> Option<BinaryType> {
         stream
-            .parse_with(|cursor: &mut Cursor| {
+            .parse_with(|cursor: &mut TokenCursor| {
                 let operator = match &cursor.current().content {
                     TokenType::Punct(punct) =>
                         match punct {

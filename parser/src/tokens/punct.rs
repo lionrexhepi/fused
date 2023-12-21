@@ -1,4 +1,4 @@
-use crate::file::Cursor;
+use crate::file::SourceCursor;
 
 use super::{ TokenContent, TokenResult };
 
@@ -49,7 +49,7 @@ pub enum TokenPunct {
 }
 
 impl TokenContent for TokenPunct {
-    fn try_read(cursor: &mut Cursor) -> TokenResult<Self> {
+    fn try_read(cursor: &mut SourceCursor) -> TokenResult<Self> {
         let result = match cursor.current() {
             '+' => {
                 if cursor.next() == '=' {
@@ -209,11 +209,11 @@ impl TokenContent for TokenPunct {
 
 #[cfg(test)]
 mod test {
-    use crate::{ file::Cursor, tokens::{ punct::TokenPunct, TokenContent } };
+    use crate::{ file::SourceCursor, tokens::{ punct::TokenPunct, TokenContent } };
 
     #[test]
     fn test_single_puncts() {
-        let mut cursor = Cursor::new("+ - * / % ^ & | ~ ? $ . \\ < > ! ; : ,");
+        let mut cursor = SourceCursor::new("+ - * / % ^ & | ~ ? $ . \\ < > ! ; : ,");
 
         assert_eq!(TokenPunct::try_read(&mut cursor).unwrap(), Some(TokenPunct::Plus));
         cursor.advance();
@@ -256,7 +256,9 @@ mod test {
 
     #[test]
     fn test_complex() {
-        let mut cursor = Cursor::new("+= -= *= /= ^= |= <= <<= || && == >>= != => -> &&= ||=");
+        let mut cursor = SourceCursor::new(
+            "+= -= *= /= ^= |= <= <<= || && == >>= != => -> &&= ||="
+        );
 
         assert_eq!(TokenPunct::try_read(&mut cursor).unwrap(), Some(TokenPunct::PlusEq));
         cursor.advance();
