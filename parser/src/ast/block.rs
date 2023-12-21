@@ -36,7 +36,7 @@ mod test {
 
     #[test]
     fn test_single_statement() {
-        let tokens = TokenStream::from_string("\n    1".to_string()).unwrap();
+        let tokens = TokenStream::from_string("\n    1").unwrap();
 
         let mut stream = ParseStream::new(tokens);
 
@@ -47,7 +47,7 @@ mod test {
 
     #[test]
     fn test_several_statements() {
-        let tokens = TokenStream::from_string("\n    1\n    2\n    3".to_string()).unwrap();
+        let tokens = TokenStream::from_string("\n    1\n    2\n    3").unwrap();
 
         let mut stream = ParseStream::new(tokens);
 
@@ -58,7 +58,7 @@ mod test {
 
     #[test]
     fn test_empty_block() {
-        let tokens = TokenStream::from_string("".to_string()).unwrap();
+        let tokens = TokenStream::from_string("").unwrap();
 
         let mut stream = ParseStream::new(tokens);
 
@@ -69,7 +69,7 @@ mod test {
 
     #[test]
     fn test_uneven_spacing() {
-        let tokens = TokenStream::from_string("\n    1\n    2\n 3".to_string()).unwrap();
+        let tokens = TokenStream::from_string("\n    1\n    2\n 3").unwrap();
 
         let mut stream = ParseStream::new(tokens);
 

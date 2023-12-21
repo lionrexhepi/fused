@@ -22,8 +22,9 @@ impl TokenStream {
         }
     }
 
-    pub fn from_string(string: String) -> Result<Self, super::TokenError> {
-        let mut cursor = SourceCursor::new(&string);
+    pub fn from_string(string: impl ToString) -> Result<Self, super::TokenError> {
+        let data = string.to_string();
+        let mut cursor = SourceCursor::new(&data);
 
         let mut vec = Vec::new();
         let eof = loop {
@@ -83,7 +84,7 @@ mod test {
     use crate::tokens::{ TokenError, TokenType, stream::TokenStream };
     #[test]
     fn test_from_string() {
-        let mut stream = TokenStream::from_string("test 1".to_string()).unwrap();
+        let mut stream = TokenStream::from_string("test 1").unwrap();
         assert_eq!(stream.len(), 2); //Ident, Literal
         assert!(matches!(stream.advance().content, TokenType::Ident(_)));
         assert!(matches!(stream.advance().content, TokenType::Literal(_)));
@@ -92,7 +93,7 @@ mod test {
 
     #[test]
     fn test_invalid_eof() {
-        let stream = TokenStream::from_string("0x".to_string());
+        let stream = TokenStream::from_string("0x");
         assert_eq!(stream.err(), Some(TokenError::UnexpectedEof));
     }
 }

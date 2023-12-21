@@ -222,7 +222,7 @@ mod test {
         let mut cursor = SourceCursor::new("123");
         let number = LiteralNumber::try_read(&mut cursor).unwrap().unwrap();
         assert_eq!(number.r#type, NumberType::Decimal);
-        assert_eq!(number.digits, "123".to_string());
+        assert_eq!(number.digits, "123");
     }
 
     #[test]
@@ -230,7 +230,7 @@ mod test {
         let mut cursor = SourceCursor::new("123.456");
         let number = LiteralNumber::try_read(&mut cursor).unwrap().unwrap();
         assert_eq!(number.r#type, NumberType::Decimal);
-        assert_eq!(number.digits, "123.456".to_string());
+        assert_eq!(number.digits, "123.456");
     }
 
     #[test]
@@ -238,7 +238,7 @@ mod test {
         let mut cursor = SourceCursor::new("0b1010");
         let number = LiteralNumber::try_read(&mut cursor).unwrap().unwrap();
         assert_eq!(number.r#type, NumberType::Binary);
-        assert_eq!(number.digits, "1010".to_string());
+        assert_eq!(number.digits, "1010");
     }
 
     #[test]
@@ -246,7 +246,7 @@ mod test {
         let mut cursor = SourceCursor::new("0x123abc");
         let number = LiteralNumber::try_read(&mut cursor).unwrap().unwrap();
         assert_eq!(number.r#type, NumberType::Hexadecimal);
-        assert_eq!(number.digits, "123abc".to_string());
+        assert_eq!(number.digits, "123abc");
     }
 
     #[test]
@@ -255,7 +255,7 @@ mod test {
 
         let string = LiteralString::try_read(&mut cursor).unwrap().unwrap();
         assert_eq!(string.r#type, StringType::Regular);
-        assert_eq!(string.content, "Hello, world!".to_string());
+        assert_eq!(string.content, "Hello, world!");
     }
 
     #[test]
@@ -265,7 +265,7 @@ mod test {
             let mut cursor = SourceCursor::new(&test_str);
             let string = LiteralString::try_read(&mut cursor).unwrap().unwrap();
             assert_eq!(string.r#type, StringType::Raw(n));
-            assert_eq!(string.content, "Hello, world!".to_string());
+            assert_eq!(string.content, "Hello, world!");
         }
     }
 

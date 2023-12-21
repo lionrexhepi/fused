@@ -59,7 +59,7 @@ mod test {
 
     #[test]
     fn test_separated() {
-        let tokens = TokenStream::from_string("1, 2, 3, 4".to_string()).unwrap();
+        let tokens = TokenStream::from_string("1, 2, 3, 4").unwrap();
         let mut stream = ParseStream::new(tokens);
 
         let separated = Separated::<ExprLit>::parse(&mut stream).unwrap();
@@ -68,7 +68,7 @@ mod test {
 
     #[test]
     fn test_single() {
-        let tokens = TokenStream::from_string("1".to_string()).unwrap();
+        let tokens = TokenStream::from_string("1").unwrap();
         let mut stream = ParseStream::new(tokens);
 
         let separated = Separated::<ExprLit>::parse(&mut stream).unwrap();

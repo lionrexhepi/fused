@@ -87,7 +87,7 @@ mod test {
     #[test]
     fn test_keywords() {
         let stream = TokenStream::from_string(
-            "if else elif while for in break continue return fn let class enum struct impl this super".to_string()
+            "if else elif while for in break continue return fn let class enum struct impl this super"
         ).unwrap();
         let mut stream = ParseStream::new(stream);
 
@@ -112,7 +112,7 @@ mod test {
 
     #[test]
     fn test_regular_ident() {
-        let stream = TokenStream::from_string("test".to_string()).unwrap();
+        let stream = TokenStream::from_string("test").unwrap();
         let mut stream = ParseStream::new(stream);
 
         assert!(matches!(stream.parse::<If>(), Err(_)));

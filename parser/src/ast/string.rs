@@ -39,7 +39,7 @@ mod test {
 
     #[test]
     fn test_string() {
-        let tokens = TokenStream::from_string("\"Hello, world!\"".to_string()).unwrap();
+        let tokens = TokenStream::from_string("\"Hello, world!\"").unwrap();
         let mut stream = ParseStream::new(tokens);
         let string = LitString::parse(&mut stream).unwrap();
         assert_eq!(string.value, "Hello, world!");

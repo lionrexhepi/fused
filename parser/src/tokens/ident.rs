@@ -9,8 +9,8 @@ pub struct TokenIdent {
 }
 
 impl TokenIdent {
-    pub const fn new(name: String) -> Self {
-        Self { name, escaped: false }
+    pub fn new(name: impl ToString) -> Self {
+        Self { name: name.to_string(), escaped: false }
     }
 }
 

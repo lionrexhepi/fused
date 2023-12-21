@@ -96,7 +96,7 @@ mod test {
 
     #[test]
     fn test_simple_untyped() {
-        let tokens = TokenStream::from_string("a = 1 \n mut b = 2".to_string()).unwrap();
+        let tokens = TokenStream::from_string("a = 1 \n mut b = 2").unwrap();
         let mut stream = ParseStream::new(tokens);
         let decl = stream.parse::<ExprDecl>().unwrap();
         assert_eq!(decl.name.name, "a");
@@ -113,7 +113,7 @@ mod test {
 
     #[test]
     fn test_simple_typed() {
-        let tokens = TokenStream::from_string("a[i32] = 1 \n mut b[i32] = 2".to_string()).unwrap();
+        let tokens = TokenStream::from_string("a[i32] = 1 \n mut b[i32] = 2").unwrap();
         let mut stream = ParseStream::new(tokens);
         let decl = stream.parse::<ExprDecl>().unwrap();
         assert_eq!(decl.name.name, "a");
@@ -130,7 +130,7 @@ mod test {
 
     #[test]
     fn test_simple_unassigned() {
-        let tokens = TokenStream::from_string("a[i32] \n mut b[i32]".to_string()).unwrap();
+        let tokens = TokenStream::from_string("a[i32] \n mut b[i32]").unwrap();
         let mut stream = ParseStream::new(tokens);
         let decl = stream.parse::<ExprDecl>().unwrap();
         assert_eq!(decl.name.name, "a");
@@ -147,7 +147,7 @@ mod test {
 
     #[test]
     fn test_let_untyped() {
-        let tokens = TokenStream::from_string("let a = 1 \n let mut b = 2".to_string()).unwrap();
+        let tokens = TokenStream::from_string("let a = 1 \n let mut b = 2").unwrap();
         let mut stream = ParseStream::new(tokens);
         let decl = stream.parse::<ExprLet>().unwrap();
         assert_eq!(decl.0.name.name, "a");
@@ -164,9 +164,7 @@ mod test {
 
     #[test]
     fn test_let_typed() {
-        let tokens = TokenStream::from_string(
-            "let a[i32] = 1 \n let mut b[i32] = 2".to_string()
-        ).unwrap();
+        let tokens = TokenStream::from_string("let a[i32] = 1 \n let mut b[i32] = 2").unwrap();
         let mut stream = ParseStream::new(tokens);
         let decl = stream.parse::<ExprLet>().unwrap();
         assert_eq!(decl.0.name.name, "a");
@@ -183,7 +181,7 @@ mod test {
 
     #[test]
     fn test_let_unassigned() {
-        let tokens = TokenStream::from_string("let a[i32] \n let mut b[i32]".to_string()).unwrap();
+        let tokens = TokenStream::from_string("let a[i32] \n let mut b[i32]").unwrap();
         let mut stream = ParseStream::new(tokens);
         let decl = stream.parse::<ExprLet>().unwrap();
         assert_eq!(decl.0.name.name, "a");
@@ -200,7 +198,7 @@ mod test {
 
     #[test]
     fn test_fn_arg_untyped() {
-        let tokens = TokenStream::from_string("a".to_string()).unwrap();
+        let tokens = TokenStream::from_string("a").unwrap();
         let mut stream = ParseStream::new(tokens);
         let arg = stream.parse::<FnArg>().unwrap();
         assert_eq!(arg.decl.name.name, "a");
@@ -212,7 +210,7 @@ mod test {
 
     #[test]
     fn test_fn_arg_typed() {
-        let tokens = TokenStream::from_string("a[i32]".to_string()).unwrap();
+        let tokens = TokenStream::from_string("a[i32]").unwrap();
         let mut stream = ParseStream::new(tokens);
         let arg = stream.parse::<FnArg>().unwrap();
         assert_eq!(arg.decl.name.name, "a");
@@ -224,7 +222,7 @@ mod test {
 
     #[test]
     fn test_fn_arg_defaulted() {
-        let tokens = TokenStream::from_string("a[i32] = 1".to_string()).unwrap();
+        let tokens = TokenStream::from_string("a[i32] = 1").unwrap();
         let mut stream = ParseStream::new(tokens);
         let arg = stream.parse::<FnArg>().unwrap();
         assert_eq!(arg.decl.name.name, "a");
@@ -236,7 +234,7 @@ mod test {
 
     #[test]
     fn test_fn_arg_ref() {
-        let tokens = TokenStream::from_string("&a[i32]".to_string()).unwrap();
+        let tokens = TokenStream::from_string("&a[i32]").unwrap();
         let mut stream = ParseStream::new(tokens);
         let arg = stream.parse::<FnArg>().unwrap();
         assert_eq!(arg.decl.name.name, "a");

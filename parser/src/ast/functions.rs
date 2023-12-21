@@ -52,7 +52,7 @@ mod test {
 
     #[test]
     fn test_simple_noargs() {
-        let tokens = TokenStream::from_string("fn foo():\n1".to_string()).unwrap();
+        let tokens = TokenStream::from_string("fn foo():\n1").unwrap();
         let mut stream = ParseStream::new(tokens);
 
         let func = stream.parse::<ExprFunction>().unwrap();
@@ -64,7 +64,7 @@ mod test {
 
     #[test]
     fn test_simple_args() {
-        let tokens = TokenStream::from_string("fn foo(a, b, c):\n1".to_string()).unwrap();
+        let tokens = TokenStream::from_string("fn foo(a, b, c):\n1").unwrap();
         let mut stream = ParseStream::new(tokens);
 
         let func = stream.parse::<ExprFunction>().unwrap();
@@ -76,7 +76,7 @@ mod test {
 
     #[test]
     fn test_empty_block_fails() {
-        let tokens = TokenStream::from_string("fn foo():\n".to_string()).unwrap();
+        let tokens = TokenStream::from_string("fn foo():\n").unwrap();
         let mut stream = ParseStream::new(tokens);
 
         let func = stream.parse::<ExprFunction>();

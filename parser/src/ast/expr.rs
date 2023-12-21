@@ -153,7 +153,7 @@ mod test {
 
     #[test]
     fn test_bools() {
-        let stream = TokenStream::from_string("true false".to_string()).unwrap();
+        let stream = TokenStream::from_string("true false").unwrap();
         let mut stream = ParseStream::new(stream);
         let token = LitBool::parse(&mut stream).unwrap();
         assert_eq!(token.value, true);

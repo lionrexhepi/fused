@@ -60,7 +60,7 @@ mod test {
 
     #[test]
     fn test_ident() {
-        let tokens = TokenStream::from_string("name".to_string()).unwrap();
+        let tokens = TokenStream::from_string("name").unwrap();
         let mut stream = ParseStream::new(tokens);
 
         let ident = Ident::parse(&mut stream).unwrap();
@@ -69,7 +69,7 @@ mod test {
 
     #[test]
     fn test_keyword() {
-        let tokens = TokenStream::from_string("let".to_string()).unwrap();
+        let tokens = TokenStream::from_string("let").unwrap();
         let mut stream = ParseStream::new(tokens);
 
         let ident = Ident::parse(&mut stream);
@@ -78,7 +78,7 @@ mod test {
 
     #[test]
     fn test_escaped_keyword() {
-        let tokens = TokenStream::from_string("@let".to_string()).unwrap();
+        let tokens = TokenStream::from_string("@let").unwrap();
         let mut stream = ParseStream::new(tokens);
 
         let ident = Ident::parse(&mut stream).unwrap();

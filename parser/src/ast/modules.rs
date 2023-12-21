@@ -100,7 +100,7 @@ mod test {
 
     #[test]
     fn test_glob_module() {
-        let tokens = TokenStream::from_string("mod test".to_string()).unwrap();
+        let tokens = TokenStream::from_string("mod test").unwrap();
         let mut stream = ParseStream::new(tokens);
 
         let module = stream.parse::<Module>().unwrap();
@@ -111,7 +111,7 @@ mod test {
 
     #[test]
     fn test_module() {
-        let tokens = TokenStream::from_string("mod test:\n    1".to_string()).unwrap();
+        let tokens = TokenStream::from_string("mod test:\n    1").unwrap();
         let mut stream = ParseStream::new(tokens);
 
         let module = stream.parse::<Module>().unwrap();
@@ -122,7 +122,7 @@ mod test {
 
     #[test]
     fn test_use_path() {
-        let tokens = TokenStream::from_string("test.test.test".to_string()).unwrap();
+        let tokens = TokenStream::from_string("test.test.test").unwrap();
         let mut stream = ParseStream::new(tokens);
 
         let path = stream.parse::<UsePath>().unwrap();
@@ -133,7 +133,7 @@ mod test {
 
     #[test]
     fn test_simple_extract() {
-        let tokens = TokenStream::from_string("test.test { test } ".to_string()).unwrap();
+        let tokens = TokenStream::from_string("test.test { test } ").unwrap();
         let mut stream = ParseStream::new(tokens);
 
         let path = stream.parse::<UsePath>().unwrap();
@@ -145,9 +145,7 @@ mod test {
 
     #[test]
     fn test_multiple_extract() {
-        let tokens = TokenStream::from_string(
-            "test.test { test.test { test }, test2 }".to_string()
-        ).unwrap();
+        let tokens = TokenStream::from_string("test.test { test.test { test }, test2 }").unwrap();
         let mut stream = ParseStream::new(tokens);
 
         let path = stream.parse::<UsePath>().unwrap();

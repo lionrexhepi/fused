@@ -115,7 +115,7 @@ mod test {
 
     #[test]
     fn test_loop() {
-        let tokens = TokenStream::from_string("loop:\n    1".to_string()).unwrap();
+        let tokens = TokenStream::from_string("loop:\n    1").unwrap();
 
         let mut stream = ParseStream::new(tokens);
 
@@ -126,7 +126,7 @@ mod test {
 
     #[test]
     fn test_while() {
-        let tokens = TokenStream::from_string("while true:\n    1".to_string()).unwrap();
+        let tokens = TokenStream::from_string("while true:\n    1").unwrap();
 
         let mut stream = ParseStream::new(tokens);
 
@@ -138,7 +138,7 @@ mod test {
 
     #[test]
     fn test_for() {
-        let tokens = TokenStream::from_string("for i in array:\n    1".to_string()).unwrap();
+        let tokens = TokenStream::from_string("for i in array:\n    1").unwrap();
 
         let mut stream = ParseStream::new(tokens);
 

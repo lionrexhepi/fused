@@ -62,10 +62,7 @@ mod test {
         let group = TokenGroup::try_read(&mut cursor).unwrap().unwrap();
         assert_eq!(group.delim, Delim::Paren);
         assert_eq!(group.tokens.len(), 1);
-        assert_eq!(
-            group.tokens.current().content,
-            TokenType::Ident(TokenIdent::new("test".to_string()))
-        );
+        assert_eq!(group.tokens.current().content, TokenType::Ident(TokenIdent::new("test")));
     }
 
     #[test]
@@ -74,10 +71,7 @@ mod test {
         let group = TokenGroup::try_read(&mut cursor).unwrap().unwrap();
         assert_eq!(group.delim, Delim::Bracket);
         assert_eq!(group.tokens.len(), 1);
-        assert_eq!(
-            group.tokens.current().content,
-            TokenType::Ident(TokenIdent::new("test".to_string()))
-        );
+        assert_eq!(group.tokens.current().content, TokenType::Ident(TokenIdent::new("test")));
     }
 
     #[test]
@@ -86,10 +80,7 @@ mod test {
         let group = TokenGroup::try_read(&mut cursor).unwrap().unwrap();
         assert_eq!(group.delim, Delim::Brace);
         assert_eq!(group.tokens.len(), 1);
-        assert_eq!(
-            group.tokens.current().content,
-            TokenType::Ident(TokenIdent::new("test".to_string()))
-        );
+        assert_eq!(group.tokens.current().content, TokenType::Ident(TokenIdent::new("test")));
     }
 
     #[test]

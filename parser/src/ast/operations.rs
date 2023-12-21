@@ -329,7 +329,7 @@ mod test {
 
     #[test]
     fn test_unary() {
-        let stream = TokenStream::from_string("*1 !2".to_string()).unwrap();
+        let stream = TokenStream::from_string("*1 !2").unwrap();
         let mut stream = ParseStream::new(stream);
         let unary = stream.parse::<ExprUnary>().unwrap();
         assert_eq!(unary.ty, UnaryType::Deref);
@@ -341,7 +341,7 @@ mod test {
 
     #[test]
     fn test_binary() {
-        let stream = TokenStream::from_string("1 + 2".to_string()).unwrap();
+        let stream = TokenStream::from_string("1 + 2").unwrap();
         let mut stream = ParseStream::new(stream);
         let binary = stream.parse::<ExprBinary>().unwrap();
         assert_eq!(binary.ty, BinaryType::Add);
@@ -351,7 +351,7 @@ mod test {
 
     #[test]
     fn test_binary_precedence() {
-        let stream = TokenStream::from_string("1 + 2 * 3".to_string()).unwrap();
+        let stream = TokenStream::from_string("1 + 2 * 3").unwrap();
         let mut stream = ParseStream::new(stream);
         let binary = stream.parse::<ExprBinary>().unwrap();
 
@@ -362,7 +362,7 @@ mod test {
 
     #[test]
     fn test_comparison() {
-        let stream = TokenStream::from_string("1 < 2 + 2".to_string()).unwrap();
+        let stream = TokenStream::from_string("1 < 2 + 2").unwrap();
         let mut stream = ParseStream::new(stream);
         let binary = stream.parse::<ExprBinary>().unwrap();
 

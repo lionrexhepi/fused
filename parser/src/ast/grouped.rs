@@ -83,7 +83,7 @@ mod test {
 
     #[test]
     fn test_paren() {
-        let tokens = TokenStream::from_string("(1)".to_string()).unwrap();
+        let tokens = TokenStream::from_string("(1)").unwrap();
         let mut stream = ParseStream::new(tokens);
         let parens = stream.parse::<Parenthesized>().unwrap();
         assert!(matches!(*parens.0, super::Expr::Literal(ExprLit::Number(_))));
@@ -91,7 +91,7 @@ mod test {
 
     #[test]
     fn test_bracket() {
-        let tokens = TokenStream::from_string("[1]".to_string()).unwrap();
+        let tokens = TokenStream::from_string("[1]").unwrap();
         let mut stream = ParseStream::new(tokens);
         let brackets = stream.parse::<super::Bracketed>().unwrap();
         assert!(matches!(*brackets.0, super::Expr::Literal(ExprLit::Number(_))));
@@ -99,7 +99,7 @@ mod test {
 
     #[test]
     fn test_brace() {
-        let tokens = TokenStream::from_string("{1}".to_string()).unwrap();
+        let tokens = TokenStream::from_string("{1}").unwrap();
         let mut stream = ParseStream::new(tokens);
         let braces = stream.parse::<super::Braced>().unwrap();
         assert!(matches!(*braces.0, super::Expr::Literal(ExprLit::Number(_))));
@@ -107,7 +107,7 @@ mod test {
 
     #[test]
     fn test_nested() {
-        let tokens = TokenStream::from_string("(1 + [2])".to_string()).unwrap();
+        let tokens = TokenStream::from_string("(1 + [2])").unwrap();
         let mut stream = ParseStream::new(tokens);
 
         let parens = stream.parse::<Parenthesized<Expr>>().unwrap();

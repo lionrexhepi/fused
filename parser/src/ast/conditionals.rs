@@ -84,7 +84,7 @@ mod test {
 
     #[test]
     fn test_if() {
-        let tokens = TokenStream::from_string("if true:\n    1\n".to_string()).unwrap();
+        let tokens = TokenStream::from_string("if true:\n    1\n").unwrap();
 
         let mut stream = ParseStream::new(tokens);
 
@@ -95,7 +95,7 @@ mod test {
 
     #[test]
     fn test_if_else() {
-        let tokens = TokenStream::from_string("if true:\n    1\nelse:\n    2".to_string()).unwrap();
+        let tokens = TokenStream::from_string("if true:\n    1\nelse:\n    2").unwrap();
 
         let mut stream = ParseStream::new(tokens);
 
@@ -107,9 +107,7 @@ mod test {
 
     #[test]
     fn test_if_else_if() {
-        let tokens = TokenStream::from_string(
-            "if true:\n    1\nelse if false:\n    2".to_string()
-        ).unwrap();
+        let tokens = TokenStream::from_string("if true:\n    1\nelse if false:\n    2").unwrap();
 
         let mut stream = ParseStream::new(tokens);
 

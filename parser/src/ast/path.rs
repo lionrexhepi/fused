@@ -105,7 +105,7 @@ mod test {
 
     #[test]
     fn test_simple_path() {
-        let tokens = TokenStream::from_string("name.field".to_string()).unwrap();
+        let tokens = TokenStream::from_string("name.field").unwrap();
         let mut stream = ParseStream::new(tokens);
         let path = stream.parse::<ExprPath>().unwrap();
         assert_eq!(path.segments.len(), 2);
@@ -113,7 +113,7 @@ mod test {
 
     #[test]
     fn test_path_with_generics() {
-        let tokens = TokenStream::from_string("name<type1, type2>".to_string()).unwrap();
+        let tokens = TokenStream::from_string("name<type1, type2>").unwrap();
         let mut stream = ParseStream::new(tokens);
         let path = stream.parse::<ExprPath>().unwrap();
         assert_eq!(path.segments.len(), 1);
@@ -122,7 +122,7 @@ mod test {
 
     #[test]
     fn test_call() {
-        let tokens = TokenStream::from_string("name()".to_string()).unwrap();
+        let tokens = TokenStream::from_string("name()").unwrap();
         let mut stream = ParseStream::new(tokens);
         let path = stream.parse::<ExprPath>().unwrap();
         assert_eq!(path.segments.len(), 1);
@@ -131,7 +131,7 @@ mod test {
 
     #[test]
     fn test_call_with_generics() {
-        let tokens = TokenStream::from_string("name<type>()".to_string()).unwrap();
+        let tokens = TokenStream::from_string("name<type>()").unwrap();
         let mut stream = ParseStream::new(tokens);
         let path = stream.parse::<ExprPath>().unwrap();
         assert_eq!(path.segments.len(), 1);
@@ -140,9 +140,7 @@ mod test {
 
     #[test]
     fn test_complex() {
-        let tokens = TokenStream::from_string(
-            "name<type1, type2>.field.method<type3>()".to_string()
-        ).unwrap();
+        let tokens = TokenStream::from_string("name<type1, type2>.field.method<type3>()").unwrap();
         let mut stream = ParseStream::new(tokens);
         let path = stream.parse::<ExprPath>().unwrap();
         assert_eq!(path.segments.len(), 3);
