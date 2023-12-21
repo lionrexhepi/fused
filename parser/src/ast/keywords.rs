@@ -77,6 +77,8 @@ define_keyword!(Impl, "impl");
 define_keyword!(This, "this");
 define_keyword!(Super, "super");
 define_keyword!(Loop, "loop");
+define_keyword!(Mod, "mod");
+define_keyword!(Use, "use");
 
 #[cfg(test)]
 mod test {

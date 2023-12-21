@@ -19,6 +19,7 @@ pub mod functions;
 pub mod declarations;
 pub mod path;
 pub mod statements;
+pub mod modules;
 
 pub struct Ast;
 

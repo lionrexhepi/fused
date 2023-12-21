@@ -8,6 +8,7 @@ use super::{
     Parse,
     Spanned,
     Newline,
+    modules::Module,
 };
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -38,14 +39,14 @@ impl Parse for Statement {
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum StatementContent {
     Expr(Expr),
+    Module(Module),
 }
 
 impl Spanned for StatementContent {
     fn span(&self) -> Span {
         match self {
             Self::Expr(expr) => expr.span(),
+            StatementContent::Module(module) => module.span(),
         }
     }
 }
-
-pub struct ModuleContent(Vec<StatementContent>);

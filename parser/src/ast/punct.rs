@@ -2,9 +2,9 @@ use crate::ast::{ Parse, ParseResult, Spanned, ParseStream, stream::Cursor, Pars
 use crate::tokens::{ Token, TokenType, punct::TokenPunct };
 pub trait Punct: Parse {}
 
-
 macro_rules! define_punct {
     ($name:ident) => {
+        #[derive(Debug, Clone, PartialEq, Eq)]
         pub struct $name($crate::tokens::Span);
 
         impl Punct for $name {}

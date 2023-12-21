@@ -1,4 +1,4 @@
-use std::{ fmt::Debug, ops::Range };
+use std::{ fmt::Debug, ops::Range, thread::current };
 
 use crate::file::Cursor;
 
@@ -57,6 +57,7 @@ impl Token {
     pub fn try_read(cursor: &mut Cursor) -> Result<Self, TokenError> {
         cursor.skip_whitespaces();
         let start = cursor.pos();
+        let current = cursor.current();
         let content = if let Some(literal) = TokenLiteral::try_read(cursor)? {
             TokenType::Literal(literal)
         } else if let Some(ident) = ident::TokenIdent::try_read(cursor)? {

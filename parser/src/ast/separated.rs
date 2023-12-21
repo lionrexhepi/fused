@@ -4,6 +4,7 @@ use crate::tokens::Span;
 
 use super::{ punct::{ Comma, Punct }, Parse, Spanned, stream::ParseStream, ParseResult };
 
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Separated<T: Parse, P: Punct = Comma> {
     inner: Vec<T>,
     _puncts: PhantomData<P>,
