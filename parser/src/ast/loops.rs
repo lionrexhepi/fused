@@ -26,11 +26,11 @@ impl Spanned for ExprLoop {
 
 impl Parse for ExprLoop {
     fn parse(token: &mut ParseStream) -> ParseResult<Self> where Self: Sized {
-        let _loop = token.parse::<Loop>()?;
+        let r#loop = token.parse::<Loop>()?;
         token.parse::<Colon>()?;
         let body = token.parse::<Block>()?;
 
-        let span = _loop.span().join(body.span());
+        let span = r#loop.span().join(body.span());
 
         Ok(Self {
             body: Box::new(body),
