@@ -5,7 +5,7 @@ use super::{
     block::Block,
     Spanned,
     Parse,
-    punct::{ Colon, Dot },
+    punct::{ Colon, Dot, Star },
     ident::Ident,
     separated::Separated,
     stream::ParseStream,
@@ -44,7 +44,7 @@ impl Parse for Module {
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct UsePath {
-    pub regular: Vec<Ident>,
+    pub regular: Vec<UsePathSegment>,
     pub extract: Option<Vec<UsePath>>,
 }
 
@@ -69,7 +69,7 @@ impl Spanned for UsePath {
 impl Parse for UsePath {
     fn parse(stream: &mut ParseStream) -> ParseResult<Self> where Self: Sized {
         let mut regular = vec![];
-        while let Ok(ident) = stream.parse::<Ident>() {
+        while let Ok(ident) = stream.parse::<UsePathSegment>() {
             regular.push(ident);
             if stream.parse::<Dot>().is_err() {
                 break;
@@ -92,9 +92,39 @@ impl Parse for UsePath {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum UsePathSegment {
+    Item(Ident),
+    All(Span),
+}
+
+impl Spanned for UsePathSegment {
+    fn span(&self) -> Span {
+        match self {
+            UsePathSegment::Item(item) => item.span(),
+            UsePathSegment::All(span) => *span,
+        }
+    }
+}
+
+impl Parse for UsePathSegment {
+    fn parse(stream: &mut ParseStream) -> ParseResult<Self> where Self: Sized {
+        if let Ok(name) = stream.parse() {
+            Ok(Self::Item(name))
+        } else if let Ok(all) = stream.parse::<Star>() {
+            Ok(Self::All(all.span()))
+        } else {
+            Err(super::ParseError::UnexpectedToken {
+                expected: "<module pat/wildcard>",
+                got: stream.current().clone(),
+            })
+        }
+    }
+}
+
 #[cfg(test)]
 mod test {
-    use crate::tokens::stream::TokenStream;
+    use crate::{ tokens::stream::TokenStream, ast::stream };
 
     use super::{ UsePath, super::stream::ParseStream, Module };
 
@@ -146,6 +176,29 @@ mod test {
     #[test]
     fn test_multiple_extract() {
         let tokens = TokenStream::from_string("test.test { test.test { test }, test2 }").unwrap();
+        let mut stream = ParseStream::new(tokens);
+
+        let path = stream.parse::<UsePath>().unwrap();
+
+        assert!(path.regular.len() == 2);
+        assert!(path.extract.is_some());
+        assert!(path.extract.unwrap().len() == 2);
+    }
+
+    #[test]
+    fn test_simple_wildcard() {
+        let tokens = TokenStream::from_string("test.test.*").unwrap();
+        let mut stream = ParseStream::new(tokens);
+
+        let path = stream.parse::<UsePath>().unwrap();
+
+        assert!(path.regular.len() == 3);
+        assert!(path.extract.is_none());
+    }
+
+    #[test]
+    fn test_wildcard_extract() {
+        let tokens = TokenStream::from_string("test.test { *, test.one } ").unwrap();
         let mut stream = ParseStream::new(tokens);
 
         let path = stream.parse::<UsePath>().unwrap();
