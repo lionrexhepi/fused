@@ -58,7 +58,7 @@ mod test {
 
     #[test]
     fn test_empty_block() {
-        let tokens = TokenStream::from_string("").unwrap();
+        let tokens = TokenStream::from_string("\n").unwrap();
 
         let mut stream = ParseStream::new(tokens);
 

@@ -47,7 +47,7 @@
         * [x] Unconditional
     * [x] Functions
         * [x] Params
-            * [ ] Types
+            * [x] Types
         * [ ] Return types
 * [ ] Modules
     * [ ] Visibility

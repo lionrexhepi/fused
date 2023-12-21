@@ -6,17 +6,21 @@ use super::{
     Spanned,
     Parse,
     keywords::Fn,
-    grouped::Parenthesized,
+    grouped::{ Parenthesized, Bracketed },
     separated::Separated,
     punct::Colon,
-    stream::ParseStream,
+    stream::{ ParseStream, UnexpectedToken },
     ParseResult,
+    declarations::FnArg,
+    ParseError,
+    path::ExprPath,
 };
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct ExprFunction {
     pub name: Ident,
-    pub args: Vec<Ident>,
+    pub args: Vec<FnArg>,
+    pub ret: Option<ExprPath>,
     pub body: Box<Block>,
 }
 
@@ -30,14 +34,27 @@ impl Parse for ExprFunction {
     fn parse(stream: &mut ParseStream) -> ParseResult<Self> {
         stream.parse::<Fn>()?;
         let name = stream.parse::<Ident>()?;
-        let args = stream.parse::<Parenthesized<Separated<Ident>>>()?;
+        let args = stream.parse::<Parenthesized<Separated<FnArg>>>()?;
+
+        let ret = stream
+            .parse::<Bracketed<ExprPath>>()
+            .ok()
+            .map(|bracketed| *bracketed.0);
 
         stream.parse::<Colon>()?;
         let body = stream.parse::<Block>()?;
 
+        if body.0.is_empty() {
+            return Err(ParseError::UnexpectedToken {
+                expected: "block",
+                got: stream.current().clone(),
+            });
+        }
+
         Ok(Self {
             name,
             args: args.0.into_iter().collect(),
+            ret,
             body: Box::new(body),
         })
     }
@@ -82,5 +99,18 @@ mod test {
         let func = stream.parse::<ExprFunction>();
 
         assert!(func.is_err());
+    }
+
+    #[test]
+    fn test_return_type() {
+        let tokens = TokenStream::from_string("fn foo()[i32]:\n1").unwrap();
+        let mut stream = ParseStream::new(tokens);
+
+        let func = stream.parse::<ExprFunction>().unwrap();
+
+        assert!(matches!(func.name, Ident { .. }));
+        assert!(func.args.is_empty());
+        assert!(matches!(*func.body, Block { .. }));
+        assert!(matches!(func.ret, Some(_)));
     }
 }

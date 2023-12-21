@@ -68,12 +68,10 @@ impl Spanned for UsePath {
 
 impl Parse for UsePath {
     fn parse(stream: &mut ParseStream) -> ParseResult<Self> where Self: Sized {
-        let mut regular = vec![];
-        while let Ok(ident) = stream.parse::<UsePathSegment>() {
-            regular.push(ident);
-            if stream.parse::<Dot>().is_err() {
-                break;
-            }
+        let first = stream.parse::<UsePathSegment>()?;
+        let mut regular = vec![first];
+        while stream.parse::<Dot>().is_ok() {
+            regular.push(stream.parse::<UsePathSegment>()?);
         }
         println!("{:#?}", stream.current());
         let extract = stream
