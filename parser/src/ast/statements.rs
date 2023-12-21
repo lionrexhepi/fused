@@ -8,7 +8,7 @@ use super::{
     Parse,
     Spanned,
     Newline,
-    modules::Module,
+    modules::{ Module, UsePath },
 };
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -27,10 +27,16 @@ impl Parse for Statement {
     fn parse(stream: &mut ParseStream) -> ParseResult<Self> where Self: Sized {
         let indent = stream.parse::<Newline>()?.follwing_spaces;
 
-        let expr = stream.parse::<Expr>()?;
+        let content = if let Some(module) = stream.parse::<Module>().ok() {
+            StatementContent::Module(module)
+        } else if let Some(use_path) = stream.parse::<UsePath>().ok() {
+            StatementContent::Use(use_path)
+        } else {
+            StatementContent::Expr(stream.parse::<Expr>()?)
+        };
 
         Ok(Self {
-            content: StatementContent::Expr(expr),
+            content,
             indent,
         })
     }
@@ -40,6 +46,7 @@ impl Parse for Statement {
 pub enum StatementContent {
     Expr(Expr),
     Module(Module),
+    Use(UsePath),
 }
 
 impl Spanned for StatementContent {
@@ -47,6 +54,7 @@ impl Spanned for StatementContent {
         match self {
             Self::Expr(expr) => expr.span(),
             StatementContent::Module(module) => module.span(),
+            StatementContent::Use(use_path) => use_path.span(),
         }
     }
 }
