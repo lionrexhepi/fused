@@ -5,12 +5,12 @@ pub trait Punct: Parse {}
 macro_rules! define_punct {
     ($name:ident) => {
         #[derive(Debug, Clone, PartialEq, Eq)]
-        pub struct $name($crate::tokens::Span);
+        pub struct $name($crate::Span);
 
         impl Punct for $name {}
 
         impl Spanned for $name {
-            fn span(&self) -> $crate::tokens::Span {
+            fn span(&self) -> $crate::Span {
                 self.0
             }
         }

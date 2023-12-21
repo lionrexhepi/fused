@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 
-use crate::tokens::Span;
+use crate::Span;
 
 use super::{ punct::{ Comma, Punct }, Parse, Spanned, stream::ParseStream, ParseResult };
 

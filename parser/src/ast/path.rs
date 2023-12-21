@@ -1,4 +1,4 @@
-use crate::tokens::Span;
+use crate::Span;
 
 use super::{
     ident::Ident,

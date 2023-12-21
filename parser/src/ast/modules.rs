@@ -1,4 +1,4 @@
-use crate::{ tokens::Span, ast::{ keywords::Mod, grouped::Braced } };
+use crate::{ Span, ast::{ keywords::Mod, grouped::Braced } };
 
 use super::{
     path::ExprPath,

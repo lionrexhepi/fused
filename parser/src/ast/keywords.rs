@@ -1,4 +1,4 @@
-use crate::tokens::{ Token, Span, TokenType };
+use crate::{ Span, tokens::{ TokenType, Token } };
 
 use super::{ Spanned, Parse, ParseResult, ParseError, stream::{ ParseStream, TokenCursor } };
 
@@ -36,16 +36,16 @@ impl<K: Keyword> Parse for K {
 macro_rules! define_keyword {
     ($kw:ident, $name:expr) => {
         #[derive(Debug, PartialEq, Eq, Clone)]
-        pub struct $kw(pub(crate) $crate::tokens::Span);
+        pub struct $kw(pub(crate) $crate::Span);
 
         impl $crate::ast::Spanned for $kw {
-            fn span(&self) -> $crate::tokens::Span {
+            fn span(&self) -> $crate::Span {
                 self.0
             }
         }
 
         impl Keyword for  $kw {
-            fn new(span: $crate::tokens::Span) -> Self {
+            fn new(span: $crate::Span) -> Self {
                 Self(span)
             }
 

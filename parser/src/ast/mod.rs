@@ -1,4 +1,4 @@
-use crate::tokens::{ Span, Token, TokenType };
+use crate::{ Span, tokens::{ TokenType, Token } };
 
 use self::stream::{ ParseStream, TokenCursor };
 

@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::tokens::{ Span, TokenType, punct::TokenPunct };
+use crate::{ Span, tokens::{ TokenType, punct::TokenPunct } };
 
 use super::{
     expr::Expr,

@@ -1,4 +1,4 @@
-use crate::tokens::{ TokenType, Span };
+use crate::{ Span, tokens::TokenType };
 use crate::tokens::group::Delim;
 
 use super::expr::Expr;

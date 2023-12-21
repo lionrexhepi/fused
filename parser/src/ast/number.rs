@@ -1,4 +1,7 @@
-use crate::tokens::{ Span, Token, TokenType, literal::{ TokenLiteral, LiteralNumber, NumberType } };
+use crate::{
+    Span,
+    tokens::{ Token, TokenType, literal::{ TokenLiteral, LiteralNumber, NumberType } },
+};
 
 use super::{ Parse, Spanned, ParseResult, stream::{ ParseStream, TokenCursor }, ParseError };
 

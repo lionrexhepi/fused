@@ -1,4 +1,4 @@
-use crate::tokens::{ Span, TokenType };
+use crate::{ Span, tokens::TokenType };
 
 use super::{
     number::LitNumber,

@@ -1,6 +1,6 @@
-use std::{ fmt::Debug, ops::Range };
+use std::fmt::Debug;
 
-use crate::file::SourceCursor;
+use crate::{ file::SourceCursor, Span };
 
 use self::{ literal::TokenLiteral, comment::TokenComment, group::TokenGroup };
 
@@ -11,32 +11,6 @@ pub mod punct;
 pub mod comment;
 pub mod group;
 pub mod stream;
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-pub struct Span {
-    pub start: usize,
-    pub end: usize,
-}
-
-impl From<Range<usize>> for Span {
-    fn from(range: Range<usize>) -> Self {
-        Self { start: range.start, end: range.end }
-    }
-}
-
-impl Span {
-    pub fn new(start: usize, end: usize) -> Self {
-        Self { start, end }
-    }
-
-    pub fn len(&self) -> usize {
-        self.end - self.start
-    }
-
-    pub fn join(&self, other: Self) -> Self {
-        Self { start: self.start, end: other.end }
-    }
-}
 
 #[macro_export]
 macro_rules! reject_eof {

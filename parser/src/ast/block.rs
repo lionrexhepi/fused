@@ -1,4 +1,4 @@
-use crate::tokens::Span;
+use crate::Span;
 
 use super::{ Parse, stream::ParseStream, ParseResult, Spanned, statements::Statement };
 
