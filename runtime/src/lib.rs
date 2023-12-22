@@ -1,6 +1,7 @@
 use std::{ collections::{ HashMap, BinaryHeap }, rc::Rc };
 
-use parser::ast::ident::Ident;
+use parser::{ ast::{ ident::Ident, Spanned }, Span };
+use thiserror::Error;
 
 #[derive(Debug, PartialEq, Eq, Clone, PartialOrd, Ord)]
 pub(crate) struct FusedValue;
@@ -8,44 +9,53 @@ pub(crate) struct FusedValue;
 #[derive(Debug, PartialEq, Eq, Clone, PartialOrd, Ord)]
 pub(crate) struct FusedValueRef(Rc<FusedValue>);
 
+pub type RuntimeResult<T> = Result<T, RuntimeError>;
+
+#[derive(Debug, PartialEq, Eq, Clone, Error)]
+pub enum RuntimeError {
+    #[error("Couldn't find symbol {0}")] UndefinedSymbol(Ident),
+    #[error("Symbol {0} has duplicate definitions!")] DuplicateSymbol(Ident),
+}
+
 pub struct Runtime {
     values: BinaryHeap<Rc<FusedValue>>,
-    global: Module,
 }
 
-impl Runtime {
+pub(crate) struct Context {
+    symbols: HashMap<Ident, FusedValueRef>,
+    modules: HashMap<Ident, Context>,
+}
+
+impl Context {
     pub fn new() -> Self {
         Self {
-            values: Default::default(),
-            global: Module::global(),
+            symbols: HashMap::new(),
+            modules: HashMap::new(),
         }
     }
 
-    pub(crate) fn add_value(&mut self, value: FusedValue) -> FusedValueRef {
-        let value = Rc::new(value);
-        self.values.push(value.clone());
-        FusedValueRef(value)
+    pub fn get_symbol(&self, ident: &Ident) -> RuntimeResult<FusedValueRef> {
+        self.symbols
+            .get(ident)
+            .cloned()
+            .ok_or_else(|| RuntimeError::UndefinedSymbol(ident.clone()))
     }
-}
 
-struct Scope<'a> {
-    current_values: HashMap<Ident, FusedValueRef>,
-    visible_modules: HashMap<Ident, &'a Module>,
-    runtime: &'a Runtime,
-}
+    pub fn get_module(&self, ident: &Ident) -> RuntimeResult<&Context> {
+        self.modules.get(ident).ok_or_else(|| RuntimeError::UndefinedSymbol(ident.clone()))
+    }
 
-struct Module {
-    name: String,
-    items: HashMap<String, FusedValueRef>,
-    children: HashMap<String, Module>,
-}
-
-impl Module {
-    pub fn global() -> Self {
-        Self {
-            name: String::from(""),
-            items: Default::default(),
-            children: Default::default(),
+    pub fn define_symbol(
+        &mut self,
+        ident: Ident,
+        value: FusedValueRef,
+        overwrite: bool
+    ) -> RuntimeResult<()> {
+        if self.symbols.contains_key(&ident) && !overwrite {
+            return Err(RuntimeError::DuplicateSymbol(ident));
         }
+
+        self.symbols.insert(ident, value);
+        Ok(())
     }
 }

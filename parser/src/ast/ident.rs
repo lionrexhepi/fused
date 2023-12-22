@@ -1,11 +1,31 @@
+use std::{ fmt::Display, hash::Hash };
+
 use crate::{ Span, tokens::TokenType };
 
 use super::{ Parse, stream::{ TokenCursor, ParseStream }, ParseError, ParseResult };
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, Eq, Clone)]
 pub struct Ident {
     pub name: String,
     span: Span,
+}
+
+impl Display for Ident {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "`{}`", self.name)
+    }
+}
+
+impl PartialEq for Ident {
+    fn eq(&self, other: &Self) -> bool {
+        self.name == other.name
+    }
+}
+
+impl Hash for Ident {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.name.hash(state);
+    }
 }
 
 impl super::Spanned for Ident {
