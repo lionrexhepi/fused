@@ -40,6 +40,10 @@ impl Parse for Module {
             content,
         })
     }
+
+    fn could_parse(stream: &mut ParseStream) -> bool {
+        Mod::could_parse(stream)
+    }
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -88,6 +92,10 @@ impl Parse for UsePath {
             extract,
         })
     }
+
+    fn could_parse(stream: &mut ParseStream) -> bool {
+        UsePathSegment::could_parse(stream)
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -117,6 +125,10 @@ impl Parse for UsePathSegment {
                 got: stream.current().clone(),
             })
         }
+    }
+
+    fn could_parse(stream: &mut ParseStream) -> bool {
+        Ident::could_parse(stream) || Star::could_parse(stream)
     }
 }
 

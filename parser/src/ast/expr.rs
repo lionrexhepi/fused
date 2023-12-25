@@ -1,4 +1,4 @@
-use crate::{ Span, tokens::TokenType };
+use crate::{ Span, tokens::{ TokenType, ident::TokenIdent } };
 
 use super::{
     number::LitNumber,
@@ -6,7 +6,6 @@ use super::{
     Spanned,
     Parse,
     ParseError,
-    operations::{ ExprUnary, ExprBinary },
     grouped::ExprGrouped,
     functions::ExprFunction,
     conditionals::ExprIf,
@@ -14,15 +13,12 @@ use super::{
     path::ExprPath,
     stream::ParseStream,
     ParseResult,
+    simple::ExprSimple,
 };
 
 #[derive(Debug, PartialEq, Eq, Clone, Default)]
 pub enum Expr {
-    Literal(ExprLit),
-    Path(ExprPath),
-    Unary(ExprUnary),
-    Binary(ExprBinary),
-    Grouped(ExprGrouped),
+    Simple(ExprSimple),
     Function(ExprFunction),
     If(ExprIf),
     While(ExprWhile),
@@ -35,11 +31,7 @@ pub enum Expr {
 impl Spanned for Expr {
     fn span(&self) -> Span {
         match self {
-            Self::Literal(lit) => lit.span(),
-            Self::Path(path) => path.span(),
-            Self::Unary(unary) => unary.span(),
-            Self::Binary(binary) => binary.span(),
-            Expr::Grouped(grouped) => grouped.span(),
+            Self::Simple(simple) => simple.span(),
             Expr::Function(function) => function.span(),
             Expr::If(r#if) => r#if.span(),
             Expr::While(r#while) => r#while.span(),
@@ -53,34 +45,25 @@ impl Spanned for Expr {
 impl Parse for Expr {
     fn parse(stream: &mut ParseStream) -> ParseResult<Self> {
         stream.skip_newlines();
-        let result = if let Ok(op) = stream.parse::<ExprUnary>() {
-            Ok(Self::Unary(op))
-        } else if let Ok(group) = stream.parse() {
-            Ok(Self::Grouped(group))
-        } else if let Ok(op) = stream.parse() {
-            Ok(Self::Binary(op))
-        } else if let Ok(lit) = stream.parse() {
-            Ok(Self::Literal(lit))
-        } else if let Ok(path) = stream.parse() {
-            Ok(Self::Path(path))
-        } else if let Ok(function) = stream.parse() {
-            Ok(Self::Function(function))
-        } else if let Ok(r#if) = stream.parse() {
-            Ok(Self::If(r#if))
-        } else if let Ok(r#while) = stream.parse() {
-            Ok(Self::While(r#while))
-        } else if let Ok(r#for) = stream.parse() {
-            Ok(Self::For(r#for))
-        } else if let Ok(r#loop) = stream.parse() {
-            Ok(Self::Loop(r#loop))
+        let result = if ExprFunction::could_parse(stream) {
+            Self::Function(stream.parse()?)
+        } else if ExprIf::could_parse(stream) {
+            Self::If(stream.parse()?)
+        } else if ExprWhile::could_parse(stream) {
+            Self::While(stream.parse()?)
+        } else if ExprFor::could_parse(stream) {
+            Self::For(stream.parse()?)
+        } else if ExprLoop::could_parse(stream) {
+            Self::Loop(stream.parse()?)
         } else {
-            Err(ParseError::UnexpectedToken {
-                expected: "expression",
-                got: stream.current().clone(),
-            })
+            Self::Simple(stream.parse()?)
         };
 
-        result
+        Ok(result)
+    }
+
+    fn could_parse(stream: &mut ParseStream) -> bool {
+        stream.current().content != TokenType::EOF
     }
 }
 
@@ -116,6 +99,12 @@ impl Parse for ExprLit {
             })
         }
     }
+
+    fn could_parse(stream: &mut ParseStream) -> bool {
+        LitBool::could_parse(stream) ||
+            LitNumber::could_parse(stream) ||
+            LitString::could_parse(stream)
+    }
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -148,6 +137,13 @@ impl Parse for LitBool {
                 Err(ParseError::UnexpectedToken { expected: "bool", got: token })
             }
         })
+    }
+
+    fn could_parse(stream: &mut ParseStream) -> bool {
+        matches!(
+            &stream.current().content,
+            TokenType::Ident(TokenIdent { escaped: false, name }) if name == "true" || name == "false"
+        )
     }
 }
 

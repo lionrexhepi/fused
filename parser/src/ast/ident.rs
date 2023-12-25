@@ -1,6 +1,6 @@
 use std::{ fmt::Display, hash::Hash };
 
-use crate::{ Span, tokens::TokenType };
+use crate::{ Span, tokens::TokenType, ast::ident };
 
 use super::{ Parse, stream::{ TokenCursor, ParseStream }, ParseError, ParseResult };
 
@@ -56,6 +56,10 @@ impl Parse for Ident {
             }
         })
     }
+
+    fn could_parse(stream: &mut ParseStream) -> bool {
+        matches!(&stream.current().content, TokenType::Ident(ident) if !ident.escaped && !is_keyword(&ident.name))
+    }
 }
 
 fn is_keyword(ident: &str) -> bool {
@@ -70,7 +74,9 @@ fn is_keyword(ident: &str) -> bool {
         | "return"
         | "break"
         | "continue"
-        | "mut" => true,
+        | "mut"
+        | "true"
+        | "false" => true,
         _ => false,
     }
 }

@@ -58,6 +58,10 @@ impl Parse for ExprFunction {
             body: Box::new(body),
         })
     }
+
+    fn could_parse(stream: &mut ParseStream) -> bool {
+        Fn::could_parse(stream)
+    }
 }
 
 #[cfg(test)]

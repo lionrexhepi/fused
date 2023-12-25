@@ -12,7 +12,7 @@ pub enum ExprGrouped<C: Parse + Sized = Expr> {
     Braced(Braced<C>),
 }
 
-impl Spanned for ExprGrouped {
+impl<C: Parse + Sized> Spanned for ExprGrouped<C> {
     fn span(&self) -> Span {
         match self {
             Self::Parenthesized(paren) => paren.span(),
@@ -22,16 +22,22 @@ impl Spanned for ExprGrouped {
     }
 }
 
-impl Parse for ExprGrouped {
+impl<C: Parse + Sized> Parse for ExprGrouped<C> {
     fn parse(stream: &mut ParseStream) -> ParseResult<Self> where Self: Sized {
-        if let Ok(paren) = stream.parse::<Parenthesized>() {
+        if let Ok(paren) = stream.parse::<Parenthesized<C>>() {
             Ok(Self::Parenthesized(paren))
-        } else if let Ok(bracket) = stream.parse::<Bracketed>() {
+        } else if let Ok(bracket) = stream.parse::<Bracketed<C>>() {
             Ok(Self::Bracketed(bracket))
         } else {
-            let brace = stream.parse::<Braced>();
+            let brace = stream.parse::<Braced<C>>();
             Ok(Self::Braced(brace?))
         }
+    }
+
+    fn could_parse(stream: &mut ParseStream) -> bool {
+        Parenthesized::<C>::could_parse(stream) ||
+            Bracketed::<C>::could_parse(stream) ||
+            Braced::<C>::could_parse(stream)
     }
 }
 
@@ -70,6 +76,10 @@ macro_rules! group {
 
                 Ok(Self(Box::new(inner.parse()?)))
             }
+
+            fn could_parse(stream: &mut ParseStream) -> bool {
+                matches!(&stream.current().content, TokenType::Group(group) if group.delim == Delim::$delim)
+            }
         }
     };
 }
@@ -81,7 +91,7 @@ group!(Braced, Brace);
 #[cfg(test)]
 mod test {
     use crate::{
-        ast::{ expr::{ Expr, ExprLit }, grouped::ExprGrouped, stream::ParseStream },
+        ast::{ expr::{ Expr, ExprLit }, stream::ParseStream, simple::{ ExprSimple, BinaryType } },
         tokens::stream::TokenStream,
     };
 
@@ -91,8 +101,8 @@ mod test {
     fn test_paren() {
         let tokens = TokenStream::from_string("(1)").unwrap();
         let mut stream = ParseStream::new(tokens);
-        let parens = stream.parse::<Parenthesized>().unwrap();
-        assert!(matches!(*parens.0, super::Expr::Literal(ExprLit::Number(_))));
+        let parens = stream.parse::<Parenthesized<ExprSimple>>().unwrap();
+        assert!(matches!(*parens.0, ExprSimple::Literal(ExprLit::Number(_))));
     }
 
     #[test]
@@ -100,7 +110,7 @@ mod test {
         let tokens = TokenStream::from_string("[1]").unwrap();
         let mut stream = ParseStream::new(tokens);
         let brackets = stream.parse::<super::Bracketed>().unwrap();
-        assert!(matches!(*brackets.0, super::Expr::Literal(ExprLit::Number(_))));
+        assert!(matches!(*brackets.0, Expr::Simple(ExprSimple::Literal(ExprLit::Number(_)))));
     }
 
     #[test]
@@ -108,20 +118,20 @@ mod test {
         let tokens = TokenStream::from_string("{1}").unwrap();
         let mut stream = ParseStream::new(tokens);
         let braces = stream.parse::<super::Braced>().unwrap();
-        assert!(matches!(*braces.0, super::Expr::Literal(ExprLit::Number(_))));
+        assert!(matches!(*braces.0, Expr::Simple(ExprSimple::Literal(ExprLit::Number(_)))));
     }
 
     #[test]
     fn test_nested() {
-        let tokens = TokenStream::from_string("(1 + [2])").unwrap();
+        let tokens = TokenStream::from_string("(1 + (2))").unwrap();
         let mut stream = ParseStream::new(tokens);
 
         let parens = stream.parse::<Parenthesized<Expr>>().unwrap();
         print!("{:#?}", parens.0);
-        assert!(matches!(*parens.0, Expr::Binary(_)));
-        if let Expr::Binary(binary) = *parens.0 {
-            assert!(matches!(*binary.left, Expr::Literal(ExprLit::Number(_))));
-            assert!(matches!(*binary.right, Expr::Grouped(ExprGrouped::Bracketed(_))));
+        assert!(matches!(*parens.0, Expr::Simple(ExprSimple::Binary(_, BinaryType::Add, _))));
+        if let Expr::Simple(ExprSimple::Binary(left, _, right)) = *parens.0 {
+            assert!(matches!(*left, ExprSimple::Literal(ExprLit::Number(_))));
+            assert!(matches!(*right, ExprSimple::Grouped(Parenthesized(_))));
         } else {
             panic!("No binary expression found")
         }

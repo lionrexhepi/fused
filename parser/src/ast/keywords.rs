@@ -31,6 +31,10 @@ impl<K: Keyword> Parse for K {
             }
         })
     }
+
+    fn could_parse(stream: &mut ParseStream) -> bool {
+        matches!(&stream.current().content, TokenType::Ident(ident) if !ident.escaped && ident.name == Self::name())
+    }
 }
 
 macro_rules! define_keyword {

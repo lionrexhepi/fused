@@ -98,4 +98,8 @@ impl Parse for LitNumber {
             }
         })
     }
+
+    fn could_parse(stream: &mut ParseStream) -> bool {
+        matches!(stream.current().content, TokenType::Literal(TokenLiteral::Number(_)))
+    }
 }

@@ -39,6 +39,10 @@ impl Parse for Statement {
             indent,
         })
     }
+
+    fn could_parse(stream: &mut ParseStream) -> bool {
+        Newline::could_parse(stream)
+    }
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]

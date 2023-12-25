@@ -38,6 +38,10 @@ macro_rules! define_punct {
                     }
                 })
             }
+
+            fn could_parse(stream: &mut ParseStream) -> bool {
+                matches!(stream.current().content, TokenType::Punct(TokenPunct::$name))
+            }
         }
     };
 
@@ -65,7 +69,9 @@ define_punct!(
     PercentEq, // %=
     CaretEq, // ^=
     AmpersandEq, // &=
+    DoubleAmpersandEq, // &&=
     PipeEq, // |=
+    DoublePipeEq, // ||=
     Tilde, // ~
     Question, // ?
     Exclamation, // !

@@ -49,6 +49,10 @@ impl<T: Parse, P: Punct> Parse for Separated<T, P> {
             _puncts: PhantomData,
         })
     }
+
+    fn could_parse(stream: &mut ParseStream) -> bool {
+        T::could_parse(stream)
+    }
 }
 
 #[cfg(test)]

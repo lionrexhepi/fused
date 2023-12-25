@@ -37,6 +37,10 @@ impl Parse for ExprLoop {
             span,
         })
     }
+
+    fn could_parse(stream: &mut ParseStream) -> bool {
+        Loop::could_parse(stream)
+    }
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -67,6 +71,10 @@ impl Parse for ExprWhile {
             body: Box::new(body),
             span,
         })
+    }
+
+    fn could_parse(stream: &mut ParseStream) -> bool {
+        While::could_parse(stream)
     }
 }
 
@@ -102,12 +110,16 @@ impl Parse for ExprFor {
             span,
         })
     }
+
+    fn could_parse(stream: &mut ParseStream) -> bool {
+        For::could_parse(stream)
+    }
 }
 
 #[cfg(test)]
 mod test {
     use crate::{
-        ast::{ expr::{ ExprLit, Expr }, path::ExprPath, stream::ParseStream },
+        ast::{ expr::{ ExprLit, Expr }, path::ExprPath, stream::ParseStream, simple::ExprSimple },
         tokens::stream::TokenStream,
     };
 
@@ -132,7 +144,7 @@ mod test {
 
         let r#while = stream.parse::<ExprWhile>().unwrap();
 
-        assert!(matches!(*r#while.condition, Expr::Literal(ExprLit::Bool(_))));
+        assert!(matches!(*r#while.condition, Expr::Simple(ExprSimple::Literal(ExprLit::Bool(_)))));
         assert_eq!(r#while.body.0.len(), 1);
     }
 
@@ -145,7 +157,7 @@ mod test {
         let r#for = stream.parse::<ExprFor>().unwrap();
 
         assert_eq!(r#for.ident.name, "i");
-        assert!(matches!(*r#for.iter, Expr::Path(ExprPath { .. })));
+        assert!(matches!(*r#for.iter, Expr::Simple(ExprSimple::Path(ExprPath { .. }))));
         assert_eq!(r#for.body.0.len(), 1);
     }
 }

@@ -41,6 +41,10 @@ impl Parse for ExprPath {
             segments: segments,
         })
     }
+
+    fn could_parse(stream: &mut ParseStream) -> bool {
+        PathSegment::could_parse(stream)
+    }
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -74,6 +78,10 @@ impl Parse for PathSegment {
             Ok(Self::Ident(ident))
         }
     }
+
+    fn could_parse(stream: &mut ParseStream) -> bool {
+        Ident::could_parse(stream)
+    }
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Default)]
@@ -97,6 +105,10 @@ impl Parse for Generics {
         split.parse::<Gt>()?;
         *stream = split;
         Ok(Self(generics.into_iter().collect()))
+    }
+
+    fn could_parse(stream: &mut ParseStream) -> bool {
+        Lt::could_parse(stream)
     }
 }
 

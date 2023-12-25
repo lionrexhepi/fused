@@ -46,6 +46,10 @@ impl Parse for ExprDecl {
             mutable,
         })
     }
+
+    fn could_parse(stream: &mut ParseStream) -> bool {
+        Mut::could_parse(stream) || Ident::could_parse(stream)
+    }
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -62,6 +66,10 @@ impl Parse for ExprLet {
         stream.parse::<Let>()?;
         let decl = stream.parse::<ExprDecl>()?;
         Ok(Self(decl))
+    }
+
+    fn could_parse(stream: &mut ParseStream) -> bool {
+        Let::could_parse(stream)
     }
 }
 
@@ -85,6 +93,10 @@ impl Parse for FnArg {
             reference,
             decl,
         })
+    }
+
+    fn could_parse(stream: &mut ParseStream) -> bool {
+        Ampersand::could_parse(stream) || ExprDecl::could_parse(stream)
     }
 }
 

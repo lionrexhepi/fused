@@ -12,13 +12,13 @@ impl Spanned for Block {
 }
 
 impl Parse for Block {
-    fn parse(token: &mut ParseStream) -> ParseResult<Self> where Self: Sized {
-        let first = token.parse::<Statement>()?;
+    fn parse(stream: &mut ParseStream) -> ParseResult<Self> where Self: Sized {
+        let first = stream.parse::<Statement>()?;
         let indent = first.indent;
 
         let mut stmts = vec![first];
 
-        while let Ok(statement) = token.parse::<Statement>() {
+        while let Ok(statement) = stream.parse::<Statement>() {
             if statement.indent != indent {
                 break;
             }
@@ -26,6 +26,10 @@ impl Parse for Block {
         }
 
         Ok(Self(stmts))
+    }
+
+    fn could_parse(stream: &mut ParseStream) -> bool {
+        Statement::could_parse(stream)
     }
 }
 

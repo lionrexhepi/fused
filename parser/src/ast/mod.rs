@@ -14,7 +14,7 @@ pub mod punct;
 mod conditionals;
 mod block;
 pub mod loops;
-pub mod operations;
+
 pub mod grouped;
 pub mod separated;
 pub mod functions;
@@ -22,6 +22,7 @@ pub mod declarations;
 pub mod path;
 pub mod statements;
 pub mod modules;
+mod simple;
 
 pub struct Ast;
 
@@ -42,6 +43,15 @@ type ParseResult<T> = Result<T, ParseError>;
 
 pub trait Parse: Spanned {
     fn parse(stream: &mut ParseStream) -> ParseResult<Self> where Self: Sized;
+
+    fn could_parse(stream: &mut ParseStream) -> bool;
+}
+
+pub trait ParseDescend: Parse {
+    type DescendTo: ParseDescend;
+    fn parse_descend(stream: &mut ParseStream) -> ParseResult<(Self, bool)> where Self: Sized;
+
+    fn unwrap_descend(self) -> Self::DescendTo;
 }
 
 pub struct Newline {
@@ -69,5 +79,9 @@ impl Parse for Newline {
                 Err(ParseError::UnexpectedToken { expected: "newline", got: token.clone() })
             }
         })
+    }
+
+    fn could_parse(stream: &mut ParseStream) -> bool {
+        matches!(stream.current().content, TokenType::Newline(_))
     }
 }

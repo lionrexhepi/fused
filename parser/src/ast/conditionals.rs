@@ -9,11 +9,12 @@ use super::{
     block::Block,
     keywords::{ If, self, Keyword },
     punct::Colon,
+    simple::ExprSimple,
 };
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct ExprIf {
-    pub condition: Box<Expr>,
+    pub condition: Box<ExprSimple>,
     pub body: Block,
     pub r#else: Option<Else>,
     span: Span,
@@ -28,7 +29,7 @@ impl Spanned for ExprIf {
 impl Parse for ExprIf {
     fn parse(token: &mut ParseStream) -> ParseResult<Self> where Self: Sized {
         let r#if = token.parse::<If>()?;
-        let condition = token.parse::<Expr>()?;
+        let condition = token.parse::<ExprSimple>()?;
         token.parse::<Colon>()?;
         let body = token.parse::<Block>()?;
         let r#else = token.parse().ok();
@@ -45,6 +46,10 @@ impl Parse for ExprIf {
             r#else,
             span,
         })
+    }
+
+    fn could_parse(stream: &mut ParseStream) -> bool {
+        If::could_parse(stream)
     }
 }
 
@@ -73,13 +78,22 @@ impl Parse for Else {
             Ok(Self::Body(Box::new(stream.parse()?)))
         }
     }
+
+    fn could_parse(stream: &mut ParseStream) -> bool {
+        keywords::Else::could_parse(stream)
+    }
 }
 
 #[cfg(test)]
 mod test {
     use crate::{
         tokens::stream::TokenStream,
-        ast::{ stream::ParseStream, conditionals::{ ExprIf, Else }, expr::{ ExprLit, Expr } },
+        ast::{
+            stream::ParseStream,
+            conditionals::{ ExprIf, Else },
+            expr::{ ExprLit, Expr },
+            simple::ExprSimple,
+        },
     };
 
     #[test]
@@ -90,7 +104,9 @@ mod test {
 
         let r#if = stream.parse::<ExprIf>().unwrap();
 
-        assert!(matches!(*r#if.condition, Expr::Literal(ExprLit::Bool(_))));
+        println!("{:#?}", r#if.condition);
+
+        assert!(matches!(*r#if.condition, ExprSimple::Literal(ExprLit::Bool(_))));
     }
 
     #[test]
@@ -101,7 +117,7 @@ mod test {
 
         let r#if = stream.parse::<ExprIf>().unwrap();
 
-        assert!(matches!(*r#if.condition, Expr::Literal(ExprLit::Bool(_))));
+        assert!(matches!(*r#if.condition, ExprSimple::Literal(ExprLit::Bool(_))));
         assert!(matches!(r#if.r#else.unwrap(), Else::Body(_)));
     }
 
@@ -113,7 +129,7 @@ mod test {
 
         let r#if = stream.parse::<ExprIf>().unwrap();
 
-        assert!(matches!(*r#if.condition, Expr::Literal(ExprLit::Bool(_))));
+        assert!(matches!(*r#if.condition, ExprSimple::Literal(ExprLit::Bool(_))));
         assert!(matches!(r#if.r#else.unwrap(), Else::If(_)));
     }
 }
