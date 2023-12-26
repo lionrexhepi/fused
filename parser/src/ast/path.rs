@@ -51,7 +51,6 @@ impl Parse for ExprPath {
 pub enum PathSegment {
     Ident(Ident),
     Generics(Ident, Generics),
-    Call(Ident, Generics, Vec<Expr>),
 }
 
 impl Spanned for PathSegment {
@@ -59,7 +58,6 @@ impl Spanned for PathSegment {
         match self {
             Self::Ident(ident) => ident.span(),
             Self::Generics(ident, generics) => ident.span().join(generics.0.last().unwrap().span()),
-            Self::Call(ident, _, args) => ident.span().join(args.last().unwrap().span()),
         }
     }
 }
@@ -70,9 +68,7 @@ impl Parse for PathSegment {
         print!("{:#?}", stream.current());
         let generics = stream.parse::<Generics>().unwrap_or_default();
 
-        if let Some(args) = stream.parse::<Parenthesized<Separated<Expr>>>().ok() {
-            Ok(Self::Call(ident, generics, args.0.into_iter().collect()))
-        } else if !generics.0.is_empty() {
+        if !generics.0.is_empty() {
             Ok(Self::Generics(ident, generics))
         } else {
             Ok(Self::Ident(ident))
@@ -136,31 +132,12 @@ mod test {
     }
 
     #[test]
-    fn test_call() {
-        let tokens = TokenStream::from_string("name()").unwrap();
-        let mut stream = ParseStream::new(tokens);
-        let path = stream.parse::<ExprPath>().unwrap();
-        assert_eq!(path.segments.len(), 1);
-        assert!(matches!(path.segments.first().unwrap(), PathSegment::Call(_, _, _)))
-    }
-
-    #[test]
-    fn test_call_with_generics() {
-        let tokens = TokenStream::from_string("name<type>()").unwrap();
-        let mut stream = ParseStream::new(tokens);
-        let path = stream.parse::<ExprPath>().unwrap();
-        assert_eq!(path.segments.len(), 1);
-        assert!(matches!(path.segments.first().unwrap(), PathSegment::Call(_, _, _)))
-    }
-
-    #[test]
     fn test_complex() {
-        let tokens = TokenStream::from_string("name<type1, type2>.field.method<type3>()").unwrap();
+        let tokens = TokenStream::from_string("name<type1, type2>.field.method<type3>").unwrap();
         let mut stream = ParseStream::new(tokens);
         let path = stream.parse::<ExprPath>().unwrap();
         assert_eq!(path.segments.len(), 3);
         assert!(matches!(path.segments.first().unwrap(), PathSegment::Generics(_, _)));
         assert!(matches!(path.segments.get(1).unwrap(), PathSegment::Ident(_)));
-        assert!(matches!(path.segments.last().unwrap(), PathSegment::Call(_, _, _)));
     }
 }

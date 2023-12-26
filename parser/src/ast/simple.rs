@@ -74,7 +74,7 @@ impl Spanned for ExprSimple {
 
 impl Parse for ExprSimple {
     fn parse(stream: &mut ParseStream) -> ParseResult<Self> where Self: Sized {
-        Self::parse_binary(stream, BinaryType::Add)
+        Self::parse_binary(stream, BinaryType::Assign)
     }
 
     fn could_parse(stream: &mut ParseStream) -> bool {
@@ -94,7 +94,7 @@ impl ExprSimple {
             Self::parse_unary_prefix(stream)?
         };
         if operator.matches(stream) {
-            let right = Self::parse_binary(stream, operator)?; //Try the first operator in case of
+            let right = Self::parse_binary(stream, operator)?; //Try the first operator in case of chaining
             Ok(Self::Binary(Box::new(left), operator, Box::new(right)))
         } else {
             Ok(left)
@@ -281,5 +281,131 @@ impl BinaryType {
             | Self::RightShiftAssign => false,
             _ => true,
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::{
+        ast::{
+            simple::{ ExprSimple, BinaryType },
+            stream::ParseStream,
+            Parse,
+            expr::{ ExprLit, Expr },
+            grouped::Parenthesized,
+        },
+        tokens::stream::TokenStream,
+    };
+
+    #[test]
+    fn test_lit_num() {
+        let mut stream = ParseStream::new(TokenStream::from_string("123").unwrap());
+        let lit = ExprSimple::parse(&mut stream).unwrap();
+        assert!(matches!(lit, ExprSimple::Literal(ExprLit::Number(_))));
+    }
+
+    #[test]
+    fn test_lit_bool() {
+        let mut stream = ParseStream::new(TokenStream::from_string("true").unwrap());
+        let lit = ExprSimple::parse(&mut stream).unwrap();
+        assert!(matches!(lit, ExprSimple::Literal(ExprLit::Bool(_))));
+    }
+
+    #[test]
+    fn test_lit_string() {
+        let mut stream = ParseStream::new(TokenStream::from_string("\"hello\"").unwrap());
+        let lit = ExprSimple::parse(&mut stream).unwrap();
+        assert!(matches!(lit, ExprSimple::Literal(ExprLit::String(_))));
+    }
+
+    #[test]
+    fn test_path() {
+        let mut stream = ParseStream::new(TokenStream::from_string("hello").unwrap());
+        let path = ExprSimple::parse(&mut stream).unwrap();
+        assert!(matches!(path, ExprSimple::Path(_)));
+    }
+
+    #[test]
+    fn test_parens() {
+        let mut stream = ParseStream::new(TokenStream::from_string("(123)").unwrap());
+        let expr = ExprSimple::parse(&mut stream).unwrap();
+        assert!(matches!(expr, ExprSimple::Grouped(_)));
+    }
+
+    #[test]
+    fn test_call_noargs() {
+        let mut stream = ParseStream::new(TokenStream::from_string("hello()").unwrap());
+        let expr = ExprSimple::parse(&mut stream).unwrap();
+        assert!(matches!(expr, ExprSimple::Call(fun, _) if matches!(*fun, ExprSimple::Path(_))));
+    }
+
+    #[test]
+    fn test_call_args() {
+        let mut stream = ParseStream::new(TokenStream::from_string("hello(1, 2, 3)").unwrap());
+        let expr = ExprSimple::parse(&mut stream).unwrap();
+        assert!(matches!(expr, ExprSimple::Call(fun, _) if matches!(*fun, ExprSimple::Path(_))));
+    }
+
+    #[test]
+    fn test_unary() {
+        let mut stream = ParseStream::new(TokenStream::from_string("!true").unwrap());
+        let expr = ExprSimple::parse(&mut stream).unwrap();
+        assert!(matches!(expr, ExprSimple::Unary(_, _)));
+    }
+
+    #[test]
+    fn test_stacked_unary() {
+        let mut stream = ParseStream::new(TokenStream::from_string("!!true").unwrap());
+        let expr = ExprSimple::parse(&mut stream).unwrap();
+        assert!(
+            matches!(expr, ExprSimple::Unary(inner, _) if matches!(*inner, ExprSimple::Unary(_, _)))
+        );
+    }
+
+    #[test]
+    fn test_simple_binary() {
+        let mut stream = ParseStream::new(TokenStream::from_string("1 + 2").unwrap());
+        let expr = ExprSimple::parse(&mut stream).unwrap();
+        assert!(matches!(expr, ExprSimple::Binary(_, BinaryType::Add, _)));
+    }
+
+    #[test]
+    fn test_binary_precedence() {
+        let mut stream = ParseStream::new(TokenStream::from_string("1 + 2 * 3").unwrap());
+        let expr = ExprSimple::parse(&mut stream).unwrap();
+        assert!(
+            matches!(expr, ExprSimple::Binary(_, BinaryType::Add, right) if matches!(*right, ExprSimple::Binary(_, BinaryType::Mul, _)))
+        );
+    }
+
+    #[test]
+    fn test_complex() {
+        let mut stream = ParseStream::new(
+            TokenStream::from_string("test = a * (1 + hello(34)) - 8 << 7").unwrap()
+        );
+        let expr = ExprSimple::parse(&mut stream).unwrap();
+        if let ExprSimple::Binary(left_assign, BinaryType::Assign, right_assign) = expr {
+            assert!(matches!(*left_assign, ExprSimple::Path(_)));
+
+            if let ExprSimple::Binary(left_sub, BinaryType::Sub, right_sub) = *right_assign {
+                assert!(matches!(*right_sub, ExprSimple::Binary(_, BinaryType::LeftShift, _)));
+                if let ExprSimple::Binary(left_mul, BinaryType::Mul, right_mul) = *left_sub {
+                    assert!(matches!(*left_mul, ExprSimple::Path(_)));
+                    if let ExprSimple::Grouped(Parenthesized(paren)) = *right_mul {
+                        if
+                            let Expr::Simple(
+                                ExprSimple::Binary(left_add, BinaryType::Add, right_add),
+                            ) = *paren
+                        {
+                            assert!(matches!(*left_add, ExprSimple::Literal(ExprLit::Number(_))));
+                            assert!(matches!(*right_add, ExprSimple::Call(_, _)));
+                            return;
+                        }
+                    }
+                }
+            }
+        }
+
+        panic!("Expression was parsed incorrectly.")
     }
 }
