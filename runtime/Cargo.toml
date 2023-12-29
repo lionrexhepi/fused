@@ -1,13 +1,12 @@
 [package]
-name = "fused"
+name = "runtime"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-thiserror = "1.0.51"
-
-
-[workspace]
-members = ["parser", "runtime", "libimmixcons"]
+libimmixcons = { path = "../libimmixcons" }
+parser = { path = "../parser" }
+thiserror-no-std = "2.0.2"
+thiserror = "1.0.52"
