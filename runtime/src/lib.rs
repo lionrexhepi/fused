@@ -3,13 +3,14 @@
 use std::{ marker::PhantomData, ptr::NonNull };
 
 use alloc::{ Guard, GuardedHeap };
-use chunk::{ Chunk, Instruction };
+use chunk::Chunk;
+use instructions::Instruction;
 use libimmixcons::{
     threading::{ immix_register_thread, immix_unregister_thread },
     object::{ GCRTTI, RawGc },
     immix_collect,
 };
-use stack::{ Stack, StackValue };
+use stack::{ Stack, RegisterContents };
 use thiserror::Error;
 use array::ArrayCapacity;
 
@@ -18,8 +19,11 @@ mod chunk;
 pub mod stack;
 mod array;
 mod alloc;
+pub mod codegen;
+mod instructions;
+mod nodes;
 
-#[derive(Error, Debug)]
+#[derive(Error, Debug, PartialEq, Eq)]
 pub enum RuntimeError {
     #[error("Cannot create an array with capacity {0} of this type")] InvalidArrayCapacity(
         ArrayCapacity,
@@ -36,35 +40,39 @@ pub enum RuntimeError {
         &'static str,
     ),
     #[error("Attempted to access empty register")] RegisterEmpty,
+    #[error("Chunk does not contain a constant at index {0:x}")] InvalidConstant(u16),
 }
 
 pub(crate) type Result<T> = std::result::Result<T, RuntimeError>;
 
 pub struct Thread {
-    stack: Stack,
+    pub stack: Stack,
 }
 
 impl Thread {
-    pub fn run_chunk(&mut self, chunk: Chunk) -> Result<StackValue> {
+    pub fn run_chunk(&mut self, chunk: Chunk) -> Result<RegisterContents> {
         let value;
         {
             immix_register_thread();
             let guard = Guard(PhantomData);
-            value = self.run_guarded(guard, chunk)?;
+            let heap = GuardedHeap::new(guard);
+            value = self.run_guarded(heap, chunk)?;
             immix_unregister_thread();
         }
         immix_collect(true);
         Ok(value)
     }
 
-    fn run_guarded(&mut self, guard: Guard, chunk: Chunk) -> Result<StackValue> {
+    fn run_guarded(&mut self, heap: GuardedHeap, chunk: Chunk) -> Result<RegisterContents> {
         let mut ip = 0;
         let mut frame = self.stack.push_frame();
         let return_value = loop {
-            if ip == chunk.len() {
-                break StackValue::None;
+            if ip == chunk.buffer.len() {
+                break RegisterContents::None;
             }
-            let (instruction, offset) = Instruction::read_from_chunk(&chunk[ip..])?;
+            let (instruction, offset) = Instruction::read_from_chunk(
+                &chunk.buffer[ip..chunk.buffer.len()]
+            )?;
             match instruction {
                 Instruction::Return(from) => {
                     break frame.get_value(from)?;
@@ -75,10 +83,76 @@ impl Thread {
                     frame.set_value(dst, left.try_add(&right)?)?;
                 }
                 Instruction::Sub { left, right, dst } => todo!(),
+                Instruction::Const(address, dst) => {
+                    println!("{address} {dst}");
+                    let const_val = chunk.consts
+                        .get(address as usize)
+                        .ok_or(RuntimeError::InvalidConstant(address))?;
+                    frame.set_value(dst, *const_val)?;
+                }
             }
             ip += offset as usize;
         };
 
         Ok(return_value)
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use std::{ thread::Thread, ptr::{ null, NonNull }, marker::PhantomData };
+
+    use libimmixcons::{ immix_init, immix_noop_callback, object::Gc };
+
+    use crate::{
+        chunk::Chunk,
+        stack::{ RegisterContents, Stack },
+        alloc::GuardedCell,
+        codegen::Codegen,
+    };
+
+    #[test]
+    fn test_file() {
+        immix_init(512 * 1000, 0, immix_noop_callback, core::ptr::null_mut());
+        let mut codegen = Codegen::new();
+
+        let left = codegen.emit_const(RegisterContents::Int(5));
+        let right = codegen.emit_const(RegisterContents::Int(3));
+
+        let result = codegen.emit_add(left, right);
+        codegen.emit_return(result);
+
+        let chunk = codegen.chunk();
+
+        let mut thread = super::Thread {
+            stack: Stack::new(),
+        };
+
+        let result = thread.run_chunk(chunk).unwrap();
+        println!("{result}")
+    }
+
+    #[test]
+    fn test_display() {
+        let values = [
+            RegisterContents::Int(5),
+            RegisterContents::Float(3.445),
+            RegisterContents::Bool(true),
+            RegisterContents::Char('o'),
+            RegisterContents::Object(
+                GuardedCell::new(Gc {
+                    //SAFETY: dont access this value, only print its pointer address
+                    ptr: unsafe {
+                        NonNull::new_unchecked(0 as *mut _)
+                    },
+                    marker: PhantomData,
+                })
+            ),
+            RegisterContents::None,
+        ];
+
+        for value in values {
+            println!("{value}\n");
+        }
     }
 }

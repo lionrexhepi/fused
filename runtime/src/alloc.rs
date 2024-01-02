@@ -1,4 +1,11 @@
-use std::{ marker::PhantomData, ptr::NonNull, cell::Cell, sync::Mutex, ops::{ Deref, DerefMut } };
+use std::{
+    marker::PhantomData,
+    ptr::NonNull,
+    cell::Cell,
+    sync::Mutex,
+    ops::{ Deref, DerefMut },
+    fmt::Debug,
+};
 
 use crate::{ Result, RuntimeError };
 
@@ -42,6 +49,18 @@ impl<'a> GuardedHeap<'a> {
 }
 
 pub struct GuardedCell<T: HeapObject>(Gc<T>);
+
+impl<T: HeapObject> std::hash::Hash for GuardedCell<T> {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.0.ptr.hash(state)
+    }
+}
+
+impl<T: HeapObject> Debug for GuardedCell<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!("{:?}", self.0.ptr))
+    }
+}
 
 impl<T: HeapObject> PartialEq<GuardedCell<T>> for GuardedCell<T> {
     fn eq(&self, other: &GuardedCell<T>) -> bool {

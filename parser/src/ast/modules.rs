@@ -28,7 +28,6 @@ impl Parse for Module {
     fn parse(stream: &mut ParseStream) -> ParseResult<Self> where Self: Sized {
         stream.parse::<Mod>()?;
         let path = stream.parse::<ExprPath>()?;
-        print!("{:#?}", stream.current());
         let content = if stream.parse::<Colon>().is_ok() {
             Some(stream.parse::<Block>()?)
         } else {
@@ -77,15 +76,11 @@ impl Parse for UsePath {
         while stream.parse::<Dot>().is_ok() {
             regular.push(stream.parse::<UsePathSegment>()?);
         }
-        println!("{:#?}", stream.current());
         let extract = stream
             .parse::<Braced<Separated<UsePath>>>()
             .ok()
 
-            .map(|bracketed| {
-                println!("{:#?}", bracketed.0);
-                bracketed.0.into_iter().collect()
-            });
+            .map(|bracketed| { bracketed.0.into_iter().collect() });
 
         Ok(Self {
             regular,

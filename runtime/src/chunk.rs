@@ -1,69 +1,92 @@
-use std::{ fmt::Formatter, path::Display };
+use std::{ fmt::{ Formatter, Display } };
 
-type Register = u8;
-use crate::RuntimeError;
+use crate::{ RuntimeError, stack::{ RegisterContents, Stack }, instructions::{ Instruction } };
 
 use super::Result;
 
-#[derive(Debug, Clone, Copy)]
-#[repr(u8)]
-pub enum Instruction {
-    Return(Register),
-    Add {
-        left: Register,
-        right: Register,
-        dst: Register,
-    },
-    Sub {
-        left: Register,
-        right: Register,
-        dst: Register,
-    },
+pub struct Chunk {
+    pub consts: Vec<RegisterContents>,
+    pub buffer: Box<[u8]>,
 }
 
-impl Instruction {
-    pub fn read_from_chunk(chunk: Chunk) -> Result<(Self, u8)> {
-        match chunk[0] {
-            0 => {
-                if chunk.len() <= 1 {
-                    Err(RuntimeError::InvalidChunkEnd)
-                } else {
-                    Ok((Self::Return(chunk[1]), 2))
-                }
-            }
-            1 => {
-                if chunk.len() < 4 {
-                    Err(RuntimeError::InvalidChunkEnd)
-                } else {
-                    Ok((
-                        Self::Add { left: chunk[1], right: chunk[2], dst: chunk[3] },
-                        4, //1 byte we've already read + the 3 args
-                    ))
-                }
-            }
-            2 => {
-                if chunk.len() < 4 {
-                    Err(RuntimeError::InvalidChunkEnd)
-                } else {
-                    Ok((Self::Sub { left: chunk[1], right: chunk[2], dst: chunk[3] }, 4))
-                }
-            }
+impl<'a> Display for Chunk {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "{:-^30}", "Constants")?;
 
-            other => Err(RuntimeError::InvalidInstruction(other)),
+        for (index, value) in self.consts.iter().enumerate() {
+            writeln!(f, "{:x}: {:?>30}", index, value)?;
         }
+
+        writeln!(f, "{:-^30}", "Instructions")?;
+
+        let mut ip = 0;
+        while ip < self.buffer.len() {
+            match Instruction::read_from_chunk(&self.buffer[ip..]) {
+                Ok((instruction, offset)) => {
+                    write!(f, "0x{:<5x}", ip)?;
+                    let (name, args) = match instruction {
+                        Instruction::Return(val) => ("return", format!("<{val:x}>")),
+                        Instruction::Const(from, to) => ("const", format!("[{from:x}] <{to:x}>")),
+                        Instruction::Add { left, right, dst } =>
+                            ("add", format!("<{left:x}> <{right:x}> <{dst:x}>")),
+                        Instruction::Sub { left, right, dst } =>
+                            ("sub", format!("<{left:x}> <{right:x}> <{dst:x}>")),
+                    };
+                    write!(f, "{: <10}", name)?;
+                    writeln!(f, "{: <15}", args)?;
+                    ip += offset as usize;
+                }
+                Err(RuntimeError::InvalidChunkEnd) => {
+                    writeln!(f, "{:x}: <invalid chunk end>", ip)?;
+                    break;
+                }
+                Err(RuntimeError::InvalidInstruction(byte)) => {
+                    writeln!(f, "{:x}: <invalid instruction: {:x}>", ip, byte)?;
+                    ip += 1;
+                }
+                Err(_) => unreachable!(),
+            }
+        }
+
+        Ok(())
     }
 }
-
-pub type Chunk<'a> = &'a [u8];
 
 #[cfg(test)]
 mod test {
     use std::io::stdin;
 
+    use crate::stack::RegisterContents;
+
     #[test]
     fn test_sizes() {
         use std::mem::size_of;
-        assert_eq!(size_of::<super::Register>(), 1);
-        assert_eq!(size_of::<super::Instruction>(), 4);
+        assert_eq!(size_of::<super::Instruction>(), 6);
+        assert_eq!(size_of::<super::Chunk>(), 40)
+    }
+
+    #[test]
+    fn display() {
+        let mut buffer = [
+            1,
+            0,
+            0,
+            0, //const [0] <0>
+            1,
+            0,
+            1,
+            1, //const [1] <1>
+            2,
+            0,
+            1,
+            2, //add <0> <1> <2>
+            0,
+            2, //return <2>
+        ];
+        let chunk = super::Chunk {
+            buffer: Box::new(buffer),
+            consts: vec![RegisterContents::Int(19), RegisterContents::Float(34f64)],
+        };
+        println!("{}", chunk);
     }
 }

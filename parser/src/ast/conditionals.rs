@@ -104,7 +104,6 @@ mod test {
 
         let r#if = stream.parse::<ExprIf>().unwrap();
 
-        println!("{:#?}", r#if.condition);
 
         assert!(matches!(*r#if.condition, ExprSimple::Literal(ExprLit::Bool(_))));
     }

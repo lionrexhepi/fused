@@ -6,7 +6,7 @@ use crate::{
 use super::{ Parse, Spanned, ParseResult, stream::{ ParseStream, TokenCursor }, ParseError };
 
 #[derive(Debug, Clone)]
-enum Number {
+pub enum Number {
     Int(i64),
     UInt(u64),
     Float(f64),
@@ -27,7 +27,7 @@ impl Eq for Number {}
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct LitNumber {
-    number: Number,
+    pub number: Number,
     span: Span,
 }
 

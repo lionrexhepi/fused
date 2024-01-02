@@ -65,7 +65,6 @@ impl Spanned for PathSegment {
 impl Parse for PathSegment {
     fn parse(stream: &mut ParseStream) -> ParseResult<Self> where Self: Sized {
         let ident = stream.parse::<Ident>()?;
-        print!("{:#?}", stream.current());
         let generics = stream.parse::<Generics>().unwrap_or_default();
 
         if !generics.0.is_empty() {

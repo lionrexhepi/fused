@@ -12,7 +12,7 @@ pub mod ident;
 pub mod string;
 pub mod punct;
 mod conditionals;
-mod block;
+pub mod block;
 pub mod loops;
 
 pub mod grouped;
@@ -22,7 +22,7 @@ pub mod declarations;
 pub mod path;
 pub mod statements;
 pub mod modules;
-mod simple;
+pub mod simple;
 
 pub struct Ast;
 

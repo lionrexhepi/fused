@@ -127,7 +127,6 @@ mod test {
         let mut stream = ParseStream::new(tokens);
 
         let parens = stream.parse::<Parenthesized<Expr>>().unwrap();
-        print!("{:#?}", parens.0);
         assert!(matches!(*parens.0, Expr::Simple(ExprSimple::Binary(_, BinaryType::Add, _))));
         if let Expr::Simple(ExprSimple::Binary(left, _, right)) = *parens.0 {
             assert!(matches!(*left, ExprSimple::Literal(ExprLit::Number(_))));
