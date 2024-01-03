@@ -72,6 +72,12 @@ impl Thread {
                 Instruction::Return(from) => {
                     break frame.get_value(from)?;
                 }
+                Instruction::Const(address, dst) => {
+                    let const_val = chunk.consts
+                        .get(address as usize)
+                        .ok_or(RuntimeError::InvalidConstant(address))?;
+                    frame.set_value(dst, *const_val)?;
+                }
                 Instruction::Add { left, right, dst } => {
                     let left = frame.get_value(left)?;
                     let right = frame.get_value(right)?;
@@ -82,12 +88,47 @@ impl Thread {
                     let right = frame.get_value(right)?;
                     frame.set_value(dst, left.try_sub(&right)?)?;
                 }
-                Instruction::Const(address, dst) => {
-                    println!("{address} {dst}");
-                    let const_val = chunk.consts
-                        .get(address as usize)
-                        .ok_or(RuntimeError::InvalidConstant(address))?;
-                    frame.set_value(dst, *const_val)?;
+
+                Instruction::Mul { left, right, dst } => {
+                    let left = frame.get_value(left)?;
+                    let right = frame.get_value(right)?;
+                    frame.set_value(dst, left.try_mul(&right)?)?;
+                }
+                Instruction::Div { left, right, dst } => {
+                    let left = frame.get_value(left)?;
+                    let right = frame.get_value(right)?;
+                    frame.set_value(dst, left.try_div(&right)?)?;
+                }
+                Instruction::Mod { left, right, dst } => {
+                    let left = frame.get_value(left)?;
+                    let right = frame.get_value(right)?;
+                    frame.set_value(dst, left.try_mod(&right)?)?;
+                }
+                Instruction::BitAnd { left, right, dst } => {
+                    let left = frame.get_value(left)?;
+                    let right = frame.get_value(right)?;
+                    frame.set_value(dst, left.try_bitand(&right)?)?;
+                }
+                Instruction::BitOr { left, right, dst } => {
+                    let left = frame.get_value(left)?;
+                    let right = frame.get_value(right)?;
+                    frame.set_value(dst, left.try_bitor(&right)?)?;
+                }
+                Instruction::BitXor { left, right, dst } => {
+                    let left = frame.get_value(left)?;
+                    let right = frame.get_value(right)?;
+                    frame.set_value(dst, left.try_bitxor(&right)?)?;
+                }
+
+                Instruction::LeftShift { left, right, dst } => {
+                    let left = frame.get_value(left)?;
+                    let right = frame.get_value(right)?;
+                    frame.set_value(dst, left.try_leftshift(&right)?)?;
+                }
+                Instruction::RightShift { left, right, dst } => {
+                    let left = frame.get_value(left)?;
+                    let right = frame.get_value(right)?;
+                    frame.set_value(dst, left.try_rightshift(&right)?)?;
                 }
             }
             ip += offset as usize;

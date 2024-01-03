@@ -68,7 +68,18 @@ impl hash::Hash for RegisterContents {
 }
 
 impl RegisterContents {
-    pub fn try_add(&self, other: &Self) -> Result<Self> {
+    pub fn type_name(&self) -> &'static str {
+        match self {
+            RegisterContents::Int(_) => "int",
+            RegisterContents::Float(_) => "float",
+            RegisterContents::Bool(_) => "bool",
+            RegisterContents::Char(_) => "char",
+            RegisterContents::Object(_) => "object",
+            RegisterContents::None => "none",
+        }
+    }
+
+    pub(crate) fn try_add(&self, other: &Self) -> Result<Self> {
         match (self, other) {
             (Self::Int(l), Self::Int(r)) => Ok(Self::Int(l + r)),
             (Self::Float(l), Self::Float(r)) => Ok(Self::Float(l + r)),
@@ -100,14 +111,126 @@ impl RegisterContents {
         }
     }
 
-    pub fn type_name(&self) -> &'static str {
-        match self {
-            RegisterContents::Int(_) => "int",
-            RegisterContents::Float(_) => "float",
-            RegisterContents::Bool(_) => "bool",
-            RegisterContents::Char(_) => "char",
-            RegisterContents::Object(_) => "object",
-            RegisterContents::None => "none",
+    pub(crate) fn try_mul(&self, right: &RegisterContents) -> Result<Self> {
+        match (self, right) {
+            (Self::Int(l), Self::Int(r)) => Ok(Self::Int(l * r)),
+            (Self::Float(l), Self::Float(r)) => Ok(Self::Float(l * r)),
+            (Self::None, _) | (_, Self::None) => Err(RuntimeError::RegisterEmpty),
+            (other_left, other_right) =>
+                Err(
+                    RuntimeError::InvalidOperation(
+                        "mul",
+                        other_left.type_name(),
+                        other_right.type_name()
+                    )
+                ),
+        }
+    }
+
+    pub(crate) fn try_div(&self, right: &RegisterContents) -> Result<RegisterContents> {
+        match (self, right) {
+            (Self::Int(l), Self::Int(r)) => Ok(Self::Int(l / r)),
+            (Self::Float(l), Self::Float(r)) => Ok(Self::Float(l / r)),
+            (Self::None, _) | (_, Self::None) => Err(RuntimeError::RegisterEmpty),
+            (other_left, other_right) =>
+                Err(
+                    RuntimeError::InvalidOperation(
+                        "div",
+                        other_left.type_name(),
+                        other_right.type_name()
+                    )
+                ),
+        }
+    }
+
+    pub(crate) fn try_mod(&self, right: &RegisterContents) -> Result<RegisterContents> {
+        match (self, right) {
+            (Self::Int(l), Self::Int(r)) => Ok(Self::Int(l % r)),
+            (Self::Float(l), Self::Float(r)) => Ok(Self::Float(l % r)),
+            (Self::None, _) | (_, Self::None) => Err(RuntimeError::RegisterEmpty),
+            (other_left, other_right) =>
+                Err(
+                    RuntimeError::InvalidOperation(
+                        "mod",
+                        other_left.type_name(),
+                        other_right.type_name()
+                    )
+                ),
+        }
+    }
+
+    pub(crate) fn try_bitand(&self, right: &RegisterContents) -> Result<RegisterContents> {
+        match (self, right) {
+            (Self::Int(l), Self::Int(r)) => Ok(Self::Int(l & r)),
+            (Self::None, _) | (_, Self::None) => Err(RuntimeError::RegisterEmpty),
+            (other_left, other_right) =>
+                Err(
+                    RuntimeError::InvalidOperation(
+                        "bitand",
+                        other_left.type_name(),
+                        other_right.type_name()
+                    )
+                ),
+        }
+    }
+
+    pub(crate) fn try_bitor(&self, right: &RegisterContents) -> Result<RegisterContents> {
+        match (self, right) {
+            (Self::Int(l), Self::Int(r)) => Ok(Self::Int(l | r)),
+            (Self::None, _) | (_, Self::None) => Err(RuntimeError::RegisterEmpty),
+            (other_left, other_right) =>
+                Err(
+                    RuntimeError::InvalidOperation(
+                        "bitor",
+                        other_left.type_name(),
+                        other_right.type_name()
+                    )
+                ),
+        }
+    }
+
+    pub(crate) fn try_bitxor(&self, right: &RegisterContents) -> Result<RegisterContents> {
+        match (self, right) {
+            (Self::Int(l), Self::Int(r)) => Ok(Self::Int(l ^ r)),
+            (Self::None, _) | (_, Self::None) => Err(RuntimeError::RegisterEmpty),
+            (other_left, other_right) =>
+                Err(
+                    RuntimeError::InvalidOperation(
+                        "bitxor",
+                        other_left.type_name(),
+                        other_right.type_name()
+                    )
+                ),
+        }
+    }
+
+    pub(crate) fn try_leftshift(&self, right: &RegisterContents) -> Result<RegisterContents> {
+        match (self, right) {
+            (Self::Int(l), Self::Int(r)) => Ok(Self::Int(l << r)),
+            (Self::None, _) | (_, Self::None) => Err(RuntimeError::RegisterEmpty),
+            (other_left, other_right) =>
+                Err(
+                    RuntimeError::InvalidOperation(
+                        "leftshift",
+                        other_left.type_name(),
+                        other_right.type_name()
+                    )
+                ),
+        }
+    }
+
+    pub(crate) fn try_rightshift(&self, right: &RegisterContents) -> Result<RegisterContents> {
+        match (self, right) {
+            (Self::Int(l), Self::Int(r)) => Ok(Self::Int(l >> r)),
+            (Self::None, _) | (_, Self::None) => Err(RuntimeError::RegisterEmpty),
+            (other_left, other_right) =>
+                Err(
+                    RuntimeError::InvalidOperation(
+                        "rightshift",
+                        other_left.type_name(),
+                        other_right.type_name()
+                    )
+                ),
         }
     }
 }

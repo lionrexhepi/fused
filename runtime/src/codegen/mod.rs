@@ -56,6 +56,54 @@ impl Codegen {
         dest
     }
 
+    pub fn emit_mul(&mut self, left: Register, right: Register) -> Register {
+        let dest = self.next_free_register();
+        self.bytes.extend([Instruction::MUL, left, right, dest]);
+        dest
+    }
+
+    pub fn emit_div(&mut self, left: Register, right: Register) -> Register {
+        let dest = self.next_free_register();
+        self.bytes.extend([Instruction::DIV, left, right, dest]);
+        dest
+    }
+
+    pub fn emit_mod(&mut self, left: Register, right: Register) -> Register {
+        let dest = self.next_free_register();
+        self.bytes.extend([Instruction::MOD, left, right, dest]);
+        dest
+    }
+
+    pub fn emit_bitand(&mut self, left: Register, right: Register) -> Register {
+        let dest = self.next_free_register();
+        self.bytes.extend([Instruction::BITAND, left, right, dest]);
+        dest
+    }
+
+    pub fn emit_bitor(&mut self, left: Register, right: Register) -> Register {
+        let dest = self.next_free_register();
+        self.bytes.extend([Instruction::BITOR, left, right, dest]);
+        dest
+    }
+
+    pub fn emit_bitxor(&mut self, left: Register, right: Register) -> Register {
+        let dest = self.next_free_register();
+        self.bytes.extend([Instruction::BITXOR, left, right, dest]);
+        dest
+    }
+
+    pub fn emit_leftshift(&mut self, left: Register, right: Register) -> Register {
+        let dest = self.next_free_register();
+        self.bytes.extend([Instruction::LEFTSHIFT, left, right, dest]);
+        dest
+    }
+
+    pub fn emit_rightshift(&mut self, left: Register, right: Register) -> Register {
+        let dest = self.next_free_register();
+        self.bytes.extend([Instruction::RIGHTSHIFT, left, right, dest]);
+        dest
+    }
+
     pub fn chunk<'a>(self) -> Chunk {
         Chunk {
             consts: self.constants,

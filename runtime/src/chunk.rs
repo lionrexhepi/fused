@@ -1,5 +1,7 @@
 use std::{ fmt::{ Formatter, Display } };
 
+use parser::ast::keywords::In;
+
 use crate::{ RuntimeError, stack::{ RegisterContents, Stack }, instructions::{ Instruction } };
 
 use super::Result;
@@ -31,6 +33,22 @@ impl<'a> Display for Chunk {
                             ("add", format!("<{left:x}> <{right:x}> <{dst:x}>")),
                         Instruction::Sub { left, right, dst } =>
                             ("sub", format!("<{left:x}> <{right:x}> <{dst:x}>")),
+                        Instruction::Mul { left, right, dst } =>
+                            ("mul", format!("<{left:x}> <{right:x}> <{dst:x}>")),
+                        Instruction::Div { left, right, dst } =>
+                            ("div", format!("<{left:x}> <{right:x}> <{dst:x}>")),
+                        Instruction::Mod { left, right, dst } =>
+                            ("mod", format!("<{left:x}> <{right:x}> <{dst:x}>")),
+                        Instruction::BitAnd { left, right, dst } =>
+                            ("bitand", format!("<{left:x}> <{right:x}> <{dst:x}>")),
+                        Instruction::BitOr { left, right, dst } =>
+                            ("bitor", format!("<{left:x}> <{right:x}> <{dst:x}>")),
+                        Instruction::BitXor { left, right, dst } =>
+                            ("bitxor", format!("<{left:x}> <{right:x}> <{dst:x}>")),
+                        Instruction::LeftShift { left, right, dst } =>
+                            ("leftshift", format!("<{left:x}> <{right:x}> <{dst:x}>")),
+                        Instruction::RightShift { left, right, dst } =>
+                            ("rightshift", format!("<{left:x}> <{right:x}> <{dst:x}>")),
                     };
                     write!(f, "{: <10}", name)?;
                     writeln!(f, "{: <15}", args)?;

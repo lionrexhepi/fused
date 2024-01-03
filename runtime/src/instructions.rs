@@ -15,6 +15,46 @@ pub enum Instruction {
         right: Register,
         dst: Register,
     } = Self::SUB,
+    Mul {
+        left: Register,
+        right: Register,
+        dst: Register,
+    } = Self::MUL,
+    Div {
+        left: Register,
+        right: Register,
+        dst: Register,
+    } = Self::DIV,
+    Mod {
+        left: Register,
+        right: Register,
+        dst: Register,
+    } = Self::MOD,
+    BitAnd {
+        left: Register,
+        right: Register,
+        dst: Register,
+    } = Self::BITAND,
+    BitOr {
+        left: Register,
+        right: Register,
+        dst: Register,
+    } = Self::BITOR,
+    BitXor {
+        left: Register,
+        right: Register,
+        dst: Register,
+    } = Self::BITXOR,
+    LeftShift {
+        left: Register,
+        right: Register,
+        dst: Register,
+    } = Self::LEFTSHIFT,
+    RightShift {
+        left: Register,
+        right: Register,
+        dst: Register,
+    } = Self::RIGHTSHIFT,
 }
 
 impl Instruction {
@@ -22,17 +62,25 @@ impl Instruction {
     pub const CONST: u8 = 1;
     pub const ADD: u8 = 2;
     pub const SUB: u8 = 3;
+    pub const MUL: u8 = 4;
+    pub const DIV: u8 = 5;
+    pub const MOD: u8 = 6;
+    pub const BITAND: u8 = 7;
+    pub const BITOR: u8 = 8;
+    pub const BITXOR: u8 = 9;
+    pub const LEFTSHIFT: u8 = 10;
+    pub const RIGHTSHIFT: u8 = 11;
 
     pub fn read_from_chunk(buffer: &[u8]) -> Result<(Self, u8)> {
         match buffer[0] {
-            0 => {
+            Self::RETURN => {
                 if buffer.len() < 2 {
                     Err(RuntimeError::InvalidChunkEnd)
                 } else {
                     Ok((Self::Return(buffer[1]), 2))
                 }
             }
-            1 => {
+            Self::CONST => {
                 if buffer.len() < 4 {
                     Err(RuntimeError::InvalidChunkEnd)
                 } else {
@@ -40,7 +88,7 @@ impl Instruction {
                     Ok((Self::Const(const_index, buffer[3]), 4))
                 }
             }
-            2 => {
+            Self::ADD => {
                 if buffer.len() < 4 {
                     Err(RuntimeError::InvalidChunkEnd)
                 } else {
@@ -50,11 +98,67 @@ impl Instruction {
                     ))
                 }
             }
-            3 => {
+            Self::SUB => {
                 if buffer.len() < 4 {
                     Err(RuntimeError::InvalidChunkEnd)
                 } else {
                     Ok((Self::Sub { left: buffer[1], right: buffer[2], dst: buffer[3] }, 4))
+                }
+            }
+            Self::MUL => {
+                if buffer.len() < 4 {
+                    Err(RuntimeError::InvalidChunkEnd)
+                } else {
+                    Ok((Self::Mul { left: buffer[1], right: buffer[2], dst: buffer[3] }, 4))
+                }
+            }
+            Self::DIV => {
+                if buffer.len() < 4 {
+                    Err(RuntimeError::InvalidChunkEnd)
+                } else {
+                    Ok((Self::Div { left: buffer[1], right: buffer[2], dst: buffer[3] }, 4))
+                }
+            }
+            Self::MOD => {
+                if buffer.len() < 4 {
+                    Err(RuntimeError::InvalidChunkEnd)
+                } else {
+                    Ok((Self::Mod { left: buffer[1], right: buffer[2], dst: buffer[3] }, 4))
+                }
+            }
+            Self::BITAND => {
+                if buffer.len() < 4 {
+                    Err(RuntimeError::InvalidChunkEnd)
+                } else {
+                    Ok((Self::BitAnd { left: buffer[1], right: buffer[2], dst: buffer[3] }, 4))
+                }
+            }
+            Self::BITOR => {
+                if buffer.len() < 4 {
+                    Err(RuntimeError::InvalidChunkEnd)
+                } else {
+                    Ok((Self::BitOr { left: buffer[1], right: buffer[2], dst: buffer[3] }, 4))
+                }
+            }
+            Self::BITXOR => {
+                if buffer.len() < 4 {
+                    Err(RuntimeError::InvalidChunkEnd)
+                } else {
+                    Ok((Self::BitXor { left: buffer[1], right: buffer[2], dst: buffer[3] }, 4))
+                }
+            }
+            Self::LEFTSHIFT => {
+                if buffer.len() < 4 {
+                    Err(RuntimeError::InvalidChunkEnd)
+                } else {
+                    Ok((Self::LeftShift { left: buffer[1], right: buffer[2], dst: buffer[3] }, 4))
+                }
+            }
+            Self::RIGHTSHIFT => {
+                if buffer.len() < 4 {
+                    Err(RuntimeError::InvalidChunkEnd)
+                } else {
+                    Ok((Self::RightShift { left: buffer[1], right: buffer[2], dst: buffer[3] }, 4))
                 }
             }
 
