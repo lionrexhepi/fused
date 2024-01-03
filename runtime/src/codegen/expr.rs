@@ -1,12 +1,8 @@
-use parser::ast::{
-    expr::{ ExprLit, Expr },
-    number::{ LitNumber, Number },
-    simple::{ ExprSimple, BinaryType },
-    block::Block,
-    statements::Statement,
-};
+use parser::ast::{ expr::{ Expr, ExprLit }, simple::{ ExprSimple, BinaryType }, number::Number };
 
-use crate::{ codegen::{ ToBytecode, Codegen }, stack::{ Register, RegisterContents } };
+use crate::stack::{ Register, RegisterContents };
+
+use super::{ ToBytecode, Codegen };
 
 impl ToBytecode for ExprLit {
     fn to_bytecode(&self, codegen: &mut Codegen) -> Register {
@@ -50,31 +46,6 @@ impl ToBytecode for Expr {
             Expr::Loop(_) => todo!("dede"),
             Expr::Empty => todo!("öeö"),
         }
-    }
-}
-
-impl ToBytecode for Statement {
-    fn to_bytecode(&self, codegen: &mut Codegen) -> Register {
-        match &self.content {
-            parser::ast::statements::StatementContent::Expr(expr) => expr.to_bytecode(codegen),
-            parser::ast::statements::StatementContent::Module(_) => todo!(),
-            parser::ast::statements::StatementContent::Use(_) => todo!(),
-        }
-    }
-}
-
-impl ToBytecode for Block {
-    fn to_bytecode(&self, codegen: &mut Codegen) -> Register {
-        let len = self.0.len();
-        let mut result = 0;
-        for (i, expr) in self.0.iter().enumerate() {
-            let expr_result = expr.to_bytecode(codegen);
-            if i == len - 1 {
-                result = expr_result;
-            }
-        }
-
-        result
     }
 }
 

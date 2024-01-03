@@ -84,6 +84,22 @@ impl RegisterContents {
         }
     }
 
+    pub(crate) fn try_sub(&self, other: &RegisterContents) -> Result<Self> {
+        match (self, other) {
+            (Self::Int(l), Self::Int(r)) => Ok(Self::Int(l - r)),
+            (Self::Float(l), Self::Float(r)) => Ok(Self::Float(l - r)),
+            (Self::None, _) | (_, Self::None) => Err(RuntimeError::RegisterEmpty),
+            (other_left, other_right) =>
+                Err(
+                    RuntimeError::InvalidOperation(
+                        "sub",
+                        other_left.type_name(),
+                        other_right.type_name()
+                    )
+                ),
+        }
+    }
+
     pub fn type_name(&self) -> &'static str {
         match self {
             RegisterContents::Int(_) => "int",

@@ -1,13 +1,7 @@
 use core::panic;
-use std::{ mem::size_of, ptr::{ NonNull, drop_in_place }, marker::PhantomData, fmt::Debug };
+use std::{ mem::size_of, ptr::{ NonNull, drop_in_place }, fmt::Debug };
 use crate::{ Result, RuntimeError };
-use libimmixcons::{
-    object::{ HeapObject, GCRTTI, RawGc, TracerPtr, Tracer, Gc },
-    immix_alloc,
-    immix_alloc_safe,
-    make_rtti_for,
-    immix_noop_visit,
-};
+use libimmixcons::{ object::{ HeapObject, GCRTTI, RawGc, Gc }, immix_alloc, immix_noop_visit };
 
 pub type ArrayCapacity = u32;
 

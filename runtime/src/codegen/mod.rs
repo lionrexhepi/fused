@@ -1,4 +1,7 @@
-use std::{ sync::atomic::AtomicU8, cell::Cell, io::Write, collections::HashMap };
+pub mod expr;
+mod block;
+
+use std::cell::Cell;
 
 use crate::{ stack::{ Register, RegisterContents }, instructions::Instruction, chunk::Chunk };
 
@@ -67,7 +70,7 @@ pub trait ToBytecode {
 
 #[cfg(test)]
 mod test {
-    use crate::{ instructions::Instruction, stack::{ RegisterContents, Stack } };
+    use crate::{ instructions::Instruction, stack::RegisterContents };
 
     use super::Codegen;
 

@@ -1,15 +1,11 @@
 #![feature(non_null_convenience)]
 
-use std::{ marker::PhantomData, ptr::NonNull };
+use std::marker::PhantomData;
 
 use alloc::{ Guard, GuardedHeap };
 use chunk::Chunk;
 use instructions::Instruction;
-use libimmixcons::{
-    threading::{ immix_register_thread, immix_unregister_thread },
-    object::{ GCRTTI, RawGc },
-    immix_collect,
-};
+use libimmixcons::{ threading::{ immix_register_thread, immix_unregister_thread }, immix_collect };
 use stack::{ Stack, RegisterContents };
 use thiserror::Error;
 use array::ArrayCapacity;
@@ -21,7 +17,6 @@ mod array;
 mod alloc;
 pub mod codegen;
 mod instructions;
-mod nodes;
 
 #[derive(Error, Debug, PartialEq, Eq)]
 pub enum RuntimeError {
@@ -82,7 +77,11 @@ impl Thread {
                     let right = frame.get_value(right)?;
                     frame.set_value(dst, left.try_add(&right)?)?;
                 }
-                Instruction::Sub { left, right, dst } => todo!(),
+                Instruction::Sub { left, right, dst } => {
+                    let left = frame.get_value(left)?;
+                    let right = frame.get_value(right)?;
+                    frame.set_value(dst, left.try_sub(&right)?)?;
+                }
                 Instruction::Const(address, dst) => {
                     println!("{address} {dst}");
                     let const_val = chunk.consts
