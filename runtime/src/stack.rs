@@ -1,5 +1,5 @@
 use core::hash;
-use std::{ vec, cell::Cell, ops::{ Range, Index }, result, fmt::{ Display, write } };
+use std::{ vec, cell::Cell, fmt::Display };
 
 use libimmixcons::{ object::{ HeapObject, Tracer, GCRTTI }, make_rtti_for };
 
@@ -83,7 +83,7 @@ impl RegisterContents {
         match (self, other) {
             (Self::Int(l), Self::Int(r)) => Ok(Self::Int(l + r)),
             (Self::Float(l), Self::Float(r)) => Ok(Self::Float(l + r)),
-            (Self::None, _) | (_, Self::None) => Err(RuntimeError::RegisterEmpty),
+            (Self::None, _) | (_, Self::None) => Err(RuntimeError::NullAccess),
             (other_left, other_right) =>
                 Err(
                     RuntimeError::InvalidOperation(
@@ -99,7 +99,7 @@ impl RegisterContents {
         match (self, other) {
             (Self::Int(l), Self::Int(r)) => Ok(Self::Int(l - r)),
             (Self::Float(l), Self::Float(r)) => Ok(Self::Float(l - r)),
-            (Self::None, _) | (_, Self::None) => Err(RuntimeError::RegisterEmpty),
+            (Self::None, _) | (_, Self::None) => Err(RuntimeError::NullAccess),
             (other_left, other_right) =>
                 Err(
                     RuntimeError::InvalidOperation(
@@ -115,7 +115,7 @@ impl RegisterContents {
         match (self, right) {
             (Self::Int(l), Self::Int(r)) => Ok(Self::Int(l * r)),
             (Self::Float(l), Self::Float(r)) => Ok(Self::Float(l * r)),
-            (Self::None, _) | (_, Self::None) => Err(RuntimeError::RegisterEmpty),
+            (Self::None, _) | (_, Self::None) => Err(RuntimeError::NullAccess),
             (other_left, other_right) =>
                 Err(
                     RuntimeError::InvalidOperation(
@@ -131,7 +131,7 @@ impl RegisterContents {
         match (self, right) {
             (Self::Int(l), Self::Int(r)) => Ok(Self::Int(l / r)),
             (Self::Float(l), Self::Float(r)) => Ok(Self::Float(l / r)),
-            (Self::None, _) | (_, Self::None) => Err(RuntimeError::RegisterEmpty),
+            (Self::None, _) | (_, Self::None) => Err(RuntimeError::NullAccess),
             (other_left, other_right) =>
                 Err(
                     RuntimeError::InvalidOperation(
@@ -147,7 +147,7 @@ impl RegisterContents {
         match (self, right) {
             (Self::Int(l), Self::Int(r)) => Ok(Self::Int(l % r)),
             (Self::Float(l), Self::Float(r)) => Ok(Self::Float(l % r)),
-            (Self::None, _) | (_, Self::None) => Err(RuntimeError::RegisterEmpty),
+            (Self::None, _) | (_, Self::None) => Err(RuntimeError::NullAccess),
             (other_left, other_right) =>
                 Err(
                     RuntimeError::InvalidOperation(
@@ -162,7 +162,7 @@ impl RegisterContents {
     pub(crate) fn try_bitand(&self, right: &RegisterContents) -> Result<RegisterContents> {
         match (self, right) {
             (Self::Int(l), Self::Int(r)) => Ok(Self::Int(l & r)),
-            (Self::None, _) | (_, Self::None) => Err(RuntimeError::RegisterEmpty),
+            (Self::None, _) | (_, Self::None) => Err(RuntimeError::NullAccess),
             (other_left, other_right) =>
                 Err(
                     RuntimeError::InvalidOperation(
@@ -177,7 +177,7 @@ impl RegisterContents {
     pub(crate) fn try_bitor(&self, right: &RegisterContents) -> Result<RegisterContents> {
         match (self, right) {
             (Self::Int(l), Self::Int(r)) => Ok(Self::Int(l | r)),
-            (Self::None, _) | (_, Self::None) => Err(RuntimeError::RegisterEmpty),
+            (Self::None, _) | (_, Self::None) => Err(RuntimeError::NullAccess),
             (other_left, other_right) =>
                 Err(
                     RuntimeError::InvalidOperation(
@@ -192,7 +192,7 @@ impl RegisterContents {
     pub(crate) fn try_bitxor(&self, right: &RegisterContents) -> Result<RegisterContents> {
         match (self, right) {
             (Self::Int(l), Self::Int(r)) => Ok(Self::Int(l ^ r)),
-            (Self::None, _) | (_, Self::None) => Err(RuntimeError::RegisterEmpty),
+            (Self::None, _) | (_, Self::None) => Err(RuntimeError::NullAccess),
             (other_left, other_right) =>
                 Err(
                     RuntimeError::InvalidOperation(
@@ -207,7 +207,7 @@ impl RegisterContents {
     pub(crate) fn try_leftshift(&self, right: &RegisterContents) -> Result<RegisterContents> {
         match (self, right) {
             (Self::Int(l), Self::Int(r)) => Ok(Self::Int(l << r)),
-            (Self::None, _) | (_, Self::None) => Err(RuntimeError::RegisterEmpty),
+            (Self::None, _) | (_, Self::None) => Err(RuntimeError::NullAccess),
             (other_left, other_right) =>
                 Err(
                     RuntimeError::InvalidOperation(
@@ -222,7 +222,7 @@ impl RegisterContents {
     pub(crate) fn try_rightshift(&self, right: &RegisterContents) -> Result<RegisterContents> {
         match (self, right) {
             (Self::Int(l), Self::Int(r)) => Ok(Self::Int(l >> r)),
-            (Self::None, _) | (_, Self::None) => Err(RuntimeError::RegisterEmpty),
+            (Self::None, _) | (_, Self::None) => Err(RuntimeError::NullAccess),
             (other_left, other_right) =>
                 Err(
                     RuntimeError::InvalidOperation(
@@ -237,7 +237,7 @@ impl RegisterContents {
     pub(crate) fn try_or(&self, right: &RegisterContents) -> Result<RegisterContents> {
         match (self, right) {
             (Self::Bool(l), Self::Bool(r)) => Ok(Self::Bool(*l || *r)),
-            (Self::None, _) | (_, Self::None) => Err(RuntimeError::RegisterEmpty),
+            (Self::None, _) | (_, Self::None) => Err(RuntimeError::NullAccess),
             (other_left, other_right) =>
                 Err(
                     RuntimeError::InvalidOperation(
@@ -252,7 +252,7 @@ impl RegisterContents {
     pub(crate) fn try_and(&self, right: &RegisterContents) -> Result<RegisterContents> {
         match (self, right) {
             (Self::Bool(l), Self::Bool(r)) => Ok(Self::Bool(*l && *r)),
-            (Self::None, _) | (_, Self::None) => Err(RuntimeError::RegisterEmpty),
+            (Self::None, _) | (_, Self::None) => Err(RuntimeError::NullAccess),
             (other_left, other_right) =>
                 Err(
                     RuntimeError::InvalidOperation(
@@ -271,14 +271,15 @@ impl RegisterContents {
             (Self::Bool(l), Self::Bool(r)) => Ok(Self::Bool(l == r)),
             (Self::Char(l), Self::Char(r)) => Ok(Self::Bool(l == r)),
             (Self::Object(l), Self::Object(r)) => Ok(Self::Bool(l == r)),
-            (Self::None, _) | (_, Self::None) => Err(RuntimeError::RegisterEmpty),
-            (other_left, other_right) => Err(
-                RuntimeError::InvalidOperation(
-                    "eq",
-                    other_left.type_name(),
-                    other_right.type_name()
-                )
-            ),
+            (Self::None, _) | (_, Self::None) => Err(RuntimeError::NullAccess),
+            (other_left, other_right) =>
+                Err(
+                    RuntimeError::InvalidOperation(
+                        "eq",
+                        other_left.type_name(),
+                        other_right.type_name()
+                    )
+                ),
         }
     }
 }
@@ -326,10 +327,8 @@ impl Stack {
     pub fn push_frame(&mut self) -> StackFrame {
         self.depth.set(self.depth.get() + 1);
         self.registers.extend([RegisterContents::None; Register::MAX as usize]);
-        let range = self.current_frame_range();
         StackFrame {
             stack: self,
-            range,
         }
     }
 
@@ -341,7 +340,6 @@ impl Stack {
 
 pub struct StackFrame<'a> {
     stack: &'a mut Stack,
-    range: Range<usize>,
 }
 
 impl<'a> StackFrame<'a> {

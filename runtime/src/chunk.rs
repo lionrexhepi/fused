@@ -1,10 +1,20 @@
-use std::{ fmt::{ Formatter, Display } };
+use std::fmt::{ Formatter, Display };
 
-use parser::ast::keywords::In;
+use thiserror::Error;
 
-use crate::{ RuntimeError, stack::{ RegisterContents, Stack }, instructions::{ Instruction } };
+use crate::{ stack::{ RegisterContents, Register }, instructions::Instruction };
 
-use super::Result;
+pub type Result<T> = std::result::Result<T, BytecodeError>;
+
+#[derive(Error, Debug, Clone, PartialEq, Eq)]
+pub enum BytecodeError {
+    #[error("Invalid instruction: {0:x}")] InvalidInstruction(u8),
+    #[error("The register {0:x} exceeds the size of the current stack frame")] RegisterNotFound(
+        Register,
+    ),
+    #[error("Chunk ends in the middle of an instruction")]
+    UnexpectedEOF,
+}
 
 pub struct Chunk {
     pub consts: Vec<RegisterContents>,
@@ -23,63 +33,53 @@ impl<'a> Display for Chunk {
 
         let mut ip = 0;
         while ip < self.buffer.len() {
-            match Instruction::read_from_chunk(&self.buffer[ip..]) {
-                Ok((instruction, offset)) => {
-                    write!(f, "0x{:<5x}", ip)?;
-                    let (name, args) = match instruction {
-                        Instruction::Return(val) => ("return", format!("<{val:x}>")),
-                        Instruction::Const(from, to) => ("const", format!("[{from:x}] <{to:x}>")),
-                        Instruction::Add { left, right, dst } =>
-                            ("add", format!("<{left:x}> <{right:x}> <{dst:x}>")),
-                        Instruction::Sub { left, right, dst } =>
-                            ("sub", format!("<{left:x}> <{right:x}> <{dst:x}>")),
-                        Instruction::Mul { left, right, dst } =>
-                            ("mul", format!("<{left:x}> <{right:x}> <{dst:x}>")),
-                        Instruction::Div { left, right, dst } =>
-                            ("div", format!("<{left:x}> <{right:x}> <{dst:x}>")),
-                        Instruction::Mod { left, right, dst } =>
-                            ("mod", format!("<{left:x}> <{right:x}> <{dst:x}>")),
-                        Instruction::BitAnd { left, right, dst } =>
-                            ("bitand", format!("<{left:x}> <{right:x}> <{dst:x}>")),
-                        Instruction::BitOr { left, right, dst } =>
-                            ("bitor", format!("<{left:x}> <{right:x}> <{dst:x}>")),
-                        Instruction::BitXor { left, right, dst } =>
-                            ("bitxor", format!("<{left:x}> <{right:x}> <{dst:x}>")),
-                        Instruction::LeftShift { left, right, dst } =>
-                            ("leftshift", format!("<{left:x}> <{right:x}> <{dst:x}>")),
-                        Instruction::RightShift { left, right, dst } =>
-                            ("rightshift", format!("<{left:x}> <{right:x}> <{dst:x}>")),
-                        Instruction::Or { left, right, dst } =>
-                            ("or", format!("<{left:x}> <{right:x}> <{dst:x}>")),
-                        Instruction::And { left, right, dst } =>
-                            ("and", format!("<{left:x}> <{right:x}> <{dst:x}>")),
-                        Instruction::Eq { left, right, dst } =>
-                            ("eq", format!("<{left:x}> <{right:x}> <{dst:x}>")),
-                    };
-                    write!(f, "{: <10}", name)?;
-                    writeln!(f, "{: <15}", args)?;
-                    ip += offset as usize;
+            let instruction = Instruction::from_byte(self.buffer[ip])?;
+            ip += 1;
+            let (name, args) = match instruction {
+                Instruction::Const => {
+                    let (address, dest) = Instruction::read_constant(&self.buffer[ip..])?;
+                    ip += 3;
+                    ("const", format!("{:x} <{}>", address, dest))
                 }
-                Err(RuntimeError::InvalidChunkEnd) => {
-                    writeln!(f, "{:x}: <invalid chunk end>", ip)?;
-                    break;
-                }
-                Err(RuntimeError::InvalidInstruction(byte)) => {
-                    writeln!(f, "{:x}: <invalid instruction: {:x}>", ip, byte)?;
+                Instruction::Return => {
                     ip += 1;
+                    ("return", format!("<{}>", self.buffer[ip - 1]))
                 }
-                Err(_) => unreachable!(),
-            }
+                other if other.is_binary() => {
+                    let (left, right, dest) = Instruction::read_binary_args(&self.buffer[ip..])?;
+                    ip += 3;
+                    let name = match other {
+                        Instruction::Add => "add",
+                        Instruction::Sub => "sub",
+                        Instruction::Mul => "mul",
+                        Instruction::Div => "div",
+                        Instruction::Mod => "mod",
+                        Instruction::BitAnd => "bitand",
+                        Instruction::BitOr => "bitor",
+                        Instruction::BitXor => "bitxor",
+                        Instruction::Eq => "eq",
+                        Instruction::And => "and",
+                        _ => unreachable!(),
+                    };
+                    (name, format!("<{}> <{}> <{}>", left, right, dest))
+                }
+                _ => unreachable!("Missing match arm for instruction {instruction:?}"),
+            };
+            writeln!(f, "{name:<5} {args:>25}")?;
         }
 
         Ok(())
     }
 }
 
+impl From<BytecodeError> for std::fmt::Error {
+    fn from(_: BytecodeError) -> Self {
+        Self
+    }
+}
+
 #[cfg(test)]
 mod test {
-    use std::io::stdin;
-
     use crate::stack::RegisterContents;
 
     #[test]
@@ -91,7 +91,7 @@ mod test {
 
     #[test]
     fn display() {
-        let mut buffer = [
+        let buffer = [
             1,
             0,
             0,

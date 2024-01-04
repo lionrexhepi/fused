@@ -3,7 +3,7 @@
 use std::marker::PhantomData;
 
 use alloc::{ Guard, GuardedHeap };
-use chunk::Chunk;
+use chunk::{ Chunk, BytecodeError };
 use instructions::Instruction;
 use libimmixcons::{ threading::{ immix_register_thread, immix_unregister_thread }, immix_collect };
 use stack::{ Stack, RegisterContents };
@@ -13,8 +13,8 @@ use array::ArrayCapacity;
 pub mod constants;
 mod chunk;
 pub mod stack;
-mod array;
-mod alloc;
+pub mod array;
+pub mod alloc;
 pub mod codegen;
 mod instructions;
 
@@ -25,16 +25,16 @@ pub enum RuntimeError {
     ),
     #[error("Failed to allocate memory")]
     AllocationFailure,
-    #[error("Invalid instruction: {0:x}")] InvalidInstruction(u8),
-    #[error("Chunk ends in the middle of instruction")] InvalidChunkEnd,
-    #[error("Invalid register: {0:x}")] InvalidRegister(u8),
+    #[error(
+        "Error while reading bytecode: {0}\n\n This error is likely unrecoverable."
+    )] InvalidBytecode(#[from] BytecodeError),
+    #[error("Attempted operation with null value")] NullAccess,
     #[error("Bad stack frame {0:x}")] BadStackFrame(u16),
     #[error("Operation {0} unsupported for types {1} and {2}")] InvalidOperation(
         &'static str,
         &'static str,
         &'static str,
     ),
-    #[error("Attempted to access empty register")] RegisterEmpty,
     #[error("Chunk does not contain a constant at index {0:x}")] InvalidConstant(u16),
 }
 
@@ -58,95 +58,53 @@ impl Thread {
         Ok(value)
     }
 
-    fn run_guarded(&mut self, heap: GuardedHeap, chunk: Chunk) -> Result<RegisterContents> {
+    fn run_guarded(&mut self, _heap: GuardedHeap, chunk: Chunk) -> Result<RegisterContents> {
         let mut ip = 0;
         let mut frame = self.stack.push_frame();
         let return_value = loop {
             if ip == chunk.buffer.len() {
                 break RegisterContents::None;
             }
-            let (instruction, offset) = Instruction::read_from_chunk(
-                &chunk.buffer[ip..chunk.buffer.len()]
-            )?;
+            let instruction = Instruction::from_byte(chunk.buffer[ip])?;
+            ip += 1;
             match instruction {
-                Instruction::Return(from) => {
-                    break frame.get_value(from)?;
+                Instruction::Return => {
+                    break frame.get_value(chunk.buffer[0])?;
                 }
-                Instruction::Const(address, dst) => {
+                Instruction::Const => {
+                    let (address, dest) = Instruction::read_constant(&chunk.buffer[ip..])?;
                     let const_val = chunk.consts
                         .get(address as usize)
                         .ok_or(RuntimeError::InvalidConstant(address))?;
-                    frame.set_value(dst, *const_val)?;
+                    frame.set_value(dest, *const_val)?;
+                    ip += 3;
                 }
-                Instruction::Add { left, right, dst } => {
+                other @ _ if other.is_binary() => {
+                    let (left, right, dest) = Instruction::read_binary_args(&chunk.buffer[ip..])?;
+                    let operator = match other {
+                        Instruction::Add => RegisterContents::try_add,
+                        Instruction::Sub => RegisterContents::try_sub,
+                        Instruction::Mul => RegisterContents::try_mul,
+                        Instruction::Div => RegisterContents::try_div,
+                        Instruction::Mod => RegisterContents::try_mod,
+                        Instruction::BitAnd => RegisterContents::try_bitand,
+                        Instruction::BitOr => RegisterContents::try_bitor,
+                        Instruction::BitXor => RegisterContents::try_bitxor,
+                        Instruction::LeftShift => RegisterContents::try_leftshift,
+                        Instruction::RightShift => RegisterContents::try_rightshift,
+                        Instruction::Eq => RegisterContents::try_eq,
+                        Instruction::And => RegisterContents::try_and,
+                        Instruction::Or => RegisterContents::try_or,
+                        _ => unreachable!(),
+                    };
                     let left = frame.get_value(left)?;
                     let right = frame.get_value(right)?;
-                    frame.set_value(dst, left.try_add(&right)?)?;
+                    let result = operator(&left, &right)?;
+                    frame.set_value(dest, result)?;
+                    ip += 3;
                 }
-                Instruction::Sub { left, right, dst } => {
-                    let left = frame.get_value(left)?;
-                    let right = frame.get_value(right)?;
-                    frame.set_value(dst, left.try_sub(&right)?)?;
-                }
-
-                Instruction::Mul { left, right, dst } => {
-                    let left = frame.get_value(left)?;
-                    let right = frame.get_value(right)?;
-                    frame.set_value(dst, left.try_mul(&right)?)?;
-                }
-                Instruction::Div { left, right, dst } => {
-                    let left = frame.get_value(left)?;
-                    let right = frame.get_value(right)?;
-                    frame.set_value(dst, left.try_div(&right)?)?;
-                }
-                Instruction::Mod { left, right, dst } => {
-                    let left = frame.get_value(left)?;
-                    let right = frame.get_value(right)?;
-                    frame.set_value(dst, left.try_mod(&right)?)?;
-                }
-                Instruction::BitAnd { left, right, dst } => {
-                    let left = frame.get_value(left)?;
-                    let right = frame.get_value(right)?;
-                    frame.set_value(dst, left.try_bitand(&right)?)?;
-                }
-                Instruction::BitOr { left, right, dst } => {
-                    let left = frame.get_value(left)?;
-                    let right = frame.get_value(right)?;
-                    frame.set_value(dst, left.try_bitor(&right)?)?;
-                }
-                Instruction::BitXor { left, right, dst } => {
-                    let left = frame.get_value(left)?;
-                    let right = frame.get_value(right)?;
-                    frame.set_value(dst, left.try_bitxor(&right)?)?;
-                }
-
-                Instruction::LeftShift { left, right, dst } => {
-                    let left = frame.get_value(left)?;
-                    let right = frame.get_value(right)?;
-                    frame.set_value(dst, left.try_leftshift(&right)?)?;
-                }
-                Instruction::RightShift { left, right, dst } => {
-                    let left = frame.get_value(left)?;
-                    let right = frame.get_value(right)?;
-                    frame.set_value(dst, left.try_rightshift(&right)?)?;
-                }
-                Instruction::Or { left, right, dst } => {
-                    let left = frame.get_value(left)?;
-                    let right = frame.get_value(right)?;
-                    frame.set_value(dst, left.try_or(&right)?)?;
-                }
-                Instruction::And { left, right, dst } => {
-                    let left = frame.get_value(left)?;
-                    let right = frame.get_value(right)?;
-                    frame.set_value(dst, left.try_and(&right)?)?;
-                }
-                Instruction::Eq { left, right, dst } => {
-                    let left = frame.get_value(left)?;
-                    let right = frame.get_value(right)?;
-                    frame.set_value(dst, RegisterContents::Bool(left == right))?;
-                }
+                _ => unreachable!("Missing match arm for instruction {:?}", instruction),
             }
-            ip += offset as usize;
         };
 
         Ok(return_value)
@@ -155,37 +113,11 @@ impl Thread {
 
 #[cfg(test)]
 mod test {
-    use std::{ thread::Thread, ptr::{ null, NonNull }, marker::PhantomData };
+    use std::{ ptr::NonNull, marker::PhantomData };
 
-    use libimmixcons::{ immix_init, immix_noop_callback, object::Gc };
+    use libimmixcons::object::Gc;
 
-    use crate::{
-        chunk::Chunk,
-        stack::{ RegisterContents, Stack },
-        alloc::GuardedCell,
-        codegen::Codegen,
-    };
-
-    #[test]
-    fn test_file() {
-        immix_init(512 * 1000, 0, immix_noop_callback, core::ptr::null_mut());
-        let mut codegen = Codegen::new();
-
-        let left = codegen.emit_const(RegisterContents::Int(5));
-        let right = codegen.emit_const(RegisterContents::Int(3));
-
-        let result = codegen.emit_add(left, right);
-        codegen.emit_return(result);
-
-        let chunk = codegen.chunk();
-
-        let mut thread = super::Thread {
-            stack: Stack::new(),
-        };
-
-        let result = thread.run_chunk(chunk).unwrap();
-        println!("{result}")
-    }
+    use crate::{ stack::RegisterContents, alloc::GuardedCell };
 
     #[test]
     fn test_display() {

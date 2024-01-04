@@ -7,7 +7,7 @@ pub type ArrayCapacity = u32;
 
 #[derive(Debug)]
 #[repr(C)]
-struct GCedArray<T: Debug> {
+pub struct GCedArray<T: Debug> {
     capacity: ArrayCapacity,
     used: ArrayCapacity,
 

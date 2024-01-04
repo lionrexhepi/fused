@@ -27,7 +27,7 @@ impl ToBytecode for ExprSimple {
             ExprSimple::Binary(left, op, right) => {
                 let left = left.to_bytecode(codegen);
                 let right = right.to_bytecode(codegen);
-                match op {
+                let instruction = match op {
                     BinaryType::Assign => todo!(),
                     BinaryType::AddAssign => todo!(),
                     BinaryType::SubAssign => todo!(),
@@ -41,25 +41,26 @@ impl ToBytecode for ExprSimple {
                     BinaryType::BitXorAssign => todo!(),
                     BinaryType::LeftShiftAssign => todo!(),
                     BinaryType::RightShiftAssign => todo!(),
-                    BinaryType::Or => codegen.emit_or(left, right),
-                    BinaryType::Add => codegen.emit_add(left, right),
-                    BinaryType::Sub => codegen.emit_sub(left, right),
-                    BinaryType::Mul => codegen.emit_mul(left, right),
-                    BinaryType::Div => codegen.emit_div(left, right),
-                    BinaryType::Mod => codegen.emit_mod(left, right),
-                    BinaryType::BitAnd => codegen.emit_bitand(left, right),
-                    BinaryType::And => codegen.emit_and(left, right),
-                    BinaryType::BitOr => codegen.emit_bitor(left, right),
-                    BinaryType::BitXor => codegen.emit_bitxor(left, right),
-                    BinaryType::Eq => codegen.emit_eq(left, right),
+                    BinaryType::Or => Instruction::Or,
+                    BinaryType::Add => Instruction::Add,
+                    BinaryType::Sub => Instruction::Sub,
+                    BinaryType::Mul => Instruction::Mul,
+                    BinaryType::Div => Instruction::Div,
+                    BinaryType::Mod => Instruction::Mod,
+                    BinaryType::BitAnd => Instruction::BitAnd,
+                    BinaryType::And => Instruction::And,
+                    BinaryType::BitOr => Instruction::BitOr,
+                    BinaryType::BitXor => Instruction::BitXor,
+                    BinaryType::Eq => Instruction::Eq,
                     BinaryType::Neq => todo!(),
                     BinaryType::Lt => todo!(),
                     BinaryType::Gt => todo!(),
                     BinaryType::Leq => todo!(),
                     BinaryType::Geq => todo!(),
-                    BinaryType::LeftShift => codegen.emit_leftshift(left, right),
-                    BinaryType::RightShift => codegen.emit_rightshift(left, right),
-                }
+                    BinaryType::LeftShift => Instruction::LeftShift,
+                    BinaryType::RightShift => Instruction::RightShift,
+                };
+                codegen.emit_binary(left, right, instruction)
             }
             ExprSimple::Literal(lit) => lit.to_bytecode(codegen),
             _ => todo!("ee"),

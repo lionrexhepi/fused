@@ -1,21 +1,8 @@
-use std::{
-    marker::PhantomData,
-    ptr::NonNull,
-    cell::Cell,
-    sync::Mutex,
-    ops::{ Deref, DerefMut },
-    fmt::Debug,
-};
+use std::{ marker::PhantomData, ptr::NonNull, ops::{ Deref, DerefMut }, fmt::Debug };
 
 use crate::{ Result, RuntimeError };
 
-use libimmixcons::{
-    object::{ HeapObject, GCRTTI, Gc, RawGc },
-    GCObject,
-    immix_alloc,
-    threading::immix_register_thread,
-    immix_alloc_safe,
-};
+use libimmixcons::{ object::{ HeapObject, GCRTTI, Gc, RawGc }, GCObject, immix_alloc };
 
 #[derive(Clone, Copy)]
 pub struct Guard<'a>(pub(crate) PhantomData<&'a ()>);

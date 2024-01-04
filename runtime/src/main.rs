@@ -1,4 +1,4 @@
-use std::{ env::args, path::Path, fs::File, io::Read, ptr::NonNull };
+use std::{ env::args, fs::File, io::Read };
 
 use libimmixcons::{ immix_init, immix_noop_callback };
 use parser::{ tokens::stream::TokenStream, ast::{ stream::ParseStream, block::Block } };
@@ -6,9 +6,9 @@ use runtime::{ codegen::{ Codegen, ToBytecode }, Thread, stack::Stack };
 
 fn main() {
     let mut args = args().skip(0);
-    if let Some(path) = args.next() {
+    if let Some(_path) = args.next() {
         let mut buf = String::new();
-        let text = File::open("./test.fused").unwrap().read_to_string(&mut buf).unwrap();
+        let _text = File::open("./test.fused").unwrap().read_to_string(&mut buf).unwrap();
         init_gc();
         let tokens = TokenStream::from_string(buf).unwrap();
         let mut parse = ParseStream::new(tokens);
