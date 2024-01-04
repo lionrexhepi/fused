@@ -49,6 +49,12 @@ impl<'a> Display for Chunk {
                             ("leftshift", format!("<{left:x}> <{right:x}> <{dst:x}>")),
                         Instruction::RightShift { left, right, dst } =>
                             ("rightshift", format!("<{left:x}> <{right:x}> <{dst:x}>")),
+                        Instruction::Or { left, right, dst } =>
+                            ("or", format!("<{left:x}> <{right:x}> <{dst:x}>")),
+                        Instruction::And { left, right, dst } =>
+                            ("and", format!("<{left:x}> <{right:x}> <{dst:x}>")),
+                        Instruction::Eq { left, right, dst } =>
+                            ("eq", format!("<{left:x}> <{right:x}> <{dst:x}>")),
                     };
                     write!(f, "{: <10}", name)?;
                     writeln!(f, "{: <15}", args)?;

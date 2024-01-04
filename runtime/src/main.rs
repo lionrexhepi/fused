@@ -13,6 +13,7 @@ fn main() {
         let tokens = TokenStream::from_string(buf).unwrap();
         let mut parse = ParseStream::new(tokens);
         let block = parse.parse::<Block>().unwrap();
+        println!("{:?}", block.0.first().unwrap().content);
         let mut codegen = Codegen::new();
         let result = block.to_bytecode(&mut codegen);
         codegen.emit_return(result);

@@ -130,6 +130,21 @@ impl Thread {
                     let right = frame.get_value(right)?;
                     frame.set_value(dst, left.try_rightshift(&right)?)?;
                 }
+                Instruction::Or { left, right, dst } => {
+                    let left = frame.get_value(left)?;
+                    let right = frame.get_value(right)?;
+                    frame.set_value(dst, left.try_or(&right)?)?;
+                }
+                Instruction::And { left, right, dst } => {
+                    let left = frame.get_value(left)?;
+                    let right = frame.get_value(right)?;
+                    frame.set_value(dst, left.try_and(&right)?)?;
+                }
+                Instruction::Eq { left, right, dst } => {
+                    let left = frame.get_value(left)?;
+                    let right = frame.get_value(right)?;
+                    frame.set_value(dst, RegisterContents::Bool(left == right))?;
+                }
             }
             ip += offset as usize;
         };

@@ -3,7 +3,11 @@ mod block;
 
 use std::cell::Cell;
 
-use crate::{ stack::{ Register, RegisterContents }, instructions::Instruction, chunk::Chunk };
+use crate::{
+    stack::{ Register, RegisterContents },
+    instructions::{ Instruction, self },
+    chunk::Chunk,
+};
 
 pub struct Codegen {
     bytes: Vec<u8>,
@@ -31,6 +35,13 @@ impl Codegen {
         (self.constants.len() as u16) - 1
     }
 
+    #[inline]
+    fn emit_binary(&mut self, left: Register, right: Register, instruction: u8) -> Register {
+        let dst = self.next_free_register();
+        self.bytes.extend([instruction, left, right, dst]);
+        dst
+    }
+
     pub fn emit_return(&mut self, value: Register) {
         self.bytes.extend([Instruction::RETURN, value])
     }
@@ -45,63 +56,55 @@ impl Codegen {
     }
 
     pub fn emit_add(&mut self, left: Register, right: Register) -> Register {
-        let dest = self.next_free_register();
-        self.bytes.extend([Instruction::ADD, left, right, dest]);
-        dest
+        self.emit_binary(left, right, Instruction::ADD)
     }
 
     pub fn emit_sub(&mut self, left: Register, right: Register) -> Register {
-        let dest = self.next_free_register();
-        self.bytes.extend([Instruction::SUB, left, right, dest]);
-        dest
+        self.emit_binary(left, right, Instruction::SUB)
     }
 
     pub fn emit_mul(&mut self, left: Register, right: Register) -> Register {
-        let dest = self.next_free_register();
-        self.bytes.extend([Instruction::MUL, left, right, dest]);
-        dest
+        self.emit_binary(left, right, Instruction::MUL)
     }
 
     pub fn emit_div(&mut self, left: Register, right: Register) -> Register {
-        let dest = self.next_free_register();
-        self.bytes.extend([Instruction::DIV, left, right, dest]);
-        dest
+        self.emit_binary(left, right, Instruction::DIV)
     }
 
     pub fn emit_mod(&mut self, left: Register, right: Register) -> Register {
-        let dest = self.next_free_register();
-        self.bytes.extend([Instruction::MOD, left, right, dest]);
-        dest
+        self.emit_binary(left, right, Instruction::MOD)
     }
 
     pub fn emit_bitand(&mut self, left: Register, right: Register) -> Register {
-        let dest = self.next_free_register();
-        self.bytes.extend([Instruction::BITAND, left, right, dest]);
-        dest
+        self.emit_binary(left, right, Instruction::BITAND)
     }
 
     pub fn emit_bitor(&mut self, left: Register, right: Register) -> Register {
-        let dest = self.next_free_register();
-        self.bytes.extend([Instruction::BITOR, left, right, dest]);
-        dest
+        self.emit_binary(left, right, Instruction::BITOR)
     }
 
     pub fn emit_bitxor(&mut self, left: Register, right: Register) -> Register {
-        let dest = self.next_free_register();
-        self.bytes.extend([Instruction::BITXOR, left, right, dest]);
-        dest
+        self.emit_binary(left, right, Instruction::BITXOR)
     }
 
     pub fn emit_leftshift(&mut self, left: Register, right: Register) -> Register {
-        let dest = self.next_free_register();
-        self.bytes.extend([Instruction::LEFTSHIFT, left, right, dest]);
-        dest
+        self.emit_binary(left, right, Instruction::LEFTSHIFT)
     }
 
     pub fn emit_rightshift(&mut self, left: Register, right: Register) -> Register {
-        let dest = self.next_free_register();
-        self.bytes.extend([Instruction::RIGHTSHIFT, left, right, dest]);
-        dest
+        self.emit_binary(left, right, Instruction::RIGHTSHIFT)
+    }
+
+    pub fn emit_or(&mut self, left: Register, right: Register) -> Register {
+        self.emit_binary(left, right, Instruction::OR)
+    }
+
+    pub fn emit_and(&mut self, left: Register, right: Register) -> Register {
+        self.emit_binary(left, right, Instruction::AND)
+    }
+
+    pub fn emit_eq(&mut self, left: Register, right: Register) -> Register {
+        self.emit_binary(left, right, Instruction::EQ)
     }
 
     pub fn chunk<'a>(self) -> Chunk {

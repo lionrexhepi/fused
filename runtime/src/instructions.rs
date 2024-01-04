@@ -55,6 +55,21 @@ pub enum Instruction {
         right: Register,
         dst: Register,
     } = Self::RIGHTSHIFT,
+    Or {
+        left: Register,
+        right: Register,
+        dst: Register,
+    } = Self::OR,
+    And {
+        left: Register,
+        right: Register,
+        dst: Register,
+    } = Self::AND,
+    Eq {
+        left: Register,
+        right: Register,
+        dst: Register,
+    } = Self::EQ,
 }
 
 impl Instruction {
@@ -70,6 +85,9 @@ impl Instruction {
     pub const BITXOR: u8 = 9;
     pub const LEFTSHIFT: u8 = 10;
     pub const RIGHTSHIFT: u8 = 11;
+    pub const OR: u8 = 12;
+    pub const AND: u8 = 13;
+    pub const EQ: u8 = 14;
 
     pub fn read_from_chunk(buffer: &[u8]) -> Result<(Self, u8)> {
         match buffer[0] {
@@ -159,6 +177,27 @@ impl Instruction {
                     Err(RuntimeError::InvalidChunkEnd)
                 } else {
                     Ok((Self::RightShift { left: buffer[1], right: buffer[2], dst: buffer[3] }, 4))
+                }
+            }
+            Self::OR => {
+                if buffer.len() < 4 {
+                    Err(RuntimeError::InvalidChunkEnd)
+                } else {
+                    Ok((Self::Or { left: buffer[1], right: buffer[2], dst: buffer[3] }, 4))
+                }
+            }
+            Self::AND => {
+                if buffer.len() < 4 {
+                    Err(RuntimeError::InvalidChunkEnd)
+                } else {
+                    Ok((Self::And { left: buffer[1], right: buffer[2], dst: buffer[3] }, 4))
+                }
+            }
+            Self::EQ => {
+                if buffer.len() < 4 {
+                    Err(RuntimeError::InvalidChunkEnd)
+                } else {
+                    Ok((Self::Eq { left: buffer[1], right: buffer[2], dst: buffer[3] }, 4))
                 }
             }
 

@@ -1,6 +1,6 @@
 use parser::ast::{ expr::{ Expr, ExprLit }, simple::{ ExprSimple, BinaryType }, number::Number };
 
-use crate::stack::{ Register, RegisterContents };
+use crate::{ stack::{ Register, RegisterContents }, instructions::Instruction };
 
 use super::{ ToBytecode, Codegen };
 
@@ -41,17 +41,17 @@ impl ToBytecode for ExprSimple {
                     BinaryType::BitXorAssign => todo!(),
                     BinaryType::LeftShiftAssign => todo!(),
                     BinaryType::RightShiftAssign => todo!(),
-                    BinaryType::Or => todo!(),
+                    BinaryType::Or => codegen.emit_or(left, right),
                     BinaryType::Add => codegen.emit_add(left, right),
                     BinaryType::Sub => codegen.emit_sub(left, right),
                     BinaryType::Mul => codegen.emit_mul(left, right),
                     BinaryType::Div => codegen.emit_div(left, right),
                     BinaryType::Mod => codegen.emit_mod(left, right),
                     BinaryType::BitAnd => codegen.emit_bitand(left, right),
-                    BinaryType::And => todo!(),
+                    BinaryType::And => codegen.emit_and(left, right),
                     BinaryType::BitOr => codegen.emit_bitor(left, right),
                     BinaryType::BitXor => codegen.emit_bitxor(left, right),
-                    BinaryType::Eq => todo!(),
+                    BinaryType::Eq => codegen.emit_eq(left, right),
                     BinaryType::Neq => todo!(),
                     BinaryType::Lt => todo!(),
                     BinaryType::Gt => todo!(),

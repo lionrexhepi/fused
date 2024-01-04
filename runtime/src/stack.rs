@@ -233,6 +233,54 @@ impl RegisterContents {
                 ),
         }
     }
+
+    pub(crate) fn try_or(&self, right: &RegisterContents) -> Result<RegisterContents> {
+        match (self, right) {
+            (Self::Bool(l), Self::Bool(r)) => Ok(Self::Bool(*l || *r)),
+            (Self::None, _) | (_, Self::None) => Err(RuntimeError::RegisterEmpty),
+            (other_left, other_right) =>
+                Err(
+                    RuntimeError::InvalidOperation(
+                        "or",
+                        other_left.type_name(),
+                        other_right.type_name()
+                    )
+                ),
+        }
+    }
+
+    pub(crate) fn try_and(&self, right: &RegisterContents) -> Result<RegisterContents> {
+        match (self, right) {
+            (Self::Bool(l), Self::Bool(r)) => Ok(Self::Bool(*l && *r)),
+            (Self::None, _) | (_, Self::None) => Err(RuntimeError::RegisterEmpty),
+            (other_left, other_right) =>
+                Err(
+                    RuntimeError::InvalidOperation(
+                        "and",
+                        other_left.type_name(),
+                        other_right.type_name()
+                    )
+                ),
+        }
+    }
+
+    pub(crate) fn try_eq(&self, right: &RegisterContents) -> Result<RegisterContents> {
+        match (self, right) {
+            (Self::Int(l), Self::Int(r)) => Ok(Self::Bool(l == r)),
+            (Self::Float(l), Self::Float(r)) => Ok(Self::Bool(l == r)),
+            (Self::Bool(l), Self::Bool(r)) => Ok(Self::Bool(l == r)),
+            (Self::Char(l), Self::Char(r)) => Ok(Self::Bool(l == r)),
+            (Self::Object(l), Self::Object(r)) => Ok(Self::Bool(l == r)),
+            (Self::None, _) | (_, Self::None) => Err(RuntimeError::RegisterEmpty),
+            (other_left, other_right) => Err(
+                RuntimeError::InvalidOperation(
+                    "eq",
+                    other_left.type_name(),
+                    other_right.type_name()
+                )
+            ),
+        }
+    }
 }
 
 pub struct Stack {
