@@ -51,6 +51,7 @@ use super::{
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum ExprSimple {
+    Assign(ExprPath, Box<Self>),
     Binary(Box<Self>, BinaryType, Box<Self>),
     Unary(Box<Self>, UnaryType),
     Call(Box<Self>, Separated<Expr, Comma>),
@@ -68,13 +69,14 @@ impl Spanned for ExprSimple {
             Self::Path(path) => path.span(),
             Self::Literal(lit) => lit.span(),
             Self::Call(callee, args) => callee.span().join(args.span()),
+            Self::Assign(path, val) => path.span().join(val.span()),
         }
     }
 }
 
 impl Parse for ExprSimple {
     fn parse(stream: &mut ParseStream) -> ParseResult<Self> where Self: Sized {
-        Self::parse_binary(stream, BinaryType::Assign)
+        Self::parse_assign(stream)
     }
 
     fn could_parse(stream: &mut ParseStream) -> bool {
@@ -87,15 +89,34 @@ impl Parse for ExprSimple {
 }
 
 impl ExprSimple {
-    fn parse_binary(stream: &mut ParseStream, operator: BinaryType) -> ParseResult<Self> {
-        let left = if let Some(next) = operator.next_by_precedence() {
-            Self::parse_binary(stream, next)?
-        } else {
-            Self::parse_unary_prefix(stream)?
-        };
-        if operator.matches(stream) {
-            let right = Self::parse_binary(stream, operator)?; //Try the first operator in case of chaining
-            Ok(Self::Binary(Box::new(left), operator, Box::new(right)))
+    fn parse_assign(stream: &mut ParseStream) -> ParseResult<Self> {
+        let target = Self::parse_binary_level(stream, 0)?;
+        match target {
+            Self::Path(path) if stream.parse::<Eq>().is_ok() => {
+                let value = Self::parse_assign(stream)?;
+                Ok(Self::Assign(path, Box::new(value)))
+            }
+            other => Ok(other),
+        }
+    }
+
+    fn parse_binary_level(stream: &mut ParseStream, precedence: usize) -> ParseResult<Self> {
+        if precedence >= BinaryType::PRECEDENCE_LEVELS.len() {
+            return Self::parse_unary_prefix(stream);
+        }
+
+        let left = Self::parse_binary_level(stream, precedence + 1)?;
+        let mut ty = None;
+
+        for operator in BinaryType::PRECEDENCE_LEVELS[precedence] {
+            if operator.matches(stream) {
+                ty = Some(*operator);
+            }
+        }
+
+        if let Some(ty) = ty {
+            let right = Self::parse_binary_level(stream, precedence)?;
+            Ok(Self::Binary(Box::new(left), ty, Box::new(right)))
         } else {
             Ok(left)
         }
@@ -190,43 +211,15 @@ pub enum BinaryType {
 }
 
 impl BinaryType {
-    fn next_by_precedence(&self) -> Option<Self> {
-        Some(match self {
-            Self::Assign => Self::AddAssign,
-            Self::AddAssign => Self::SubAssign,
-            Self::SubAssign => Self::MulAssign,
-            Self::MulAssign => Self::DivAssign,
-            Self::DivAssign => Self::ModAssign,
-            Self::ModAssign => Self::AndAssign,
-            Self::AndAssign => Self::OrAssign,
-            Self::OrAssign => Self::BitAndAssign,
-            Self::BitAndAssign => Self::BitOrAssign,
-            Self::BitOrAssign => Self::BitXorAssign,
-            Self::BitXorAssign => Self::LeftShiftAssign,
-            Self::LeftShiftAssign => Self::RightShiftAssign,
-            Self::RightShiftAssign => Self::Eq,
-            Self::Eq => Self::Neq,
-            Self::Neq => Self::Lt,
-            Self::Lt => Self::Gt,
-            Self::Gt => Self::Leq,
-            Self::Leq => Self::Geq,
-            Self::Geq => Self::Or,
-            Self::Or => Self::Add,
-            Self::Add => Self::Sub,
-            Self::Sub => Self::Mul,
-            Self::Mul => Self::Div,
-            Self::Div => Self::Mod,
-            Self::Mod => Self::And,
-            Self::And => Self::BitAnd,
-            Self::BitAnd => Self::BitOr,
-            Self::BitOr => Self::BitXor,
-            Self::BitXor => Self::LeftShift,
-            Self::LeftShift => Self::RightShift,
-            Self::RightShift => {
-                return None;
-            }
-        })
-    }
+    pub const PRECEDENCE_LEVELS: [&'static [Self]; 7] = [
+        &[Self::And, Self::Or],
+        &[Self::Eq, Self::Neq],
+        &[Self::Lt, Self::Gt, Self::Leq, Self::Geq],
+        &[Self::Add, Self::Sub],
+        &[Self::Mul, Self::Div, Self::Mod],
+        &[Self::BitAnd, Self::BitOr, Self::BitXor],
+        &[Self::LeftShift, Self::RightShift],
+    ];
 
     fn matches(&self, stream: &mut ParseStream) -> bool {
         match self {
@@ -293,6 +286,7 @@ mod test {
             Parse,
             expr::{ ExprLit, Expr },
             grouped::Parenthesized,
+            path::ExprPath,
         },
         tokens::stream::TokenStream,
     };
@@ -384,9 +378,8 @@ mod test {
             TokenStream::from_string("test = a * (1 + hello(34)) - 8 << 7").unwrap()
         );
         let expr = ExprSimple::parse(&mut stream).unwrap();
-        if let ExprSimple::Binary(left_assign, BinaryType::Assign, right_assign) = expr {
-            assert!(matches!(*left_assign, ExprSimple::Path(_)));
-
+        if let ExprSimple::Assign(_, right_assign) = expr {
+            println!("leftmost is path");
             if let ExprSimple::Binary(left_sub, BinaryType::Sub, right_sub) = *right_assign {
                 assert!(matches!(*right_sub, ExprSimple::Binary(_, BinaryType::LeftShift, _)));
                 if let ExprSimple::Binary(left_mul, BinaryType::Mul, right_mul) = *left_sub {
@@ -407,5 +400,14 @@ mod test {
         }
 
         panic!("Expression was parsed incorrectly.")
+    }
+
+    #[test]
+    fn test_chained_assign() {
+        let mut stream = ParseStream::new(TokenStream::from_string("a = b = c").unwrap());
+        let expr = ExprSimple::parse(&mut stream).unwrap();
+        assert!(
+            matches!(expr, ExprSimple::Assign(_, right) if matches!(*right, ExprSimple::Assign(_, _)))
+        );
     }
 }
