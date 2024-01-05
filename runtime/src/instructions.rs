@@ -33,7 +33,7 @@ impl Instruction {
         if buffer.len() < 3 {
             Err(BytecodeError::UnexpectedEOF)?
         } else {
-            Ok((u16::from_le_bytes(buffer[0..1].try_into().unwrap()), buffer[2]))
+            Ok((u16::from_le_bytes([buffer[0], buffer[1]]), buffer[2]))
         }
     }
 

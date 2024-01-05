@@ -10,6 +10,7 @@ use super::{
     punct::Colon,
     stream::ParseStream,
     ParseResult,
+    simple::ExprSimple,
 };
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -81,7 +82,7 @@ impl Parse for ExprWhile {
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct ExprFor {
     pub ident: Box<Ident>,
-    pub iter: Box<Expr>,
+    pub iter: Box<ExprSimple>,
     pub body: Box<Block>,
     span: Span,
 }
@@ -97,7 +98,7 @@ impl Parse for ExprFor {
         let _for = token.parse::<For>()?;
         let ident = token.parse::<Ident>()?;
         let _in = token.parse::<In>()?;
-        let iter = token.parse::<Expr>()?;
+        let iter = token.parse()?;
         token.parse::<Colon>()?;
         let body = token.parse::<Block>()?;
 
@@ -157,7 +158,7 @@ mod test {
         let r#for = stream.parse::<ExprFor>().unwrap();
 
         assert_eq!(r#for.ident.name, "i");
-        assert!(matches!(*r#for.iter, Expr::Simple(ExprSimple::Path(ExprPath { .. }))));
+        assert!(matches!(*r#for.iter, ExprSimple::Path(ExprPath { .. })));
         assert_eq!(r#for.body.0.len(), 1);
     }
 }

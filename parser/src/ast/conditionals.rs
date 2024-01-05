@@ -29,7 +29,7 @@ impl Spanned for ExprIf {
 impl Parse for ExprIf {
     fn parse(token: &mut ParseStream) -> ParseResult<Self> where Self: Sized {
         let r#if = token.parse::<If>()?;
-        let condition = token.parse::<ExprSimple>()?;
+        let condition = token.parse()?;
         token.parse::<Colon>()?;
         let body = token.parse::<Block>()?;
         let r#else = token.parse().ok();
@@ -103,7 +103,6 @@ mod test {
         let mut stream = ParseStream::new(tokens);
 
         let r#if = stream.parse::<ExprIf>().unwrap();
-
 
         assert!(matches!(*r#if.condition, ExprSimple::Literal(ExprLit::Bool(_))));
     }

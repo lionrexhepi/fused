@@ -14,10 +14,12 @@ use super::{
     stream::ParseStream,
     ParseResult,
     simple::ExprSimple,
+    declarations::ExprDecl,
 };
 
 #[derive(Debug, PartialEq, Eq, Clone, Default)]
 pub enum Expr {
+    Decl(ExprDecl),
     Simple(ExprSimple),
     Function(ExprFunction),
     If(ExprIf),
@@ -31,6 +33,7 @@ pub enum Expr {
 impl Spanned for Expr {
     fn span(&self) -> Span {
         match self {
+            Self::Decl(decl) => decl.span(),
             Self::Simple(simple) => simple.span(),
             Expr::Function(function) => function.span(),
             Expr::If(r#if) => r#if.span(),
@@ -55,6 +58,8 @@ impl Parse for Expr {
             Self::For(stream.parse()?)
         } else if ExprLoop::could_parse(stream) {
             Self::Loop(stream.parse()?)
+        } else if ExprDecl::could_parse(stream) {
+            Self::Decl(stream.parse()?)
         } else {
             Self::Simple(stream.parse()?)
         };

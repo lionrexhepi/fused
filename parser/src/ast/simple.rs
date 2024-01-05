@@ -39,7 +39,7 @@ pub enum ExprSimple {
     Assign(ExprPath, Box<Self>),
     Binary(Box<Self>, BinaryType, Box<Self>),
     Unary(Box<Self>, UnaryType),
-    Call(Box<Self>, Separated<Expr, Comma>),
+    Call(Box<Self>, Separated<ExprSimple, Comma>),
     Grouped(Parenthesized<Expr>),
     Path(ExprPath),
     Literal(ExprLit),
@@ -65,7 +65,7 @@ impl Parse for ExprSimple {
     }
 
     fn could_parse(stream: &mut ParseStream) -> bool {
-        Parenthesized::<Expr>::could_parse(stream) ||
+        Parenthesized::<ExprSimple>::could_parse(stream) ||
             ExprPath::could_parse(stream) ||
             ExprLit::could_parse(stream) ||
             Exclamation::could_parse(stream) ||
@@ -124,7 +124,7 @@ impl ExprSimple {
     fn parse_call(stream: &mut ParseStream) -> ParseResult<Self> {
         let mut callee = Self::parse_grouped(stream)?;
 
-        while Parenthesized::<Separated<Expr>>::could_parse(stream) {
+        while Parenthesized::<Separated<ExprSimple>>::could_parse(stream) {
             let args = stream.parse::<Parenthesized<_>>()?;
             callee = Self::Call(Box::new(callee), *args.0);
         }
@@ -133,7 +133,7 @@ impl ExprSimple {
     }
 
     fn parse_grouped(stream: &mut ParseStream) -> ParseResult<Self> {
-        if Parenthesized::<Expr>::could_parse(stream) {
+        if Parenthesized::<ExprSimple>::could_parse(stream) {
             Ok(Self::Grouped(stream.parse()?))
         } else {
             Self::parse_path(stream)

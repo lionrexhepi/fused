@@ -59,6 +59,7 @@ impl ToBytecode for Expr {
     fn to_bytecode(&self, codegen: &mut Codegen) -> Register {
         match self {
             Expr::Simple(simple) => simple.to_bytecode(codegen),
+            Expr::Decl(_) => todo!("declr"),
             Expr::Function(_) => todo!("eeee"),
             Expr::If(_) => todo!("ees"),
             Expr::While(_) => todo!("sse"),
