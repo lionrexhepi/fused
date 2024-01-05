@@ -1,29 +1,14 @@
-use std::{ collections::HashMap, fmt::Binary };
-
-use crate::{ Span, tokens::{ TokenType, punct::TokenPunct, group::{ TokenGroup, Delim } } };
+use crate::Span;
 
 use super::{
     expr::{ Expr, ExprLit },
     Spanned,
     Parse,
-    stream::{ ParseStream, TokenCursor, self },
-    ParseError,
+    stream::ParseStream,
     ParseResult,
     punct::{
         Eq,
-        PlusEq,
-        MinusEq,
         DoublePipe,
-        StarEq,
-        SlashEq,
-        PercentEq,
-        AmpersandEq,
-        PipeEq,
-        DoubleAmpersandEq,
-        DoublePipeEq,
-        CaretEq,
-        DoubleLtEq,
-        DoubleGtEq,
         Plus,
         Minus,
         Star,
@@ -45,7 +30,7 @@ use super::{
         Exclamation,
     },
     path::ExprPath,
-    grouped::{ ExprGrouped, Parenthesized },
+    grouped::Parenthesized,
     separated::Separated,
 };
 
@@ -177,19 +162,6 @@ pub enum UnaryType {
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 #[repr(u8)]
 pub enum BinaryType {
-    Assign,
-    AddAssign,
-    SubAssign,
-    MulAssign,
-    DivAssign,
-    ModAssign,
-    AndAssign,
-    OrAssign,
-    BitAndAssign,
-    BitOrAssign,
-    BitXorAssign,
-    LeftShiftAssign,
-    RightShiftAssign,
     Or,
     Add,
     Sub,
@@ -223,19 +195,6 @@ impl BinaryType {
 
     fn matches(&self, stream: &mut ParseStream) -> bool {
         match self {
-            Self::Assign => stream.parse::<Eq>().is_ok(),
-            Self::AddAssign => stream.parse::<PlusEq>().is_ok(),
-            Self::SubAssign => stream.parse::<MinusEq>().is_ok(),
-            Self::MulAssign => stream.parse::<StarEq>().is_ok(),
-            Self::DivAssign => stream.parse::<SlashEq>().is_ok(),
-            Self::ModAssign => stream.parse::<PercentEq>().is_ok(),
-            Self::AndAssign => stream.parse::<DoubleAmpersandEq>().is_ok(),
-            Self::OrAssign => stream.parse::<DoublePipeEq>().is_ok(),
-            Self::BitAndAssign => stream.parse::<AmpersandEq>().is_ok(),
-            Self::BitOrAssign => stream.parse::<PipeEq>().is_ok(),
-            Self::BitXorAssign => stream.parse::<CaretEq>().is_ok(),
-            Self::LeftShiftAssign => stream.parse::<DoubleLtEq>().is_ok(),
-            Self::RightShiftAssign => stream.parse::<DoubleGtEq>().is_ok(),
             Self::Or => stream.parse::<DoublePipe>().is_ok(),
             Self::Eq => stream.parse::<DoubleEq>().is_ok(),
             Self::Neq => stream.parse::<NotEq>().is_ok(),
@@ -256,25 +215,6 @@ impl BinaryType {
             Self::RightShift => stream.parse::<DoubleGt>().is_ok(),
         }
     }
-
-    fn left_associative(&self) -> bool {
-        match self {
-            | Self::Assign
-            | Self::AddAssign
-            | Self::SubAssign
-            | Self::MulAssign
-            | Self::DivAssign
-            | Self::ModAssign
-            | Self::AndAssign
-            | Self::OrAssign
-            | Self::BitAndAssign
-            | Self::BitOrAssign
-            | Self::BitXorAssign
-            | Self::LeftShiftAssign
-            | Self::RightShiftAssign => false,
-            _ => true,
-        }
-    }
 }
 
 #[cfg(test)]
@@ -286,7 +226,6 @@ mod test {
             Parse,
             expr::{ ExprLit, Expr },
             grouped::Parenthesized,
-            path::ExprPath,
         },
         tokens::stream::TokenStream,
     };
