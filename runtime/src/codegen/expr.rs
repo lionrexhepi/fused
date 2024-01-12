@@ -72,7 +72,6 @@ impl ToBytecode for Expr {
 
 #[cfg(test)]
 mod test {
-    use libimmixcons::{ immix_init, immix_noop_callback };
     use parser::{ tokens::stream::TokenStream, ast::{ stream::ParseStream, expr::Expr } };
 
     use crate::{ codegen::ToBytecode, Thread, stack::Stack };
@@ -90,7 +89,6 @@ mod test {
         codegen.emit_return(result);
         let chunk = codegen.chunk();
 
-        immix_init(512 * 1000, 0, immix_noop_callback, core::ptr::null_mut());
         let mut thread = Thread {
             stack: Stack::new(),
         };

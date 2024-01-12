@@ -1,17 +1,11 @@
 use core::hash;
 use std::{ vec, cell::Cell, fmt::Display };
 
-use libimmixcons::{ object::{ HeapObject, Tracer, GCRTTI }, make_rtti_for };
-
-use crate::{ Result, RuntimeError, alloc::GuardedCell };
+use crate::{ Result, RuntimeError };
 
 pub type Register = u8;
 
 pub struct FusedObject;
-
-impl HeapObject for FusedObject {
-    const RTTI: GCRTTI = make_rtti_for!(finalize FusedObject);
-}
 
 #[derive(Clone, Copy, Debug)]
 pub enum RegisterContents {
@@ -19,7 +13,7 @@ pub enum RegisterContents {
     Float(f64),
     Bool(bool),
     Char(char),
-    Object(GuardedCell<FusedObject>),
+    Object(()),
     None,
 }
 

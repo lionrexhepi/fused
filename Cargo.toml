@@ -10,4 +10,4 @@ thiserror = "1.0.51"
 
 
 [workspace]
-members = ["parser", "runtime", "libimmixcons"]
+members = ["parser", "runtime"]

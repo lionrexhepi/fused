@@ -2,27 +2,19 @@
 
 use std::marker::PhantomData;
 
-use alloc::{ Guard, GuardedHeap };
 use chunk::{ Chunk, BytecodeError };
 use instructions::Instruction;
-use libimmixcons::{ threading::{ immix_register_thread, immix_unregister_thread }, immix_collect };
 use stack::{ Stack, RegisterContents };
 use thiserror::Error;
-use array::ArrayCapacity;
 
 pub mod constants;
 mod chunk;
 pub mod stack;
-pub mod array;
-pub mod alloc;
 pub mod codegen;
 mod instructions;
 
 #[derive(Error, Debug, PartialEq, Eq)]
 pub enum RuntimeError {
-    #[error("Cannot create an array with capacity {0} of this type")] InvalidArrayCapacity(
-        ArrayCapacity,
-    ),
     #[error("Failed to allocate memory")]
     AllocationFailure,
     #[error(
@@ -48,17 +40,12 @@ impl Thread {
     pub fn run_chunk(&mut self, chunk: Chunk) -> Result<RegisterContents> {
         let value;
         {
-            immix_register_thread();
-            let guard = Guard(PhantomData);
-            let heap = GuardedHeap::new(guard);
-            value = self.run_guarded(heap, chunk)?;
-            immix_unregister_thread();
+            value = self.run_guarded(chunk)?;
         }
-        immix_collect(true);
         Ok(value)
     }
 
-    fn run_guarded(&mut self, _heap: GuardedHeap, chunk: Chunk) -> Result<RegisterContents> {
+    fn run_guarded(&mut self, chunk: Chunk) -> Result<RegisterContents> {
         let mut ip = 0;
         let mut frame = self.stack.push_frame();
         let return_value = loop {
@@ -113,11 +100,7 @@ impl Thread {
 
 #[cfg(test)]
 mod test {
-    use std::{ ptr::NonNull, marker::PhantomData };
-
-    use libimmixcons::object::Gc;
-
-    use crate::{ stack::RegisterContents, alloc::GuardedCell };
+    use crate::stack::RegisterContents;
 
     #[test]
     fn test_display() {
@@ -126,15 +109,7 @@ mod test {
             RegisterContents::Float(3.445),
             RegisterContents::Bool(true),
             RegisterContents::Char('o'),
-            RegisterContents::Object(
-                GuardedCell::new(Gc {
-                    //SAFETY: dont access this value, only print its pointer address
-                    ptr: unsafe {
-                        NonNull::new_unchecked(0 as *mut _)
-                    },
-                    marker: PhantomData,
-                })
-            ),
+
             RegisterContents::None,
         ];
 
