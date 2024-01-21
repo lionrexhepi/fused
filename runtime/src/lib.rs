@@ -1,4 +1,4 @@
-#![feature(non_null_convenience)]
+
 
 use std::marker::PhantomData;
 
@@ -28,6 +28,8 @@ pub enum RuntimeError {
         &'static str,
     ),
     #[error("Chunk does not contain a constant at index {0:x}")] InvalidConstant(u16),
+    #[error("Attempted to access undefined variable {0}")] UndefinedSymbol(String),
+    #[error("Attempted to mutate immutable variable {0}")] ImmutableSymbol(String),
 }
 
 pub(crate) type Result<T> = std::result::Result<T, RuntimeError>;
