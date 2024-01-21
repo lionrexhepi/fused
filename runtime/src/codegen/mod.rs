@@ -1,5 +1,7 @@
 pub mod expr;
 mod block;
+mod symbols;
+mod scope;
 
 use std::cell::Cell;
 

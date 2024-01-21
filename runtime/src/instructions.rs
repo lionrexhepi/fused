@@ -18,6 +18,7 @@ pub enum Instruction {
     Eq,
     And,
     Or,
+    Child,
 }
 
 impl Instruction {
