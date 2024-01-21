@@ -48,5 +48,7 @@ impl<'a> CodegenScope<'a> {
         }
     }
 
-    pub fn to_chunks() -> Vec<Chunk> {}
+    pub fn to_chunks() -> Vec<Chunk> {
+        todo!()
+    }
 }
