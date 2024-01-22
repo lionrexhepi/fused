@@ -18,7 +18,12 @@ pub enum Instruction {
     Eq,
     And,
     Or,
-    Child,
+    PushFrame,
+    PopFrame,
+    Load,
+    LoadLocal,
+    Store,
+    StoreLocal,
 }
 
 impl Instruction {

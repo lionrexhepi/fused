@@ -2,9 +2,10 @@ use std::{ hash::Hash, collections::HashMap };
 
 use crate::chunk::Chunk;
 
-use super::Codegen;
+use super::{ Codegen, symbols::Symbol };
 
 pub type ChildId = usize;
+pub type SymbolId = u16;
 
 #[derive(Debug, Default)]
 pub struct CodegenScope<'a> {
@@ -32,23 +33,20 @@ impl<'a> CodegenScope<'a> {
         self.children.len() - 1
     }
 
-    pub fn declare(&mut self, name: String) -> u16 {
+    pub fn declare(&mut self, name: String) -> SymbolId {
         let index = self.symbols.len() as u16;
         self.symbols.insert(name, index);
         index
     }
 
-    pub fn get(&mut self, name: &str) -> Option<u16> {
+    pub fn get(&mut self, name: &str) -> Option<(u8, SymbolId)> {
         if let Some(index) = self.symbols.get(name) {
-            Some(*index)
-        } else if let Some(parent) = self.parent.as_mut() {
-            parent.get(name)
+            Some((0, *index))
+        } else if let Some(parent) = &mut self.parent {
+            let (depth, index) = parent.get(name)?;
+            Some((depth + 1, index))
         } else {
             None
         }
-    }
-
-    pub fn to_chunks() -> Vec<Chunk> {
-        todo!()
     }
 }

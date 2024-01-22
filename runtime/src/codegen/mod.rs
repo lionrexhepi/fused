@@ -3,17 +3,17 @@ mod block;
 mod symbols;
 mod scope;
 
-use std::cell::Cell;
+use std::{ cell::Cell };
 
 use crate::{ stack::{ Register, RegisterContents }, instructions::Instruction, chunk::Chunk };
 
-use self::symbols::SymbolTable;
+use self::{ symbols::SymbolTable, scope::CodegenScope };
 
 pub struct Codegen {
     bytes: Vec<u8>,
     constants: Vec<RegisterContents>,
     used_registers: Cell<Register>,
-    symbols: SymbolTable,
+    scope: CodegenScope<'static>,
 }
 
 impl Codegen {
@@ -22,7 +22,7 @@ impl Codegen {
             bytes: Vec::new(),
             constants: Default::default(),
             used_registers: Cell::new(0),
-            symbols: SymbolTable::new(),
+            scope: CodegenScope::default(),
         }
     }
 
@@ -61,28 +61,8 @@ impl Codegen {
         dest
     }
 
-    pub fn access_symbol(&mut self, name: &str) -> Option<Register> {
-        self.symbols.get(name).map(|(reg, _)| reg)
-    }
-
-    pub fn declare(&mut self, name: String, initial: Register, mutable: bool) {
-        _ = self.symbols.declare(&name, initial, mutable);
-    }
-
-    pub fn enter_scope(&mut self) {
-        //SAFETY: We immediately replace the uninitialized value with a valid one
-        let old = std::mem::replace(&mut self.symbols, unsafe { #[allow(invalid_value)]
-            std::mem::MaybeUninit::zeroed().assume_init() });
-        self.symbols = old.push();
-    }
-
-    pub fn leave_scope(&mut self) {
-        //SAFETY: We immediately replace the uninitialized value with a valid one
-        let old = std::mem::replace(&mut self.symbols, unsafe { #[allow(invalid_value)]
-            std::mem::MaybeUninit::zeroed().assume_init() });
-        self.symbols = old
-            .pop()
-            .expect("Attempted to leave scope when there was no scope to leave");
+    pub fn new_scope(&mut self, gen: impl FnOnce(&mut Self)) {
+        todo!()
     }
 
     pub fn chunk<'a>(self) -> Chunk {
