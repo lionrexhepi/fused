@@ -1,36 +1,31 @@
-use std::{ hash::Hash, collections::HashMap };
+use std::{collections::HashMap, hash::Hash};
 
 use crate::chunk::Chunk;
 
-use super::{ Codegen, symbols::Symbol };
+use super::{symbols::Symbol, Codegen};
 
 pub type ChildId = usize;
 pub type SymbolId = u16;
 
 #[derive(Debug, Default)]
 pub struct CodegenScope<'a> {
-    code: Vec<u8>,
     symbols: HashMap<String, u16>,
-    children: Vec<Self>,
     parent: Option<&'a mut CodegenScope<'a>>,
 }
 
 impl<'a> CodegenScope<'a> {
     fn with_parent(parent: &'a mut Self) -> Self {
         Self {
-            code: Vec::new(),
             symbols: HashMap::new(),
-            children: Vec::new(),
             parent: Some(parent),
         }
     }
 
-    pub fn enter_child(&mut self, gen: impl FnOnce(&mut Self)) -> ChildId {
-        let mut child = Self::default();
-
-        gen(&mut child);
-        self.children.push(child);
-        self.children.len() - 1
+    pub fn enter_child(&'a mut self) -> Self {
+        Self {
+            parent: Some(self),
+            symbols: Default::default(),
+        }
     }
 
     pub fn declare(&mut self, name: String) -> SymbolId {

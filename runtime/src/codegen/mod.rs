@@ -5,18 +5,18 @@ mod scope;
 
 use std::{ cell::Cell };
 
-use crate::{ stack::{ Register, RegisterContents }, instructions::Instruction, chunk::Chunk };
+use crate::{ Result, stack::{ Register, RegisterContents }, instructions::Instruction, chunk::Chunk };
 
 use self::{ symbols::SymbolTable, scope::CodegenScope };
 
-pub struct Codegen {
+pub struct Codegen<'a> {
     bytes: Vec<u8>,
     constants: Vec<RegisterContents>,
     used_registers: Cell<Register>,
-    scope: CodegenScope<'static>,
+    scope: CodegenScope<'a>,
 }
 
-impl Codegen {
+impl<'a> Codegen<'a> {
     pub fn new() -> Self {
         Self {
             bytes: Vec::new(),
@@ -61,11 +61,51 @@ impl Codegen {
         dest
     }
 
-    pub fn new_scope(&mut self, gen: impl FnOnce(&mut Self)) {
-        todo!()
+    pub fn new_scope(&'a mut self, gen: impl FnOnce(&mut Self)) {
+        self.bytes.push(Instruction::PushFrame as u8);
+        
+        let mut child = Self {
+            used_registers: Cell::new(0),
+            constants: Vec::new(),
+            bytes: Vec::new(),
+            scope: self.scope.enter_child()
+        };
+
+        gen(&mut child);
+        let Chunk {
+            consts, buffer 
+        } = child.chunk();
+
+        self.bytes.extend(buffer.into_iter());
+        self.constants.extend(consts);
+        
+        self.bytes.push(Instruction::PopFrame as u8)
     }
 
-    pub fn chunk<'a>(self) -> Chunk {
+    pub fn declare(&mut self, name: String, _mutable: bool) {
+        self.scope.declare(name);
+    }
+
+    pub fn emit_load(&mut self, name: &str) -> Result<Register> {
+        if let Some((depth, symbol)) = self.scope.get(name) {
+            let dest = self.next_free_register();
+            if depth == 0 {
+                self.bytes.push(Instruction::LoadLocal as u8);
+            } else {
+                self.bytes.extend(&[Instruction::Load as u8, depth]);
+            };
+
+            self.bytes.extend(symbol.to_le_bytes());
+
+            Ok(dest)
+        } else {
+            Err(crate::RuntimeError::UndefinedSymbol(name.to_string()))
+        }
+    }
+
+    
+
+    pub fn chunk(self) -> Chunk {
         Chunk {
             consts: self.constants,
             buffer: self.bytes.into_boxed_slice(),
