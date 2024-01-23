@@ -1,47 +1,36 @@
-use std::{collections::HashMap, hash::Hash};
+use std::{ cell::RefCell, collections::HashMap };
 
-use crate::chunk::Chunk;
-
-use super::{symbols::Symbol, Codegen};
-
-pub type ChildId = usize;
 pub type SymbolId = u16;
 
 #[derive(Debug, Default)]
-pub struct CodegenScope<'a> {
-    symbols: HashMap<String, u16>,
-    parent: Option<&'a mut CodegenScope<'a>>,
+pub struct SymbolTable {
+    contents: RefCell<Vec<HashMap<String, SymbolId>>>,
 }
 
-impl<'a> CodegenScope<'a> {
-    fn with_parent(parent: &'a mut Self) -> Self {
-        Self {
-            symbols: HashMap::new(),
-            parent: Some(parent),
-        }
+impl SymbolTable {
+    pub fn declare(&self, name: String) -> SymbolId {
+        let mut contents = self.contents.borrow_mut();
+        let map = contents.last_mut().expect("Attempted to declare symbol in empty symbol table");
+
+        let id = map.len() as SymbolId;
+        map.insert(name, id);
+        id
     }
 
-    pub fn enter_child(&'a mut self) -> Self {
-        Self {
-            parent: Some(self),
-            symbols: Default::default(),
-        }
+    pub fn push(&self) {
+        self.contents.borrow_mut().push(HashMap::new());
     }
 
-    pub fn declare(&mut self, name: String) -> SymbolId {
-        let index = self.symbols.len() as u16;
-        self.symbols.insert(name, index);
-        index
+    pub fn pop(&self) {
+        self.contents.borrow_mut().pop().expect("Attempted to pop empty symbol table");
     }
 
-    pub fn get(&mut self, name: &str) -> Option<(u8, SymbolId)> {
-        if let Some(index) = self.symbols.get(name) {
-            Some((0, *index))
-        } else if let Some(parent) = &mut self.parent {
-            let (depth, index) = parent.get(name)?;
-            Some((depth + 1, index))
-        } else {
-            None
+    pub fn get(&self, name: &str) -> Option<(u8, SymbolId)> {
+        for (depth, table) in self.contents.borrow().iter().rev().enumerate() {
+            if let Some(index) = table.get(name) {
+                return Some((depth as u8, *index));
+            }
         }
+        None
     }
 }

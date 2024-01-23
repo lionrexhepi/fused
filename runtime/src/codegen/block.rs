@@ -14,15 +14,12 @@ impl ToBytecode for Statement {
 
 impl ToBytecode for Block {
     fn to_bytecode(&self, codegen: &mut Codegen) -> Register {
-        let len = self.0.len();
-        let mut result = 0;
-        for (i, expr) in self.0.iter().enumerate() {
-            let expr_result = expr.to_bytecode(codegen);
-            if i == len - 1 {
-                result = expr_result;
+        codegen.new_scope(|codegen: &mut Codegen| {
+            let mut result = 0;
+            for statement in &self.0 {
+                result = statement.to_bytecode(codegen);
             }
-        }
-
-        result
+            result
+        })
     }
 }

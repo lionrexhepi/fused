@@ -25,7 +25,7 @@ impl ToBytecode for ExprSimple {
     fn to_bytecode(&self, codegen: &mut Codegen) -> Register {
         match self {
             ExprSimple::Binary(left, op, right) => {
-                let left = left.to_bytecode(codegen);
+                let left = { left.to_bytecode(codegen) };
                 let right = right.to_bytecode(codegen);
                 let instruction = match op {
                     BinaryType::Or => Instruction::Or,
