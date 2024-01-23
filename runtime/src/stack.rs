@@ -318,43 +318,22 @@ impl Stack {
         }
     }
 
-    pub fn push_frame(&mut self) -> StackFrame {
+    pub fn push_frame(&mut self) {
         self.depth.set(self.depth.get() + 1);
         self.registers.extend([RegisterContents::None; Register::MAX as usize]);
-        StackFrame {
-            stack: self,
-        }
     }
 
-    pub(self) fn pop_frame(&mut self) {
+    pub fn pop_frame(&mut self) {
         self.registers.drain(self.current_frame_range());
         self.depth.set(self.depth.get() - 1);
     }
-}
 
-pub struct StackFrame<'a> {
-    stack: &'a mut Stack,
-}
-
-impl<'a> StackFrame<'a> {
-    pub fn get_value(&self, register: Register) -> Result<RegisterContents> {
-        let frame = self.stack.current_frame()?;
-        Ok(frame[register as usize])
+    pub fn get(&self, register: Register) -> Result<RegisterContents> {
+        Ok(self.current_frame()?[register as usize])
     }
 
-    pub fn set_value(&mut self, register: Register, value: RegisterContents) -> Result<()> {
-        let frame = self.stack.current_frame_mut()?;
-        frame[register as usize] = value;
+    pub fn set(&mut self, register: Register, value: RegisterContents) -> Result<()> {
+        self.current_frame_mut()?[register as usize] = value;
         Ok(())
-    }
-
-    pub fn create_child(&'a mut self) -> Self {
-        self.stack.push_frame()
-    }
-}
-
-impl<'a> Drop for StackFrame<'a> {
-    fn drop(&mut self) {
-        self.stack.pop_frame()
     }
 }

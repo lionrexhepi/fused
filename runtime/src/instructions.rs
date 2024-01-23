@@ -65,6 +65,13 @@ impl Instruction {
             12 => Ok(Instruction::Eq),
             13 => Ok(Instruction::And),
             14 => Ok(Instruction::Or),
+            15 => Ok(Instruction::PushFrame),
+            16 => Ok(Instruction::PopFrame),
+            17 => Ok(Instruction::Load),
+            18 => Ok(Instruction::LoadLocal),
+            19 => Ok(Instruction::Store),
+            20 => Ok(Instruction::StoreLocal),
+
             _ => Err(BytecodeError::InvalidInstruction(byte)),
         }
     }

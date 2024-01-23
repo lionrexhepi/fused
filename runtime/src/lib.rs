@@ -1,5 +1,3 @@
-
-
 use std::marker::PhantomData;
 
 use chunk::{ Chunk, BytecodeError };
@@ -58,15 +56,28 @@ impl Thread {
             ip += 1;
             match instruction {
                 Instruction::Return => {
-                    break frame.get_value(chunk.buffer[0])?;
+                    break self.stack.get(chunk.buffer[0])?;
                 }
                 Instruction::Const => {
                     let (address, dest) = Instruction::read_constant(&chunk.buffer[ip..])?;
                     let const_val = chunk.consts
                         .get(address as usize)
                         .ok_or(RuntimeError::InvalidConstant(address))?;
-                    frame.set_value(dest, *const_val)?;
+                    self.stack.set(dest, *const_val)?;
                     ip += 3;
+                }
+                Instruction::PushFrame => {
+                    self.stack.push_frame();
+                }
+                Instruction::PopFrame => {
+                    if chunk.buffer.len() < ip + 2 {
+                        Err(BytecodeError::UnexpectedEOF)?;
+                    } else {
+                        let result = self.stack.get(chunk.buffer[ip])?;
+                        let destination = chunk.buffer[ip + 1];
+                        self.stack.pop_frame();
+                        self.stack.set(destination, result)?;
+                    }
                 }
                 other @ _ if other.is_binary() => {
                     let (left, right, dest) = Instruction::read_binary_args(&chunk.buffer[ip..])?;
@@ -86,10 +97,10 @@ impl Thread {
                         Instruction::Or => RegisterContents::try_or,
                         _ => unreachable!(),
                     };
-                    let left = frame.get_value(left)?;
-                    let right = frame.get_value(right)?;
+                    let left = self.stack.get(left)?;
+                    let right = self.stack.get(right)?;
                     let result = operator(&left, &right)?;
-                    frame.set_value(dest, result)?;
+                    self.stack.set(dest, result)?;
                     ip += 3;
                 }
                 _ => unreachable!("Missing match arm for instruction {:?}", instruction),
