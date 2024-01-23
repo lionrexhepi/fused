@@ -14,10 +14,10 @@ fn main() {
         let block = parse.parse::<Block>().unwrap();
         println!("{:?}", block.0.first().unwrap().content);
         let mut codegen = Codegen::new();
-        let result = block.to_bytecode(&mut codegen).unwrap();
-        codegen.emit_return(result);
+        _ = block.to_bytecode(&mut codegen).unwrap();
 
         let chunk = codegen.chunk();
+        println!("{}", chunk);
         let mut thread = Thread {
             stack: Stack::new(),
         };

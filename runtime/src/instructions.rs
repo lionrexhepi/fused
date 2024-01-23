@@ -19,11 +19,20 @@ pub enum Instruction {
     And,
     Or,
     PushFrame,
-    PopFrame,
+
     Load,
     LoadLocal,
     Store,
     StoreLocal,
+}
+macro_rules! match_bytes {
+    
+    ($byte:expr, $($instrs:ident),*) => {
+        match $byte {
+            $(byte if byte == (Self::$instrs as u8) => Ok(Self::$instrs)),*,
+            _ => Err(BytecodeError::InvalidInstruction($byte)),
+        }
+    };
 }
 
 impl Instruction {
@@ -49,30 +58,29 @@ impl Instruction {
     }
 
     pub const fn from_byte(byte: u8) -> Result<Self> {
-        match byte {
-            0 => Ok(Instruction::Return),
-            1 => Ok(Instruction::Const),
-            2 => Ok(Instruction::Add),
-            3 => Ok(Instruction::Sub),
-            4 => Ok(Instruction::Mul),
-            5 => Ok(Instruction::Div),
-            6 => Ok(Instruction::Mod),
-            7 => Ok(Instruction::BitAnd),
-            8 => Ok(Instruction::BitOr),
-            9 => Ok(Instruction::BitXor),
-            10 => Ok(Instruction::LeftShift),
-            11 => Ok(Instruction::RightShift),
-            12 => Ok(Instruction::Eq),
-            13 => Ok(Instruction::And),
-            14 => Ok(Instruction::Or),
-            15 => Ok(Instruction::PushFrame),
-            16 => Ok(Instruction::PopFrame),
-            17 => Ok(Instruction::Load),
-            18 => Ok(Instruction::LoadLocal),
-            19 => Ok(Instruction::Store),
-            20 => Ok(Instruction::StoreLocal),
-
-            _ => Err(BytecodeError::InvalidInstruction(byte)),
-        }
+        match_bytes!(
+            byte,
+            Return, // byte if byte == (Self::Return as u8) => Ok(Self::Return),
+            Const,
+            Add,
+            Sub,
+            Mul,
+            Div,
+            Mod,
+            BitAnd,
+            BitOr,
+            BitXor,
+            LeftShift,
+            RightShift,
+            Eq,
+            And,
+            Or,
+            PushFrame,
+            Load,
+            LoadLocal,
+            Store,
+            StoreLocal
+        )
     }
 }
+

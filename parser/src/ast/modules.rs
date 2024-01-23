@@ -129,7 +129,7 @@ impl Parse for UsePathSegment {
 
 #[cfg(test)]
 mod test {
-    use crate::{ tokens::stream::TokenStream, ast::stream };
+    use crate:: tokens::stream::TokenStream;
 
     use super::{ UsePath, super::stream::ParseStream, Module };
 

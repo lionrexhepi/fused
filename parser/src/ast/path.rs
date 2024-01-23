@@ -2,10 +2,8 @@ use crate::Span;
 
 use super::{
     ident::Ident,
-    expr::Expr,
     Spanned,
     Parse,
-    grouped::Parenthesized,
     separated::Separated,
     punct::{ Lt, Gt },
     stream::ParseStream,

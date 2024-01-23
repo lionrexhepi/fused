@@ -1,6 +1,6 @@
 use parser::ast::{ expr::{ Expr, ExprLit }, simple::{ ExprSimple, BinaryType }, number::Number };
 
-use crate::{ stack::{ Register, RegisterContents }, instructions::Instruction };
+use crate::{ stack::RegisterContents, instructions::Instruction };
 
 use super::{ Codegen, CodegenResult, ToBytecode };
 

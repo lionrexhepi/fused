@@ -1,5 +1,3 @@
-use std::marker::PhantomData;
-
 use chunk::{ Chunk, BytecodeError };
 use instructions::Instruction;
 use stack::{ Stack, RegisterContents };
@@ -47,7 +45,6 @@ impl Thread {
 
     fn run_guarded(&mut self, chunk: Chunk) -> Result<RegisterContents> {
         let mut ip = 0;
-        let mut frame = self.stack.push_frame();
         let return_value = loop {
             if ip == chunk.buffer.len() {
                 break RegisterContents::None;
@@ -56,7 +53,18 @@ impl Thread {
             ip += 1;
             match instruction {
                 Instruction::Return => {
-                    break self.stack.get(chunk.buffer[0])?;
+                    if chunk.buffer.len() < ip + 2 {
+                        Err(RuntimeError::InvalidBytecode(BytecodeError::UnexpectedEOF))?;
+                    }
+
+                    let value = self.stack.get(chunk.buffer[ip])?;
+                    self.stack.pop_frame();
+                    if self.stack.is_root() {
+                        break value;
+                    } else {
+                        self.stack.set(chunk.buffer[1], value)?;
+                        ip += 1;
+                    }
                 }
                 Instruction::Const => {
                     let (address, dest) = Instruction::read_constant(&chunk.buffer[ip..])?;
@@ -68,18 +76,10 @@ impl Thread {
                 }
                 Instruction::PushFrame => {
                     self.stack.push_frame();
+                     
                 }
-                Instruction::PopFrame => {
-                    if chunk.buffer.len() < ip + 2 {
-                        Err(BytecodeError::UnexpectedEOF)?;
-                    } else {
-                        let result = self.stack.get(chunk.buffer[ip])?;
-                        let destination = chunk.buffer[ip + 1];
-                        self.stack.pop_frame();
-                        self.stack.set(destination, result)?;
-                    }
-                }
-                other @ _ if other.is_binary() => {
+
+                other if other.is_binary() => {
                     let (left, right, dest) = Instruction::read_binary_args(&chunk.buffer[ip..])?;
                     let operator = match other {
                         Instruction::Add => RegisterContents::try_add,
@@ -97,6 +97,7 @@ impl Thread {
                         Instruction::Or => RegisterContents::try_or,
                         _ => unreachable!(),
                     };
+
                     let left = self.stack.get(left)?;
                     let right = self.stack.get(right)?;
                     let result = operator(&left, &right)?;

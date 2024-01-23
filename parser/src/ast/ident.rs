@@ -1,6 +1,6 @@
 use std::{ fmt::Display, hash::Hash };
 
-use crate::{ Span, tokens::TokenType, ast::ident };
+use crate::{ Span, tokens::TokenType };
 
 use super::{ Parse, stream::{ TokenCursor, ParseStream }, ParseError, ParseResult };
 

@@ -1,6 +1,6 @@
 use parser::ast::{ block::Block, statements::{ Statement, StatementContent } };
 
-use crate::{ codegen::{ ToBytecode, Codegen }, stack::Register };
+use crate::codegen::{ ToBytecode, Codegen };
 
 use super::CodegenResult;
 
@@ -21,6 +21,7 @@ impl ToBytecode for Block {
             for statement in &self.0 {
                 result = statement.to_bytecode(codegen)?;
             }
+            println!("result: {}", result);
             Ok(result)
         })
     }

@@ -336,4 +336,8 @@ impl Stack {
         self.current_frame_mut()?[register as usize] = value;
         Ok(())
     }
+
+    pub fn is_root(&self) -> bool {
+        self.depth.get() == 0
+    }
 }

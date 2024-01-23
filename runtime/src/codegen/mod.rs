@@ -17,6 +17,7 @@ pub enum CodegenError {
 
 type CodegenResult = std::result::Result<Register, CodegenError>;
 
+#[derive(Clone)]
 pub struct Codegen {
     bytes: Vec<u8>,
     constants: Vec<RegisterContents>,
@@ -60,8 +61,11 @@ impl Codegen {
     }
 
     ///Emits an instruction to return the value in the provided register
-    pub fn emit_return(&mut self, value: Register) {
-        self.bytes.extend([Instruction::Return as u8, value])
+    pub fn emit_return(&mut self, value: Register) -> Register {
+        println!("Emitting return: {}", value);
+        let location = self.next_free_register();
+        self.bytes.extend([Instruction::Return as u8, value, location]);
+        location
     }
 
     /// - Creates a new constant
@@ -79,8 +83,7 @@ impl Codegen {
     /// - Pushes a new lexical scope
     /// - Instructs the VM to push a new frame
     /// - Executes the provided function to generate the code to be executed in the new scope
-    /// - Takes the return value of the provided function, that being a register containing the "result" of the code
-    /// - Pops the frame, instructing the VM to copy the result into the parent scope
+    /// - Pops the frame, instructing the VM to copy the result into the parent scope via a return instruction
     /// - Returns the register containing the result
     pub fn new_scope(&mut self, gen: impl FnOnce(&mut Self) -> CodegenResult) -> CodegenResult {
         self.bytes.push(Instruction::PushFrame as u8);
@@ -95,14 +98,11 @@ impl Codegen {
         let result = gen(&mut child)?;
         self.scope.pop();
         let Chunk { consts, buffer } = child.chunk();
-
-        self.bytes.extend(buffer.into_iter());
+        self.bytes.append(&mut buffer.into_vec());
         self.constants.extend(consts);
 
-        let preserve = self.next_free_register();
 
-        self.bytes.extend(&[Instruction::PopFrame as u8, result, preserve]);
-        Ok(preserve)
+        Ok(self.emit_return(result))
     }
 
     /// Declares a new symbol in the current scope

@@ -9,7 +9,7 @@ use super::{
     grouped::{ Parenthesized, Bracketed },
     separated::Separated,
     punct::Colon,
-    stream::{ ParseStream, UnexpectedToken },
+    stream:: ParseStream,
     ParseResult,
     declarations::FnArg,
     ParseError,

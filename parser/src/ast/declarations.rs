@@ -6,7 +6,7 @@ use super::{
     Spanned,
     Parse,
     keywords::Mut,
-    punct::{ Ampersand, Eq, Colon },
+    punct::{  Eq, Colon },
     stream::ParseStream,
     ParseResult,
     grouped::Bracketed,

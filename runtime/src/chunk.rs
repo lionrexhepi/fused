@@ -32,6 +32,7 @@ impl<'a> Display for Chunk {
         writeln!(f, "{:-^30}", "Instructions")?;
 
         let mut ip = 0;
+        println!("Raw: {:?}", self.buffer);
         while ip < self.buffer.len() {
             let instruction = Instruction::from_byte(self.buffer[ip])?;
             ip += 1;
@@ -42,9 +43,15 @@ impl<'a> Display for Chunk {
                     ("const", format!("{:x} <{}>", address, dest))
                 }
                 Instruction::Return => {
-                    ip += 1;
-                    ("return", format!("<{}>", self.buffer[ip - 1]))
+                    ip += 2;
+                    ("ret", format!("<{}> -> <{}>", self.buffer[ip - 2], self.buffer[ip - 1]))
+                },
+                Instruction::PushFrame => {
+                    
+
+                    ("pushframe", String::new())
                 }
+                    
                 other if other.is_binary() => {
                     let (left, right, dest) = Instruction::read_binary_args(&self.buffer[ip..])?;
                     ip += 3;
