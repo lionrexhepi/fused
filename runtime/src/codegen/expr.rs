@@ -2,10 +2,10 @@ use parser::ast::{ expr::{ Expr, ExprLit }, simple::{ ExprSimple, BinaryType }, 
 
 use crate::{ stack::{ Register, RegisterContents }, instructions::Instruction };
 
-use super::{ ToBytecode, Codegen };
+use super::{ Codegen, CodegenResult, ToBytecode };
 
 impl ToBytecode for ExprLit {
-    fn to_bytecode(&self, codegen: &mut Codegen) -> Register {
+    fn to_bytecode(&self, codegen: &mut Codegen) -> CodegenResult {
         let value = match self {
             ExprLit::String(_) => todo!(),
             ExprLit::Number(num) =>
@@ -17,16 +17,16 @@ impl ToBytecode for ExprLit {
             ExprLit::Bool(bool) => RegisterContents::Bool(bool.value),
         };
 
-        codegen.emit_const(value)
+        Ok(codegen.emit_const(value))
     }
 }
 
 impl ToBytecode for ExprSimple {
-    fn to_bytecode(&self, codegen: &mut Codegen) -> Register {
+    fn to_bytecode(&self, codegen: &mut Codegen) -> CodegenResult {
         match self {
             ExprSimple::Binary(left, op, right) => {
-                let left = { left.to_bytecode(codegen) };
-                let right = right.to_bytecode(codegen);
+                let left = left.to_bytecode(codegen)?;
+                let right = right.to_bytecode(codegen)?;
                 let instruction = match op {
                     BinaryType::Or => Instruction::Or,
                     BinaryType::Add => Instruction::Add,
@@ -47,7 +47,7 @@ impl ToBytecode for ExprSimple {
                     BinaryType::LeftShift => Instruction::LeftShift,
                     BinaryType::RightShift => Instruction::RightShift,
                 };
-                codegen.emit_binary(left, right, instruction)
+                Ok(codegen.emit_binary(left, right, instruction))
             }
             ExprSimple::Literal(lit) => lit.to_bytecode(codegen),
             _ => todo!("ee"),
@@ -56,7 +56,7 @@ impl ToBytecode for ExprSimple {
 }
 
 impl ToBytecode for Expr {
-    fn to_bytecode(&self, codegen: &mut Codegen) -> Register {
+    fn to_bytecode(&self, codegen: &mut Codegen) -> CodegenResult {
         match self {
             Expr::Simple(simple) => simple.to_bytecode(codegen),
             Expr::Decl(_) => todo!("declr"),
@@ -85,7 +85,7 @@ mod test {
         let expr = stream.parse::<Expr>().unwrap();
         println!("{:?}", expr);
         let mut codegen = Codegen::new();
-        let result = expr.to_bytecode(&mut codegen);
+        let result = expr.to_bytecode(&mut codegen).unwrap();
         codegen.emit_return(result);
         let chunk = codegen.chunk();
 

@@ -4,14 +4,18 @@ mod scope;
 
 use std::{ cell::Cell, rc::Rc };
 
-use crate::{
-    Result,
-    stack::{ Register, RegisterContents },
-    instructions::Instruction,
-    chunk::Chunk,
-};
+use thiserror::Error;
+
+use crate::{ stack::{ Register, RegisterContents }, instructions::Instruction, chunk::Chunk };
 
 use self::scope::SymbolTable;
+
+#[derive(Error, Debug)]
+pub enum CodegenError {
+    #[error("Undefined symbol: {0}")] UndefinedSymbol(String),
+}
+
+type CodegenResult = std::result::Result<Register, CodegenError>;
 
 pub struct Codegen {
     bytes: Vec<u8>,
@@ -78,7 +82,7 @@ impl Codegen {
     /// - Takes the return value of the provided function, that being a register containing the "result" of the code
     /// - Pops the frame, instructing the VM to copy the result into the parent scope
     /// - Returns the register containing the result
-    pub fn new_scope(&mut self, gen: impl FnOnce(&mut Self) -> Register) -> Register {
+    pub fn new_scope(&mut self, gen: impl FnOnce(&mut Self) -> CodegenResult) -> CodegenResult {
         self.bytes.push(Instruction::PushFrame as u8);
         self.scope.push();
         let mut child = Self {
@@ -88,7 +92,7 @@ impl Codegen {
             scope: self.scope.clone(),
         };
 
-        let result = gen(&mut child);
+        let result = gen(&mut child)?;
         self.scope.pop();
         let Chunk { consts, buffer } = child.chunk();
 
@@ -98,7 +102,7 @@ impl Codegen {
         let preserve = self.next_free_register();
 
         self.bytes.extend(&[Instruction::PopFrame as u8, result, preserve]);
-        preserve
+        Ok(preserve)
     }
 
     /// Declares a new symbol in the current scope
@@ -110,7 +114,7 @@ impl Codegen {
     /// - Loads the value of the symbol into a new register
     /// - Returns the register
     /// - If the symbol is not defined, returns an error
-    pub fn emit_load(&mut self, name: &str) -> Result<Register> {
+    pub fn emit_load(&mut self, name: &str) -> CodegenResult {
         if let Some((depth, symbol)) = self.scope.get(name) {
             let dest = self.next_free_register();
             if depth == 0 {
@@ -123,14 +127,14 @@ impl Codegen {
 
             Ok(dest)
         } else {
-            Err(crate::RuntimeError::UndefinedSymbol(name.to_string()))
+            Err(CodegenError::UndefinedSymbol(name.to_string()))
         }
     }
 
     /// - Stores the value of the provided register into the symbol
     /// - Returns an error if the symbol is not defined
     /// - Returns the register
-    pub fn emit_store(&mut self, name: &str, value: Register) -> Result<()> {
+    pub fn emit_store(&mut self, name: &str, value: Register) -> CodegenResult {
         if let Some((depth, symbol)) = self.scope.get(name) {
             if depth == 0 {
                 self.bytes.push(Instruction::StoreLocal as u8);
@@ -141,9 +145,9 @@ impl Codegen {
             self.bytes.extend(symbol.to_le_bytes());
             self.bytes.push(value);
 
-            Ok(())
+            Ok(0)
         } else {
-            Err(crate::RuntimeError::UndefinedSymbol(name.to_string()))
+            Err(CodegenError::UndefinedSymbol(name.to_string()))
         }
     }
 
@@ -156,7 +160,7 @@ impl Codegen {
 }
 
 pub trait ToBytecode {
-    fn to_bytecode(&self, codegen: &mut Codegen) -> Register;
+    fn to_bytecode(&self, codegen: &mut Codegen) -> CodegenResult;
 }
 
 #[cfg(test)]

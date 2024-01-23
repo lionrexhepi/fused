@@ -14,7 +14,7 @@ fn main() {
         let block = parse.parse::<Block>().unwrap();
         println!("{:?}", block.0.first().unwrap().content);
         let mut codegen = Codegen::new();
-        let result = block.to_bytecode(&mut codegen);
+        let result = block.to_bytecode(&mut codegen).unwrap();
         codegen.emit_return(result);
 
         let chunk = codegen.chunk();
