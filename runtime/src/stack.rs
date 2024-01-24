@@ -342,13 +342,11 @@ impl Stack {
     }
 
     pub fn load(& self, variable: u16) -> RegisterContents {
-        println!("Storing {}, in {variable}", self.variables[variable as usize]);
 
         self.variables[variable as usize]
     }
 
     pub fn store(&mut self, variable: u16, value: RegisterContents) {
-        println!("Storing {value} in {variable}");
         self.variables[variable as usize] = value;
     }
 

@@ -82,7 +82,7 @@ impl Thread {
 
                 Instruction::StoreLocal => {
                     let var_id = Instruction::read_variable(&chunk.buffer[ip..])?;
-                    let value = chunk.buffer[2];
+                    let value = chunk.buffer[ip + 2];
                     self.stack.store(var_id, self.stack.get(value)?);
                     ip += 3;
                 }
