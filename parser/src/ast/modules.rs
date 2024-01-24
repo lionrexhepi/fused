@@ -9,7 +9,7 @@ use super::{
     ident::Ident,
     separated::Separated,
     stream::ParseStream,
-    ParseResult,
+    ParseResult, keywords::Use,
 };
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -71,6 +71,7 @@ impl Spanned for UsePath {
 
 impl Parse for UsePath {
     fn parse(stream: &mut ParseStream) -> ParseResult<Self> where Self: Sized {
+        stream.parse::<Use>()?;
         let first = stream.parse::<UsePathSegment>()?;
         let mut regular = vec![first];
         while stream.parse::<Dot>().is_ok() {
@@ -89,7 +90,7 @@ impl Parse for UsePath {
     }
 
     fn could_parse(stream: &mut ParseStream) -> bool {
-        UsePathSegment::could_parse(stream)
+        Use::could_parse(stream)
     }
 }
 

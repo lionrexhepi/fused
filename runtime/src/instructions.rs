@@ -44,9 +44,17 @@ impl Instruction {
         }
     }
 
+    pub fn read_variable(buffer: &[u8]) -> Result<u16> {
+        if buffer.len() < 2 {
+            Err(BytecodeError::UnexpectedEOF)
+        } else {
+            Ok(u16::from_le_bytes([buffer[0], buffer[1]]))
+        }
+    }
+
     pub fn read_constant(buffer: &[u8]) -> Result<(u16, Register)> {
         if buffer.len() < 3 {
-            Err(BytecodeError::UnexpectedEOF)?
+            Err(BytecodeError::UnexpectedEOF)
         } else {
             Ok((u16::from_le_bytes([buffer[0], buffer[1]]), buffer[2]))
         }

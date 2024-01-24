@@ -1,31 +1,32 @@
-use chunk::{ Chunk, BytecodeError };
+use chunk::{BytecodeError, Chunk};
 use instructions::Instruction;
-use stack::{ Stack, RegisterContents };
+use stack::{RegisterContents, Stack};
 use thiserror::Error;
 
-pub mod constants;
 mod chunk;
-pub mod stack;
 pub mod codegen;
+pub mod constants;
 mod instructions;
+pub mod stack;
 
 #[derive(Error, Debug, PartialEq, Eq)]
 pub enum RuntimeError {
     #[error("Failed to allocate memory")]
     AllocationFailure,
-    #[error(
-        "Error while reading bytecode: {0}\n\n This error is likely unrecoverable."
-    )] InvalidBytecode(#[from] BytecodeError),
-    #[error("Attempted operation with null value")] NullAccess,
-    #[error("Bad stack frame {0:x}")] BadStackFrame(u16),
-    #[error("Operation {0} unsupported for types {1} and {2}")] InvalidOperation(
-        &'static str,
-        &'static str,
-        &'static str,
-    ),
-    #[error("Chunk does not contain a constant at index {0:x}")] InvalidConstant(u16),
-    #[error("Attempted to access undefined variable {0}")] UndefinedSymbol(String),
-    #[error("Attempted to mutate immutable variable {0}")] ImmutableSymbol(String),
+    #[error("Error while reading bytecode: {0}\n\n This error is likely unrecoverable.")]
+    InvalidBytecode(#[from] BytecodeError),
+    #[error("Attempted operation with null value")]
+    NullAccess,
+    #[error("Bad stack frame {0:x}")]
+    BadStackFrame(u16),
+    #[error("Operation {0} unsupported for types {1} and {2}")]
+    InvalidOperation(&'static str, &'static str, &'static str),
+    #[error("Chunk does not contain a constant at index {0:x}")]
+    InvalidConstant(u16),
+    #[error("Attempted to access undefined variable {0}")]
+    UndefinedSymbol(String),
+    #[error("Attempted to mutate immutable variable {0}")]
+    ImmutableSymbol(String),
 }
 
 pub(crate) type Result<T> = std::result::Result<T, RuntimeError>;
@@ -68,7 +69,8 @@ impl Thread {
                 }
                 Instruction::Const => {
                     let (address, dest) = Instruction::read_constant(&chunk.buffer[ip..])?;
-                    let const_val = chunk.consts
+                    let const_val = chunk
+                        .consts
                         .get(address as usize)
                         .ok_or(RuntimeError::InvalidConstant(address))?;
                     self.stack.set(dest, *const_val)?;
@@ -76,7 +78,21 @@ impl Thread {
                 }
                 Instruction::PushFrame => {
                     self.stack.push_frame();
-                     
+                }
+
+                Instruction::StoreLocal => {
+                    let var_id = Instruction::read_variable(&chunk.buffer[ip..])?;
+                    let value = chunk.buffer[2];
+                    self.stack.store(var_id, self.stack.get(value)?);
+                    ip += 3;
+                }
+
+                Instruction::LoadLocal => {
+                    let var_id = Instruction::read_variable(&chunk.buffer[ip..])?;
+                    let dest = chunk.buffer[ip + 2];
+                    let value = self.stack.load(var_id);
+                    self.stack.set(dest, value)?;
+                    ip += 3;
                 }
 
                 other if other.is_binary() => {
@@ -123,7 +139,6 @@ mod test {
             RegisterContents::Float(3.445),
             RegisterContents::Bool(true),
             RegisterContents::Char('o'),
-
             RegisterContents::None,
         ];
 

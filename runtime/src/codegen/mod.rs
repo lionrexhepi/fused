@@ -107,8 +107,8 @@ impl Codegen {
 
     /// Declares a new symbol in the current scope
     /// -> This is a purely lexical method and does not emit any instructions
-    pub fn declare(&mut self, name: String, _mutable: bool) {
-        self.scope.declare(name);
+    pub fn declare(&mut self, name: String, _mutable: bool) -> scope::SymbolId {
+        self.scope.declare(name)
     }
 
     /// - Loads the value of the symbol into a new register
@@ -124,7 +124,7 @@ impl Codegen {
             }
 
             self.bytes.extend(symbol.to_le_bytes());
-
+            self.bytes.push(dest);
             Ok(dest)
         } else {
             Err(CodegenError::UndefinedSymbol(name.to_string()))

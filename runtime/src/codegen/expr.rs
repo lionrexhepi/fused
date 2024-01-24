@@ -1,23 +1,39 @@
-use parser::ast::{ expr::{ Expr, ExprLit }, simple::{ ExprSimple, BinaryType }, number::Number };
+use parser::ast::{
+    declarations::ExprDecl,
+    expr::{Expr, ExprLit},
+    number::Number,
+    simple::{BinaryType, ExprSimple}, path::PathSegment,
+};
 
-use crate::{ stack::RegisterContents, instructions::Instruction };
+use crate::{instructions::Instruction, stack::RegisterContents};
 
-use super::{ Codegen, CodegenResult, ToBytecode };
+use super::{Codegen, CodegenResult, ToBytecode};
 
 impl ToBytecode for ExprLit {
     fn to_bytecode(&self, codegen: &mut Codegen) -> CodegenResult {
         let value = match self {
             ExprLit::String(_) => todo!(),
-            ExprLit::Number(num) =>
-                match num.number {
-                    Number::Int(int) => RegisterContents::Int(int),
-                    Number::Float(float) => RegisterContents::Float(float),
-                    Number::UInt(uint) => RegisterContents::Int(uint as i64),
-                }
+            ExprLit::Number(num) => match num.number {
+                Number::Int(int) => RegisterContents::Int(int),
+                Number::Float(float) => RegisterContents::Float(float),
+                Number::UInt(uint) => RegisterContents::Int(uint as i64),
+            },
             ExprLit::Bool(bool) => RegisterContents::Bool(bool.value),
         };
 
         Ok(codegen.emit_const(value))
+    }
+}
+
+impl ToBytecode for ExprDecl {
+    fn to_bytecode(&self, codegen: &mut Codegen) -> CodegenResult {
+        codegen.declare(self.name.name.clone(), self.mutable);
+        if let Some(value) = &self.value {
+            let value_reg = value.to_bytecode(codegen)?;
+            codegen.emit_store(&self.name.name, value_reg)
+        } else {
+            Ok(0)
+        }
     }
 }
 
@@ -50,6 +66,18 @@ impl ToBytecode for ExprSimple {
                 Ok(codegen.emit_binary(left, right, instruction))
             }
             ExprSimple::Literal(lit) => lit.to_bytecode(codegen),
+            ExprSimple::Path(path) => {
+                if path.segments.len() == 1 {
+                    let ident = path.segments.last().unwrap();
+                    if let PathSegment::Ident(ident) = ident {
+                        codegen.emit_load(&ident.name)
+                    } else {
+                        todo!()
+                    }
+                } else {
+                    todo!()
+                }
+            }
             _ => todo!("ee"),
         }
     }
@@ -59,7 +87,7 @@ impl ToBytecode for Expr {
     fn to_bytecode(&self, codegen: &mut Codegen) -> CodegenResult {
         match self {
             Expr::Simple(simple) => simple.to_bytecode(codegen),
-            Expr::Decl(_) => todo!("declr"),
+            Expr::Decl(decl) => decl.to_bytecode(codegen),
             Expr::Function(_) => todo!("eeee"),
             Expr::If(_) => todo!("ees"),
             Expr::While(_) => todo!("sse"),
@@ -72,9 +100,12 @@ impl ToBytecode for Expr {
 
 #[cfg(test)]
 mod test {
-    use parser::{ tokens::stream::TokenStream, ast::{ stream::ParseStream, expr::Expr } };
+    use parser::{
+        ast::{expr::Expr, stream::ParseStream},
+        tokens::stream::TokenStream,
+    };
 
-    use crate::{ codegen::ToBytecode, Thread, stack::Stack };
+    use crate::{codegen::ToBytecode, stack::Stack, Thread};
 
     use super::Codegen;
 

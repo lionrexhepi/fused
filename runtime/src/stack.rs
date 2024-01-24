@@ -280,6 +280,7 @@ impl RegisterContents {
 
 pub struct Stack {
     pub registers: Vec<RegisterContents>,
+    pub variables: Vec<RegisterContents>,
     depth: Cell<u16>,
 }
 
@@ -287,6 +288,7 @@ impl Stack {
     pub fn new() -> Self {
         Self {
             registers: vec![],
+            variables: vec![],
             depth: Cell::new(0),
         }
     }
@@ -321,10 +323,12 @@ impl Stack {
     pub fn push_frame(&mut self) {
         self.depth.set(self.depth.get() + 1);
         self.registers.extend([RegisterContents::None; Register::MAX as usize]);
+        self.variables.extend([RegisterContents::None; u16::MAX as usize])
     }
 
     pub fn pop_frame(&mut self) {
         self.registers.drain(self.current_frame_range());
+        self.variables.drain(0..(u16::MAX as usize));
         self.depth.set(self.depth.get() - 1);
     }
 
@@ -335,6 +339,17 @@ impl Stack {
     pub fn set(&mut self, register: Register, value: RegisterContents) -> Result<()> {
         self.current_frame_mut()?[register as usize] = value;
         Ok(())
+    }
+
+    pub fn load(& self, variable: u16) -> RegisterContents {
+        println!("Storing {}, in {variable}", self.variables[variable as usize]);
+
+        self.variables[variable as usize]
+    }
+
+    pub fn store(&mut self, variable: u16, value: RegisterContents) {
+        println!("Storing {value} in {variable}");
+        self.variables[variable as usize] = value;
     }
 
     pub fn is_root(&self) -> bool {

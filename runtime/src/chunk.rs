@@ -1,17 +1,20 @@
-use std::fmt::{ Formatter, Display };
+use std::fmt::{Display, Formatter};
 
 use thiserror::Error;
 
-use crate::{ stack::{ RegisterContents, Register }, instructions::Instruction };
+use crate::{
+    instructions::Instruction,
+    stack::{Register, RegisterContents},
+};
 
 pub type Result<T> = std::result::Result<T, BytecodeError>;
 
 #[derive(Error, Debug, Clone, PartialEq, Eq)]
 pub enum BytecodeError {
-    #[error("Invalid instruction: {0:x}")] InvalidInstruction(u8),
-    #[error("The register {0:x} exceeds the size of the current stack frame")] RegisterNotFound(
-        Register,
-    ),
+    #[error("Invalid instruction: {0:x}")]
+    InvalidInstruction(u8),
+    #[error("The register {0:x} exceeds the size of the current stack frame")]
+    RegisterNotFound(Register),
     #[error("Chunk ends in the middle of an instruction")]
     UnexpectedEOF,
 }
@@ -23,6 +26,7 @@ pub struct Chunk {
 
 impl<'a> Display for Chunk {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        //return Ok(());
         writeln!(f, "{:-^30}", "Constants")?;
 
         for (index, value) in self.consts.iter().enumerate() {
@@ -44,14 +48,23 @@ impl<'a> Display for Chunk {
                 }
                 Instruction::Return => {
                     ip += 2;
-                    ("ret", format!("<{}> -> <{}>", self.buffer[ip - 2], self.buffer[ip - 1]))
-                },
-                Instruction::PushFrame => {
-                    
-
-                    ("pushframe", String::new())
+                    (
+                        "ret",
+                        format!("<{}> -> <{}>", self.buffer[ip - 2], self.buffer[ip - 1]),
+                    )
                 }
-                    
+                Instruction::PushFrame => ("pushframe", String::new()),
+                Instruction::StoreLocal => {
+                    let (var, dest) = Instruction::read_constant(&self.buffer[ip..])?;
+                    ip += 3;
+                    ("store_loc", format!("<{dest}> -> [{var}]"))
+                }
+                Instruction::LoadLocal => {
+                    let (var, dest) = Instruction::read_constant(&self.buffer[ip..])?;
+                    ip += 3;
+                    ("load_loc", format!("[{var}] -> <{dest}>"))
+                }
+
                 other if other.is_binary() => {
                     let (left, right, dest) = Instruction::read_binary_args(&self.buffer[ip..])?;
                     ip += 3;
@@ -99,20 +112,10 @@ mod test {
     #[test]
     fn display() {
         let buffer = [
-            1,
-            0,
-            0,
-            0, //const [0] <0>
-            1,
-            0,
-            1,
-            1, //const [1] <1>
-            2,
-            0,
-            1,
-            2, //add <0> <1> <2>
-            0,
-            2, //return <2>
+            1, 0, 0, 0, //const [0] <0>
+            1, 0, 1, 1, //const [1] <1>
+            2, 0, 1, 2, //add <0> <1> <2>
+            0, 2, //return <2>
         ];
         let chunk = super::Chunk {
             buffer: Box::new(buffer),
