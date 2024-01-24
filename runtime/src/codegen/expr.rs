@@ -78,6 +78,19 @@ impl ToBytecode for ExprSimple {
                     todo!()
                 }
             }
+            ExprSimple::Assign(target, value) => {
+                if target.segments.len() == 1 {
+                    let ident = target.segments.last().unwrap();
+                    if let PathSegment::Ident(ident) = ident {
+                        let value = value.to_bytecode(codegen)?;
+                        codegen.emit_store(&ident.name, value)
+                    } else {
+                        todo!()
+                    }
+                } else {
+                    todo!()
+                }
+            }
             _ => todo!("ee"),
         }
     }
