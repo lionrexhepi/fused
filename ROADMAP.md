@@ -1,7 +1,7 @@
 # Roadmap
 
 ## Tokenization
-* [x] Cyursor
+* [x] Cursor
 * [x] TokenStream
 * [x] Identifiers
 * [x] Operators
