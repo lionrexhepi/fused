@@ -1,3 +1,4 @@
+use bufreader::BufReader;
 use chunk::{BytecodeError, Chunk};
 use instructions::Instruction;
 use stack::{RegisterContents, Stack};
@@ -8,6 +9,7 @@ pub mod codegen;
 pub mod constants;
 mod instructions;
 pub mod stack;
+mod bufreader;
 
 #[derive(Error, Debug, PartialEq, Eq)]
 pub enum RuntimeError {
@@ -45,58 +47,54 @@ impl Thread {
     }
 
     fn run_guarded(&mut self, chunk: Chunk) -> Result<RegisterContents> {
-        let mut ip = 0;
+        let mut reader = BufReader::new(&chunk.buffer);
         let return_value = loop {
-            if ip == chunk.buffer.len() {
+            
+            if reader.eof() {
                 break RegisterContents::None;
             }
-            let instruction = Instruction::from_byte(chunk.buffer[ip])?;
-            ip += 1;
+            let instruction = reader.read_instruction()?;
             match instruction {
                 Instruction::Return => {
-                    if chunk.buffer.len() < ip + 2 {
-                        Err(RuntimeError::InvalidBytecode(BytecodeError::UnexpectedEOF))?;
-                    }
 
-                    let value = self.stack.get(chunk.buffer[ip])?;
+                    let value = self.stack.get(reader.read_register()?)?;
                     self.stack.pop_frame();
                     if self.stack.is_root() {
                         break value;
                     } else {
-                        self.stack.set(chunk.buffer[1], value)?;
-                        ip += 1;
+                        self.stack.set(reader.read_register()?, value)?;
+                        
                     }
                 }
                 Instruction::Const => {
-                    let (address, dest) = Instruction::read_constant(&chunk.buffer[ip..])?;
+                    let address = reader.read_index()?;
                     let const_val = chunk
                         .consts
                         .get(address as usize)
                         .ok_or(RuntimeError::InvalidConstant(address))?;
-                    self.stack.set(dest, *const_val)?;
-                    ip += 3;
+                    self.stack.set(reader.read_register()?, *const_val)?;
                 }
                 Instruction::PushFrame => {
                     self.stack.push_frame();
                 }
 
                 Instruction::StoreLocal => {
-                    let var_id = Instruction::read_variable(&chunk.buffer[ip..])?;
-                    let value = chunk.buffer[ip + 2];
-                    self.stack.store(var_id, self.stack.get(value)?);
-                    ip += 3;
+
+                    self.stack.store(reader.read_index()?, self.stack.get(reader.read_register()?)?);
                 }
 
                 Instruction::LoadLocal => {
-                    let var_id = Instruction::read_variable(&chunk.buffer[ip..])?;
-                    let dest = chunk.buffer[ip + 2];
-                    let value = self.stack.load(var_id);
-                    self.stack.set(dest, value)?;
-                    ip += 3;
+                    let value = self.stack.load(reader.read_index()?);
+                    self.stack.set(reader.read_register()?, value)?;
                 }
 
                 other if other.is_binary() => {
-                    let (left, right, dest) = Instruction::read_binary_args(&chunk.buffer[ip..])?;
+                    let (left, right, dest) = (
+                        reader.read_register()?,
+                        reader.read_register()?,
+                        reader.read_register()?
+
+                    );
                     let operator = match other {
                         Instruction::Add => RegisterContents::try_add,
                         Instruction::Sub => RegisterContents::try_sub,
@@ -118,7 +116,6 @@ impl Thread {
                     let right = self.stack.get(right)?;
                     let result = operator(&left, &right)?;
                     self.stack.set(dest, result)?;
-                    ip += 3;
                 }
                 _ => unreachable!("Missing match arm for instruction {:?}", instruction),
             }

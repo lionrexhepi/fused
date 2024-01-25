@@ -91,7 +91,7 @@ impl ToBytecode for ExprSimple {
                     todo!()
                 }
             }
-            _ => todo!("ee"),
+            other => todo!("{other:?}"),
         }
     }
 }

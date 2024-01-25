@@ -1,10 +1,10 @@
-use std::fmt::{Display, Formatter};
+use std::{fmt::{Display, Formatter}, mem::size_of};
 
 use thiserror::Error;
 
 use crate::{
     instructions::Instruction,
-    stack::{Register, RegisterContents},
+    stack::{Register, RegisterContents}, bufreader::BufReader,
 };
 
 pub type Result<T> = std::result::Result<T, BytecodeError>;
@@ -24,9 +24,15 @@ pub struct Chunk {
     pub buffer: Box<[u8]>,
 }
 
+impl Chunk {
+    pub fn size(&self) -> usize {
+        self.consts.len() * size_of::<RegisterContents>() + self.buffer.len()
+    }
+}
+
 impl<'a> Display for Chunk {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        //return Ok(());
+
         writeln!(f, "{:-^30}", "Constants")?;
 
         for (index, value) in self.consts.iter().enumerate() {
@@ -35,39 +41,28 @@ impl<'a> Display for Chunk {
 
         writeln!(f, "{:-^30}", "Instructions")?;
 
-        let mut ip = 0;
-        println!("Raw: {:?}", self.buffer);
-        while ip < self.buffer.len() {
-            let instruction = Instruction::from_byte(self.buffer[ip])?;
-            ip += 1;
+        let mut reader = BufReader::new(&self.buffer);
+        while !reader.eof() {
+            let instruction = reader.read_instruction()?;
             let (name, args) = match instruction {
                 Instruction::Const => {
-                    let (address, dest) = Instruction::read_constant(&self.buffer[ip..])?;
-                    ip += 3;
-                    ("const", format!("{:x} <{}>", address, dest))
+                    ("const", format!("{:x} <{}>", reader.read_index()?, reader.read_register()?))
                 }
                 Instruction::Return => {
-                    ip += 2;
                     (
                         "ret",
-                        format!("<{}> -> <{}>", self.buffer[ip - 2], self.buffer[ip - 1]),
+                        format!("<{}> -> <{}>", reader.read_register()?, reader.read_register()?),
                     )
                 }
                 Instruction::PushFrame => ("pushframe", String::new()),
                 Instruction::StoreLocal => {
-                    let (var, dest) = Instruction::read_constant(&self.buffer[ip..])?;
-                    ip += 3;
-                    ("store_loc", format!("<{dest}> -> [{var}]"))
+                    ("store_loc", format!("[{}] << <{}>", reader.read_index()?, reader.read_register()?))
                 }
                 Instruction::LoadLocal => {
-                    let (var, dest) = Instruction::read_constant(&self.buffer[ip..])?;
-                    ip += 3;
-                    ("load_loc", format!("[{var}] -> <{dest}>"))
+                    ("load_loc", format!("[{}] << <{}>", reader.read_index()?, reader.read_register()?))
                 }
 
                 other if other.is_binary() => {
-                    let (left, right, dest) = Instruction::read_binary_args(&self.buffer[ip..])?;
-                    ip += 3;
                     let name = match other {
                         Instruction::Add => "add",
                         Instruction::Sub => "sub",
@@ -81,7 +76,7 @@ impl<'a> Display for Chunk {
                         Instruction::And => "and",
                         _ => unreachable!(),
                     };
-                    (name, format!("<{}> <{}> <{}>", left, right, dest))
+                    (name, format!("<{}> <{}> <{}>", reader.read_register()?, reader.read_register()?, reader.read_register()?))
                 }
                 _ => unreachable!("Missing match arm for instruction {instruction:?}"),
             };

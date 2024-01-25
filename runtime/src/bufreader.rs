@@ -12,6 +12,8 @@ impl<'a> BufReader<'a> {
         Self { ip: 0, buf: buffer }
     }
 
+    
+
     fn next_byte(&mut self) -> Result<u8, BytecodeError> {
         if self.ip >= self.buf.len() {
             return Err(BytecodeError::UnexpectedEOF);
@@ -21,6 +23,10 @@ impl<'a> BufReader<'a> {
         Ok(byte)
     }
 
+    pub fn eof(&self) -> bool {
+        self.ip >= self.buf.len()
+    }
+ 
     pub fn read_instruction(&mut self)-> Result<Instruction, BytecodeError> {
         Instruction::from_byte(self.next_byte()?)
     }
