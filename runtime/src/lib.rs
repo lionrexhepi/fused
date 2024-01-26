@@ -1,7 +1,7 @@
 use bufreader::BufReader;
-use chunk::{BytecodeError, Chunk};
+use chunk::{ BytecodeError, Chunk };
 use instructions::Instruction;
-use stack::{RegisterContents, Stack};
+use stack::{ RegisterContents, Stack };
 use thiserror::Error;
 
 mod chunk;
@@ -15,20 +15,20 @@ mod bufreader;
 pub enum RuntimeError {
     #[error("Failed to allocate memory")]
     AllocationFailure,
-    #[error("Error while reading bytecode: {0}\n\n This error is likely unrecoverable.")]
-    InvalidBytecode(#[from] BytecodeError),
+    #[error(
+        "Error while reading bytecode: {0}\n\n This error is likely unrecoverable."
+    )] InvalidBytecode(#[from] BytecodeError),
     #[error("Attempted operation with null value")]
     NullAccess,
-    #[error("Bad stack frame {0:x}")]
-    BadStackFrame(u16),
-    #[error("Operation {0} unsupported for types {1} and {2}")]
-    InvalidOperation(&'static str, &'static str, &'static str),
-    #[error("Chunk does not contain a constant at index {0:x}")]
-    InvalidConstant(u16),
-    #[error("Attempted to access undefined variable {0}")]
-    UndefinedSymbol(String),
-    #[error("Attempted to mutate immutable variable {0}")]
-    ImmutableSymbol(String),
+    #[error("Bad stack frame {0:x}")] BadStackFrame(u16),
+    #[error("Operation {0} unsupported for types {1} and {2}")] InvalidOperation(
+        &'static str,
+        &'static str,
+        &'static str,
+    ),
+    #[error("Chunk does not contain a constant at index {0:x}")] InvalidConstant(u16),
+    #[error("Attempted to access undefined variable {0}")] UndefinedSymbol(String),
+    #[error("Attempted to mutate immutable variable {0}")] ImmutableSymbol(String),
 }
 
 pub(crate) type Result<T> = std::result::Result<T, RuntimeError>;
@@ -49,27 +49,26 @@ impl Thread {
     fn run_guarded(&mut self, chunk: Chunk) -> Result<RegisterContents> {
         let mut reader = BufReader::new(&chunk.buffer);
         let return_value = loop {
-            
             if reader.eof() {
                 break RegisterContents::None;
             }
             let instruction = reader.read_instruction()?;
             match instruction {
                 Instruction::Return => {
-
                     let value = self.stack.get(reader.read_register()?)?;
                     self.stack.pop_frame();
                     if self.stack.is_root() {
                         break value;
                     } else {
-                        self.stack.set(reader.read_register()?, value)?;
-                        
+                        let dest = reader.read_register()?;
+                        if !dest.is_null() {
+                            self.stack.set(reader.read_register()?, value)?;
+                        }
                     }
                 }
                 Instruction::Const => {
                     let address = reader.read_index()?;
-                    let const_val = chunk
-                        .consts
+                    let const_val = chunk.consts
                         .get(address as usize)
                         .ok_or(RuntimeError::InvalidConstant(address))?;
                     self.stack.set(reader.read_register()?, *const_val)?;
@@ -79,8 +78,10 @@ impl Thread {
                 }
 
                 Instruction::StoreLocal => {
-
-                    self.stack.store(reader.read_index()?, self.stack.get(reader.read_register()?)?);
+                    self.stack.store(
+                        reader.read_index()?,
+                        self.stack.get(reader.read_register()?)?
+                    );
                 }
 
                 Instruction::LoadLocal => {
@@ -92,8 +93,7 @@ impl Thread {
                     let (left, right, dest) = (
                         reader.read_register()?,
                         reader.read_register()?,
-                        reader.read_register()?
-
+                        reader.read_register()?,
                     );
                     let operator = match other {
                         Instruction::Add => RegisterContents::try_add,

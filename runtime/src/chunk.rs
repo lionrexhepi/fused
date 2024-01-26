@@ -1,20 +1,21 @@
-use std::{fmt::{Display, Formatter}, mem::size_of};
+use std::{ fmt::{ Display, Formatter }, mem::size_of };
 
 use thiserror::Error;
 
 use crate::{
     instructions::Instruction,
-    stack::{Register, RegisterContents}, bufreader::BufReader,
+    stack::{ Register, RegisterContents },
+    bufreader::BufReader,
 };
 
 pub type Result<T> = std::result::Result<T, BytecodeError>;
 
 #[derive(Error, Debug, Clone, PartialEq, Eq)]
 pub enum BytecodeError {
-    #[error("Invalid instruction: {0:x}")]
-    InvalidInstruction(u8),
-    #[error("The register {0:x} exceeds the size of the current stack frame")]
-    RegisterNotFound(Register),
+    #[error("Invalid instruction: {0:x}")] InvalidInstruction(u8),
+    #[error("The register {0:x} exceeds the size of the current stack frame")] RegisterNotFound(
+        Register,
+    ),
     #[error("Chunk ends in the middle of an instruction")]
     UnexpectedEOF,
 }
@@ -32,7 +33,6 @@ impl Chunk {
 
 impl<'a> Display for Chunk {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-
         writeln!(f, "{:-^30}", "Constants")?;
 
         for (index, value) in self.consts.iter().enumerate() {
@@ -46,20 +46,23 @@ impl<'a> Display for Chunk {
             let instruction = reader.read_instruction()?;
             let (name, args) = match instruction {
                 Instruction::Const => {
-                    ("const", format!("{:x} <{}>", reader.read_index()?, reader.read_register()?))
+                    ("const", format!("{:x} {}", reader.read_index()?, reader.read_register()?))
                 }
                 Instruction::Return => {
-                    (
-                        "ret",
-                        format!("<{}> -> <{}>", reader.read_register()?, reader.read_register()?),
-                    )
+                    ("ret", format!("{} -> {}", reader.read_register()?, reader.read_register()?))
                 }
                 Instruction::PushFrame => ("pushframe", String::new()),
                 Instruction::StoreLocal => {
-                    ("store_loc", format!("[{}] << <{}>", reader.read_index()?, reader.read_register()?))
+                    (
+                        "store_loc",
+                        format!("[{}] << {}", reader.read_index()?, reader.read_register()?),
+                    )
                 }
                 Instruction::LoadLocal => {
-                    ("load_loc", format!("[{}] << <{}>", reader.read_index()?, reader.read_register()?))
+                    (
+                        "load_loc",
+                        format!("[{}] << {}", reader.read_index()?, reader.read_register()?),
+                    )
                 }
 
                 other if other.is_binary() => {
@@ -76,7 +79,15 @@ impl<'a> Display for Chunk {
                         Instruction::And => "and",
                         _ => unreachable!(),
                     };
-                    (name, format!("<{}> <{}> <{}>", reader.read_register()?, reader.read_register()?, reader.read_register()?))
+                    (
+                        name,
+                        format!(
+                            "{} {} {}",
+                            reader.read_register()?,
+                            reader.read_register()?,
+                            reader.read_register()?
+                        ),
+                    )
                 }
                 _ => unreachable!("Missing match arm for instruction {instruction:?}"),
             };
@@ -107,10 +118,20 @@ mod test {
     #[test]
     fn display() {
         let buffer = [
-            1, 0, 0, 0, //const [0] <0>
-            1, 0, 1, 1, //const [1] <1>
-            2, 0, 1, 2, //add <0> <1> <2>
-            0, 2, //return <2>
+            1,
+            0,
+            0,
+            0, //const [0] <0>
+            1,
+            0,
+            1,
+            1, //const [1] <1>
+            2,
+            0,
+            1,
+            2, //add <0> <1> <2>
+            0,
+            2, //return <2>
         ];
         let chunk = super::Chunk {
             buffer: Box::new(buffer),

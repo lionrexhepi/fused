@@ -1,23 +1,25 @@
 use parser::ast::{
     declarations::ExprDecl,
-    expr::{Expr, ExprLit},
+    expr::{ Expr, ExprLit },
     number::Number,
-    simple::{BinaryType, ExprSimple}, path::PathSegment,
+    simple::{ BinaryType, ExprSimple },
+    path::PathSegment,
 };
 
-use crate::{instructions::Instruction, stack::RegisterContents};
+use crate::{ instructions::Instruction, stack::{ Register, RegisterContents } };
 
-use super::{Codegen, CodegenResult, ToBytecode};
+use super::{ Codegen, CodegenResult, ToBytecode };
 
 impl ToBytecode for ExprLit {
     fn to_bytecode(&self, codegen: &mut Codegen) -> CodegenResult {
         let value = match self {
             ExprLit::String(_) => todo!(),
-            ExprLit::Number(num) => match num.number {
-                Number::Int(int) => RegisterContents::Int(int),
-                Number::Float(float) => RegisterContents::Float(float),
-                Number::UInt(uint) => RegisterContents::Int(uint as i64),
-            },
+            ExprLit::Number(num) =>
+                match num.number {
+                    Number::Int(int) => RegisterContents::Int(int),
+                    Number::Float(float) => RegisterContents::Float(float),
+                    Number::UInt(uint) => RegisterContents::Int(uint as i64),
+                }
             ExprLit::Bool(bool) => RegisterContents::Bool(bool.value),
         };
 
@@ -32,7 +34,7 @@ impl ToBytecode for ExprDecl {
             let value_reg = value.to_bytecode(codegen)?;
             codegen.emit_store(&self.name.name, value_reg)
         } else {
-            Ok(0)
+            Ok(Register::NULL)
         }
     }
 }
@@ -113,12 +115,9 @@ impl ToBytecode for Expr {
 
 #[cfg(test)]
 mod test {
-    use parser::{
-        ast::{expr::Expr, stream::ParseStream},
-        tokens::stream::TokenStream,
-    };
+    use parser::{ ast::{ expr::Expr, stream::ParseStream }, tokens::stream::TokenStream };
 
-    use crate::{codegen::ToBytecode, stack::Stack, Thread};
+    use crate::{ codegen::ToBytecode, stack::Stack, Thread };
 
     use super::Codegen;
 

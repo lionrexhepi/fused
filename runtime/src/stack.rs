@@ -1,9 +1,7 @@
 use core::hash;
-use std::{ vec, cell::Cell, fmt::Display };
+use std::{ cell::Cell, fmt::{ Display, LowerHex }, ops::{ Index, IndexMut }, vec };
 
 use crate::{ Result, RuntimeError };
-
-pub type Register = u8;
 
 pub struct FusedObject;
 
@@ -295,8 +293,8 @@ impl Stack {
 
     #[inline]
     fn current_frame_range(&self) -> std::ops::Range<usize> {
-        let end = (self.depth.get() as usize) * (Register::MAX as usize);
-        let start = end - (Register::MAX as usize);
+        let end = (self.depth.get() as usize) * Register::RANGE;
+        let start = end - Register::RANGE;
         start..end
     }
 
@@ -322,27 +320,32 @@ impl Stack {
 
     pub fn push_frame(&mut self) {
         self.depth.set(self.depth.get() + 1);
-        self.registers.extend([RegisterContents::None; Register::MAX as usize]);
+        self.registers.extend([RegisterContents::None; Register::RANGE]);
         self.variables.extend([RegisterContents::None; u16::MAX as usize])
     }
 
     pub fn pop_frame(&mut self) {
         self.registers.drain(self.current_frame_range());
-        self.variables.drain(0..(u16::MAX as usize));
+        self.variables.drain(0..u16::MAX as usize);
         self.depth.set(self.depth.get() - 1);
     }
 
     pub fn get(&self, register: Register) -> Result<RegisterContents> {
-        Ok(self.current_frame()?[register as usize])
+        if register.is_null() {
+            Ok(RegisterContents::None)
+        } else {
+            Ok(self.current_frame()?[register])
+        }
     }
 
     pub fn set(&mut self, register: Register, value: RegisterContents) -> Result<()> {
-        self.current_frame_mut()?[register as usize] = value;
+        if !register.is_null() {
+            self.current_frame_mut()?[register] = value;
+        }
         Ok(())
     }
 
-    pub fn load(& self, variable: u16) -> RegisterContents {
-
+    pub fn load(&self, variable: u16) -> RegisterContents {
         self.variables[variable as usize]
     }
 
@@ -352,5 +355,58 @@ impl Stack {
 
     pub fn is_root(&self) -> bool {
         self.depth.get() == 0
+    }
+}
+
+#[repr(transparent)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct Register(u8);
+
+impl Register {
+    pub const NULL: Self = Self(0);
+    pub const RANGE: usize = u8::MAX as usize;
+
+    pub const fn new(id: u8) -> Self {
+        if id == 0 { Self::NULL } else { Self(id) }
+    }
+
+    pub fn is_null(&self) -> bool {
+        self.0 == 0
+    }
+
+    pub fn next(&self) -> Self {
+        Self(self.0 + 1)
+    }
+}
+
+impl From<Register> for u8 {
+    fn from(value: Register) -> Self {
+        value.0
+    }
+}
+
+impl<T> Index<Register> for [T] {
+    type Output = T;
+
+    fn index(&self, index: Register) -> &Self::Output {
+        &self[index.0 as usize]
+    }
+}
+
+impl<T> IndexMut<Register> for [T] {
+    fn index_mut(&mut self, index: Register) -> &mut Self::Output {
+        &mut self[index.0 as usize]
+    }
+}
+
+impl Display for Register {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if self.is_null() { write!(f, "<null>") } else { write!(f, "<{}>", self.0) }
+    }
+}
+
+impl LowerHex for Register {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:x}", self.0)
     }
 }

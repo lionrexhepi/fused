@@ -21,7 +21,7 @@ type CodegenResult = std::result::Result<Register, CodegenError>;
 pub struct Codegen {
     bytes: Vec<u8>,
     constants: Vec<RegisterContents>,
-    used_registers: Cell<Register>,
+    next_register: Cell<Register>,
     scope: Rc<SymbolTable>,
 }
 
@@ -30,14 +30,14 @@ impl Codegen {
         Self {
             bytes: Vec::new(),
             constants: Default::default(),
-            used_registers: Cell::new(0),
+            next_register: Cell::new(Register::new(1)),
             scope: Default::default(),
         }
     }
 
     fn next_free_register(&mut self) -> Register {
-        let register = self.used_registers.get();
-        self.used_registers.set(register + 1);
+        let register = self.next_register.get();
+        self.next_register.set(register.next());
         register
     }
 
@@ -56,7 +56,7 @@ impl Codegen {
         instruction: Instruction
     ) -> Register {
         let dst = self.next_free_register();
-        self.bytes.extend([instruction as u8, left, right, dst]);
+        self.bytes.extend([instruction as u8, left.into(), right.into(), dst.into()]);
         dst
     }
 
@@ -64,7 +64,7 @@ impl Codegen {
     pub fn emit_return(&mut self, value: Register) -> Register {
         println!("Emitting return: {}", value);
         let location = self.next_free_register();
-        self.bytes.extend([Instruction::Return as u8, value, location]);
+        self.bytes.extend([Instruction::Return as u8, value.into(), location.into()]);
         location
     }
 
@@ -76,7 +76,7 @@ impl Codegen {
         let index = self.create_const(value);
         self.bytes.push(Instruction::Const as u8);
         self.bytes.extend(index.to_le_bytes());
-        self.bytes.push(dest);
+        self.bytes.push(dest.into());
         dest
     }
 
@@ -89,7 +89,7 @@ impl Codegen {
         self.bytes.push(Instruction::PushFrame as u8);
         self.scope.push();
         let mut child = Self {
-            used_registers: Cell::new(0),
+            next_register: Cell::new(Register::new(1)),
             constants: Vec::new(),
             bytes: Vec::new(),
             scope: self.scope.clone(),
@@ -100,7 +100,6 @@ impl Codegen {
         let Chunk { consts, buffer } = child.chunk();
         self.bytes.append(&mut buffer.into_vec());
         self.constants.extend(consts);
-
 
         Ok(self.emit_return(result))
     }
@@ -124,7 +123,7 @@ impl Codegen {
             }
 
             self.bytes.extend(symbol.to_le_bytes());
-            self.bytes.push(dest);
+            self.bytes.push(dest.into());
             Ok(dest)
         } else {
             Err(CodegenError::UndefinedSymbol(name.to_string()))
@@ -143,9 +142,9 @@ impl Codegen {
             }
 
             self.bytes.extend(symbol.to_le_bytes());
-            self.bytes.push(value);
+            self.bytes.push(value.into());
 
-            Ok(0)
+            Ok(Register::NULL)
         } else {
             Err(CodegenError::UndefinedSymbol(name.to_string()))
         }
