@@ -62,8 +62,7 @@ impl Codegen {
 
     ///Emits an instruction to return the value in the provided register
     pub fn emit_return(&mut self, value: Register) -> Register {
-        println!("Emitting return: {}", value);
-        let location = self.next_free_register();
+        let location = if value.is_null() { Register::NULL } else { self.next_free_register() };
         self.bytes.extend([Instruction::Return as u8, value.into(), location.into()]);
         location
     }

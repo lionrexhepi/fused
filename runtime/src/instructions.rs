@@ -1,4 +1,4 @@
-use crate::{ stack::Register, chunk::{ Result, BytecodeError } };
+use crate::chunk::{ Result, BytecodeError };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
@@ -26,7 +26,6 @@ pub enum Instruction {
     StoreLocal,
 }
 macro_rules! match_bytes {
-    
     ($byte:expr, $($instrs:ident),*) => {
         match $byte {
             $(byte if byte == (Self::$instrs as u8) => Ok(Self::$instrs)),*,
@@ -36,7 +35,6 @@ macro_rules! match_bytes {
 }
 
 impl Instruction {
-
     #[inline(always)]
     pub const fn is_binary(self) -> bool {
         (self as u8) <= (Instruction::Or as u8) && (self as u8) >= (Instruction::Add as u8)
@@ -68,4 +66,3 @@ impl Instruction {
         )
     }
 }
-
