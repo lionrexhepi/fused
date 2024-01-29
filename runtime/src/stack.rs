@@ -1,7 +1,5 @@
 use core::hash;
-use std::{ cell::Cell, fmt::{ Display, LowerHex }, vec };
-
-use parser::ast::keywords::In;
+use std::{ cell::Cell, fmt::Display, vec };
 
 use crate::{ bufreader::Index, Result, RuntimeError };
 

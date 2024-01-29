@@ -4,7 +4,7 @@ use thiserror::Error;
 
 use crate::{
     instructions::Instruction,
-    stack::{ RegisterContents },
+    stack::RegisterContents,
     bufreader::{ Address, BufReader },
 };
 
@@ -98,8 +98,6 @@ impl From<BytecodeError> for std::fmt::Error {
 
 #[cfg(test)]
 mod test {
-    use crate::stack::RegisterContents;
-
     #[test]
     fn test_sizes() {
         use std::mem::size_of;

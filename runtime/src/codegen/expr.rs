@@ -7,7 +7,7 @@ use parser::ast::{
     simple::{ BinaryType, ExprSimple },
 };
 
-use crate::{ instructions::Instruction, stack::{ RegisterContents } };
+use crate::{ instructions::Instruction, stack::RegisterContents };
 
 use super::{ Codegen, CodegenResult, ToBytecode };
 
@@ -157,8 +157,8 @@ mod test {
         let mut stream = ParseStream::new(tokens);
         let expr = stream.parse::<Expr>().unwrap();
         let mut codegen = Codegen::new();
-        let result = expr.to_bytecode(&mut codegen).unwrap();
-        codegen.emit_simple(Instruction::Return);
+        expr.to_bytecode(&mut codegen).unwrap();
+        codegen.emit_simple(Instruction::Return).unwrap();
         let chunk = codegen.chunk();
 
         let mut thread = Thread {

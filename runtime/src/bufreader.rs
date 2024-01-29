@@ -1,5 +1,3 @@
-use std::ops::Add;
-
 use crate::{ chunk::BytecodeError, instructions::Instruction };
 
 pub struct BufReader<'a> {
