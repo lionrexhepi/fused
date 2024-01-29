@@ -4,8 +4,8 @@ use thiserror::Error;
 
 use crate::{
     instructions::Instruction,
-    stack::{ Register, RegisterContents },
-    bufreader::BufReader,
+    stack::{ RegisterContents },
+    bufreader::{ Address, BufReader },
 };
 
 pub type Result<T> = std::result::Result<T, BytecodeError>;
@@ -13,11 +13,10 @@ pub type Result<T> = std::result::Result<T, BytecodeError>;
 #[derive(Error, Debug, Clone, PartialEq, Eq)]
 pub enum BytecodeError {
     #[error("Invalid instruction: {0:x}")] InvalidInstruction(u8),
-    #[error("The register {0:x} exceeds the size of the current stack frame")] RegisterNotFound(
-        Register,
-    ),
+
     #[error("Chunk ends in the middle of an instruction")]
     UnexpectedEOF,
+    #[error("Invalid jump address: {0:x}")] InvalidJumpAddress(Address),
 }
 
 pub struct Chunk {
@@ -43,27 +42,19 @@ impl<'a> Display for Chunk {
 
         let mut reader = BufReader::new(&self.buffer);
         while !reader.eof() {
+            let addr = reader.current_address();
             let instruction = reader.read_instruction()?;
             let (name, args) = match instruction {
-                Instruction::Const => {
-                    ("const", format!("{:x} {}", reader.read_index()?, reader.read_register()?))
-                }
-                Instruction::Return => {
-                    ("ret", format!("{} -> {}", reader.read_register()?, reader.read_register()?))
-                }
-                Instruction::PushFrame => ("pushframe", String::new()),
+                Instruction::Const => { ("const", format!("{:x}", reader.read_index()?)) }
+                Instruction::Return => { ("ret", String::default()) }
+                Instruction::PushFrame => ("pushframe", String::default()),
                 Instruction::StoreLocal => {
-                    (
-                        "store_loc",
-                        format!("[{}] << {}", reader.read_index()?, reader.read_register()?),
-                    )
+                    ("store_loc", format!(" >> [{}] ", reader.read_index()?))
                 }
                 Instruction::LoadLocal => {
-                    (
-                        "load_loc",
-                        format!("[{}] << {}", reader.read_index()?, reader.read_register()?),
-                    )
+                    ("load_loc", format!(" << [{}]", reader.read_index()?))
                 }
+                Instruction::JumpTo => { ("jump_to", format!("#{}", reader.read_address()?)) }
 
                 other if other.is_binary() => {
                     let name = match other {
@@ -79,19 +70,11 @@ impl<'a> Display for Chunk {
                         Instruction::And => "and",
                         _ => unreachable!(),
                     };
-                    (
-                        name,
-                        format!(
-                            "{} {} {}",
-                            reader.read_register()?,
-                            reader.read_register()?,
-                            reader.read_register()?
-                        ),
-                    )
+                    (name, String::default())
                 }
                 _ => unreachable!("Missing match arm for instruction {instruction:?}"),
             };
-            writeln!(f, "{name:<5} {args:>25}")?;
+            writeln!(f, "#{addr} {name:<5} {args:>25}")?;
         }
 
         Ok(())

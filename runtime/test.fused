@@ -1,5 +1,7 @@
 
-left:= 2
-right := 2
-sum:= left + right
-x:=1
+a:= if true:
+    2 + 3
+else:
+    2 + 2
+
+a

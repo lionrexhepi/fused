@@ -1,7 +1,7 @@
 use std::{ env::args, fs::File, io::Read };
 
 use parser::{ tokens::stream::TokenStream, ast::{ stream::ParseStream, block::Block } };
-use runtime::{ codegen::{ Codegen, ToBytecode }, Thread, stack::Stack };
+use runtime::{ codegen::{ Codegen, ToBytecode }, instructions::Instruction, stack::Stack, Thread };
 
 fn main() {
     let mut args = args().skip(0);
@@ -12,9 +12,9 @@ fn main() {
         let tokens = TokenStream::from_string(buf).unwrap();
         let mut parse = ParseStream::new(tokens);
         let block = parse.parse::<Block>().unwrap();
-        println!("{:?}", block.0);
         let mut codegen = Codegen::new();
         _ = block.to_bytecode(&mut codegen).unwrap();
+        codegen.emit_simple(Instruction::Return).unwrap();
 
         let chunk = codegen.chunk();
         let size = chunk.size();

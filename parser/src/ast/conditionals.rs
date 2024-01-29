@@ -1,7 +1,6 @@
 use crate::Span;
 
 use super::{
-    
     stream::ParseStream,
     ParseResult,
     Spanned,
@@ -32,6 +31,8 @@ impl Parse for ExprIf {
         let condition = token.parse()?;
         token.parse::<Colon>()?;
         let body = token.parse::<Block>()?;
+        token.skip_newlines();
+        println!("{:?}", token.current());
         let r#else = token.parse().ok();
 
         let span = match &r#else {
@@ -91,7 +92,7 @@ mod test {
         ast::{
             stream::ParseStream,
             conditionals::{ ExprIf, Else },
-            expr:: ExprLit,
+            expr::ExprLit,
             simple::ExprSimple,
         },
     };

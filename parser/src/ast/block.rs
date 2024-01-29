@@ -1,4 +1,4 @@
-use crate::Span;
+use crate::{ tokens::TokenType, Span };
 
 use super::{ Parse, stream::ParseStream, ParseResult, Spanned, statements::Statement };
 
@@ -14,15 +14,16 @@ impl Spanned for Block {
 impl Parse for Block {
     fn parse(stream: &mut ParseStream) -> ParseResult<Self> where Self: Sized {
         let first = stream.parse::<Statement>()?;
-        let indent = first.indent;
+        let first_indent = first.indent;
 
         let mut stmts = vec![first];
-
-        while let Ok(statement) = stream.parse::<Statement>() {
-            if statement.indent != indent {
+        while let TokenType::Newline(indent) = stream.current().content {
+            if indent != first_indent {
                 break;
             }
-            stmts.push(statement);
+
+            stmts.push(stream.parse()?);
+            stream.skip_newlines();
         }
 
         Ok(Self(stmts))

@@ -72,10 +72,11 @@ impl RegisterContents {
     }
 
     pub(crate) fn try_add(&self, other: &Self) -> Result<Self> {
+        println!("{}", self == &Self::None);
         match (self, other) {
             (Self::Int(l), Self::Int(r)) => Ok(Self::Int(l + r)),
             (Self::Float(l), Self::Float(r)) => Ok(Self::Float(l + r)),
-            (Self::None, _) | (_, Self::None) => Err(RuntimeError::NullAccess),
+            (Self::None, _) | (_, Self::None) => Err(RuntimeError::NullAccess("add")),
             (other_left, other_right) =>
                 Err(
                     RuntimeError::InvalidOperation(
@@ -91,7 +92,7 @@ impl RegisterContents {
         match (self, other) {
             (Self::Int(l), Self::Int(r)) => Ok(Self::Int(l - r)),
             (Self::Float(l), Self::Float(r)) => Ok(Self::Float(l - r)),
-            (Self::None, _) | (_, Self::None) => Err(RuntimeError::NullAccess),
+            (Self::None, _) | (_, Self::None) => Err(RuntimeError::NullAccess("sub")),
             (other_left, other_right) =>
                 Err(
                     RuntimeError::InvalidOperation(
@@ -107,7 +108,7 @@ impl RegisterContents {
         match (self, right) {
             (Self::Int(l), Self::Int(r)) => Ok(Self::Int(l * r)),
             (Self::Float(l), Self::Float(r)) => Ok(Self::Float(l * r)),
-            (Self::None, _) | (_, Self::None) => Err(RuntimeError::NullAccess),
+            (Self::None, _) | (_, Self::None) => Err(RuntimeError::NullAccess("mul")),
             (other_left, other_right) =>
                 Err(
                     RuntimeError::InvalidOperation(
@@ -123,7 +124,7 @@ impl RegisterContents {
         match (self, right) {
             (Self::Int(l), Self::Int(r)) => Ok(Self::Int(l / r)),
             (Self::Float(l), Self::Float(r)) => Ok(Self::Float(l / r)),
-            (Self::None, _) | (_, Self::None) => Err(RuntimeError::NullAccess),
+            (Self::None, _) | (_, Self::None) => Err(RuntimeError::NullAccess("div")),
             (other_left, other_right) =>
                 Err(
                     RuntimeError::InvalidOperation(
@@ -139,7 +140,7 @@ impl RegisterContents {
         match (self, right) {
             (Self::Int(l), Self::Int(r)) => Ok(Self::Int(l % r)),
             (Self::Float(l), Self::Float(r)) => Ok(Self::Float(l % r)),
-            (Self::None, _) | (_, Self::None) => Err(RuntimeError::NullAccess),
+            (Self::None, _) | (_, Self::None) => Err(RuntimeError::NullAccess("mod")),
             (other_left, other_right) =>
                 Err(
                     RuntimeError::InvalidOperation(
@@ -154,7 +155,7 @@ impl RegisterContents {
     pub(crate) fn try_bitand(&self, right: &RegisterContents) -> Result<RegisterContents> {
         match (self, right) {
             (Self::Int(l), Self::Int(r)) => Ok(Self::Int(l & r)),
-            (Self::None, _) | (_, Self::None) => Err(RuntimeError::NullAccess),
+            (Self::None, _) | (_, Self::None) => Err(RuntimeError::NullAccess("band")),
             (other_left, other_right) =>
                 Err(
                     RuntimeError::InvalidOperation(
@@ -169,7 +170,7 @@ impl RegisterContents {
     pub(crate) fn try_bitor(&self, right: &RegisterContents) -> Result<RegisterContents> {
         match (self, right) {
             (Self::Int(l), Self::Int(r)) => Ok(Self::Int(l | r)),
-            (Self::None, _) | (_, Self::None) => Err(RuntimeError::NullAccess),
+            (Self::None, _) | (_, Self::None) => Err(RuntimeError::NullAccess("bor")),
             (other_left, other_right) =>
                 Err(
                     RuntimeError::InvalidOperation(
@@ -184,7 +185,7 @@ impl RegisterContents {
     pub(crate) fn try_bitxor(&self, right: &RegisterContents) -> Result<RegisterContents> {
         match (self, right) {
             (Self::Int(l), Self::Int(r)) => Ok(Self::Int(l ^ r)),
-            (Self::None, _) | (_, Self::None) => Err(RuntimeError::NullAccess),
+            (Self::None, _) | (_, Self::None) => Err(RuntimeError::NullAccess("bxor")),
             (other_left, other_right) =>
                 Err(
                     RuntimeError::InvalidOperation(
@@ -199,7 +200,7 @@ impl RegisterContents {
     pub(crate) fn try_leftshift(&self, right: &RegisterContents) -> Result<RegisterContents> {
         match (self, right) {
             (Self::Int(l), Self::Int(r)) => Ok(Self::Int(l << r)),
-            (Self::None, _) | (_, Self::None) => Err(RuntimeError::NullAccess),
+            (Self::None, _) | (_, Self::None) => Err(RuntimeError::NullAccess("lshift")),
             (other_left, other_right) =>
                 Err(
                     RuntimeError::InvalidOperation(
@@ -214,7 +215,7 @@ impl RegisterContents {
     pub(crate) fn try_rightshift(&self, right: &RegisterContents) -> Result<RegisterContents> {
         match (self, right) {
             (Self::Int(l), Self::Int(r)) => Ok(Self::Int(l >> r)),
-            (Self::None, _) | (_, Self::None) => Err(RuntimeError::NullAccess),
+            (Self::None, _) | (_, Self::None) => Err(RuntimeError::NullAccess("rshift")),
             (other_left, other_right) =>
                 Err(
                     RuntimeError::InvalidOperation(
@@ -229,7 +230,7 @@ impl RegisterContents {
     pub(crate) fn try_or(&self, right: &RegisterContents) -> Result<RegisterContents> {
         match (self, right) {
             (Self::Bool(l), Self::Bool(r)) => Ok(Self::Bool(*l || *r)),
-            (Self::None, _) | (_, Self::None) => Err(RuntimeError::NullAccess),
+            (Self::None, _) | (_, Self::None) => Err(RuntimeError::NullAccess("or")),
             (other_left, other_right) =>
                 Err(
                     RuntimeError::InvalidOperation(
@@ -244,7 +245,7 @@ impl RegisterContents {
     pub(crate) fn try_and(&self, right: &RegisterContents) -> Result<RegisterContents> {
         match (self, right) {
             (Self::Bool(l), Self::Bool(r)) => Ok(Self::Bool(*l && *r)),
-            (Self::None, _) | (_, Self::None) => Err(RuntimeError::NullAccess),
+            (Self::None, _) | (_, Self::None) => Err(RuntimeError::NullAccess("and")),
             (other_left, other_right) =>
                 Err(
                     RuntimeError::InvalidOperation(
@@ -263,7 +264,7 @@ impl RegisterContents {
             (Self::Bool(l), Self::Bool(r)) => Ok(Self::Bool(l == r)),
             (Self::Char(l), Self::Char(r)) => Ok(Self::Bool(l == r)),
             (Self::Object(l), Self::Object(r)) => Ok(Self::Bool(l == r)),
-            (Self::None, _) | (_, Self::None) => Err(RuntimeError::NullAccess),
+            (Self::None, _) | (_, Self::None) => Err(RuntimeError::NullAccess("eq")),
             (other_left, other_right) =>
                 Err(
                     RuntimeError::InvalidOperation(
@@ -277,7 +278,7 @@ impl RegisterContents {
 }
 
 pub struct Stack {
-    pub registers: Vec<RegisterContents>,
+    pub values: Vec<RegisterContents>,
     pub variables: Vec<RegisterContents>,
     depth: Cell<u16>,
 }
@@ -285,64 +286,28 @@ pub struct Stack {
 impl Stack {
     pub fn new() -> Self {
         Self {
-            registers: vec![],
+            values: vec![],
             variables: vec![],
             depth: Cell::new(0),
         }
     }
 
-    #[inline]
-    fn current_frame_range(&self) -> std::ops::Range<usize> {
-        let end = (self.depth.get() as usize) * Register::RANGE;
-        let start = end - Register::RANGE;
-        start..end
-    }
-
-    #[inline]
-    pub(self) fn current_frame(&self) -> Result<&[RegisterContents]> {
-        let range = self.current_frame_range();
-        if self.registers.len() < range.clone().max().expect("Expected a closed range") {
-            Err(RuntimeError::BadStackFrame(self.depth.get()))
-        } else {
-            Ok(&self.registers[range])
-        }
-    }
-
-    #[inline]
-    pub(self) fn current_frame_mut(&mut self) -> Result<&mut [RegisterContents]> {
-        let range = self.current_frame_range();
-        if self.registers.len() < range.clone().max().expect("Expected a closed range") {
-            Err(RuntimeError::BadStackFrame(self.depth.get()))
-        } else {
-            Ok(&mut self.registers[range])
-        }
-    }
-
     pub fn push_frame(&mut self) {
-        self.depth.set(self.depth.get() + 1);
-        self.registers.extend([RegisterContents::None; Register::RANGE]);
-        self.variables.extend([RegisterContents::None; u16::MAX as usize])
+        self.variables.extend([RegisterContents::None; u16::MAX as usize]);
+        self.depth.set(self.depth.get() + 1)
     }
 
     pub fn pop_frame(&mut self) {
-        self.registers.drain(self.current_frame_range());
         self.variables.drain(0..u16::MAX as usize);
         self.depth.set(self.depth.get() - 1);
     }
 
-    pub fn get(&self, register: Register) -> Result<RegisterContents> {
-        if register.is_null() {
-            Ok(RegisterContents::None)
-        } else {
-            Ok(self.current_frame()?[register])
-        }
+    pub fn push(&mut self, value: RegisterContents) {
+        self.values.push(value)
     }
 
-    pub fn set(&mut self, register: Register, value: RegisterContents) -> Result<()> {
-        if !register.is_null() {
-            self.current_frame_mut()?[register] = value;
-        }
-        Ok(())
+    pub fn pop(&mut self) -> Result<RegisterContents> {
+        self.values.pop().ok_or(RuntimeError::BadStackFrame(0))
     }
 
     pub fn load(&self, variable: u16) -> RegisterContents {
@@ -355,58 +320,5 @@ impl Stack {
 
     pub fn is_root(&self) -> bool {
         self.depth.get() == 0
-    }
-}
-
-#[repr(transparent)]
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct Register(u8);
-
-impl Register {
-    pub const NULL: Self = Self(0);
-    pub const RANGE: usize = u8::MAX as usize;
-
-    pub const fn new(id: u8) -> Self {
-        if id == 0 { Self::NULL } else { Self(id) }
-    }
-
-    pub fn is_null(&self) -> bool {
-        self.0 == 0
-    }
-
-    pub fn next(&self) -> Self {
-        Self(self.0 + 1)
-    }
-}
-
-impl From<Register> for u8 {
-    fn from(value: Register) -> Self {
-        value.0
-    }
-}
-
-impl<T> Index<Register> for [T] {
-    type Output = T;
-
-    fn index(&self, index: Register) -> &Self::Output {
-        &self[index.0 as usize]
-    }
-}
-
-impl<T> IndexMut<Register> for [T] {
-    fn index_mut(&mut self, index: Register) -> &mut Self::Output {
-        &mut self[index.0 as usize]
-    }
-}
-
-impl Display for Register {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        if self.is_null() { write!(f, "<null>") } else { write!(f, "<{}>", self.0) }
-    }
-}
-
-impl LowerHex for Register {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:x}", self.0)
     }
 }

@@ -19,11 +19,12 @@ pub enum Instruction {
     And,
     Or,
     PushFrame,
-
     Load,
     LoadLocal,
     Store,
     StoreLocal,
+    JumpTo,
+    JumpBack,
 }
 macro_rules! match_bytes {
     ($byte:expr, $($instrs:ident),*) => {
@@ -62,7 +63,9 @@ impl Instruction {
             Load,
             LoadLocal,
             Store,
-            StoreLocal
+            StoreLocal,
+            JumpTo,
+            JumpBack
         )
     }
 }

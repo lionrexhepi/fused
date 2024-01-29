@@ -1,13 +1,14 @@
 use bufreader::BufReader;
 use chunk::{ BytecodeError, Chunk };
 use instructions::Instruction;
+use parser::ast::keywords::In;
 use stack::{ RegisterContents, Stack };
 use thiserror::Error;
 
 mod chunk;
 pub mod codegen;
 pub mod constants;
-mod instructions;
+pub mod instructions;
 pub mod stack;
 mod bufreader;
 
@@ -18,8 +19,7 @@ pub enum RuntimeError {
     #[error(
         "Error while reading bytecode: {0}\n\n This error is likely unrecoverable."
     )] InvalidBytecode(#[from] BytecodeError),
-    #[error("Attempted operation with null value")]
-    NullAccess,
+    #[error("Attempted operation with null value")] NullAccess(&'static str),
     #[error("Bad stack frame {0:x}")] BadStackFrame(u16),
     #[error("Operation {0} unsupported for types {1} and {2}")] InvalidOperation(
         &'static str,
@@ -55,46 +55,44 @@ impl Thread {
             let instruction = reader.read_instruction()?;
             match instruction {
                 Instruction::Return => {
-                    let value = self.stack.get(reader.read_register()?)?;
+                    let value = self.stack.pop()?;
+                    println!("returning {value:?}");
                     self.stack.pop_frame();
-                    if self.stack.is_root() {
-                        break value;
-                    } else {
-                        let dest = reader.read_register()?;
-                        if !dest.is_null() {
-                            self.stack.set(reader.read_register()?, value)?;
-                        }
-                    }
+                    break value;
                 }
                 Instruction::Const => {
                     let address = reader.read_index()?;
                     let const_val = chunk.consts
                         .get(address as usize)
                         .ok_or(RuntimeError::InvalidConstant(address))?;
-                    self.stack.set(reader.read_register()?, *const_val)?;
+                    self.stack.push(*const_val);
                 }
                 Instruction::PushFrame => {
                     self.stack.push_frame();
                 }
 
                 Instruction::StoreLocal => {
-                    self.stack.store(
-                        reader.read_index()?,
-                        self.stack.get(reader.read_register()?)?
-                    );
+                    let value = self.stack.pop()?;
+                    self.stack.store(reader.read_index()?, value);
                 }
 
                 Instruction::LoadLocal => {
                     let value = self.stack.load(reader.read_index()?);
-                    self.stack.set(reader.read_register()?, value)?;
+                    self.stack.push(value);
+                }
+
+                Instruction::JumpTo => {
+                    let condition = self.stack.pop()? == RegisterContents::Bool(false);
+                    let address = reader.read_address()?;
+                    if condition {
+                        println!("jumping to {address}");
+                        reader.jump_to(address as usize)?;
+                    }
                 }
 
                 other if other.is_binary() => {
-                    let (left, right, dest) = (
-                        reader.read_register()?,
-                        reader.read_register()?,
-                        reader.read_register()?,
-                    );
+                    let (left, right) = (self.stack.pop()?, self.stack.pop()?);
+                    println!("{:?}", &self.stack.variables[0..4]);
                     let operator = match other {
                         Instruction::Add => RegisterContents::try_add,
                         Instruction::Sub => RegisterContents::try_sub,
@@ -112,10 +110,8 @@ impl Thread {
                         _ => unreachable!(),
                     };
 
-                    let left = self.stack.get(left)?;
-                    let right = self.stack.get(right)?;
                     let result = operator(&left, &right)?;
-                    self.stack.set(dest, result)?;
+                    self.stack.push(result);
                 }
                 _ => unreachable!("Missing match arm for instruction {:?}", instruction),
             }

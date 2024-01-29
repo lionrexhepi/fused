@@ -11,7 +11,7 @@ pub mod expr;
 pub mod ident;
 pub mod string;
 pub mod punct;
-mod conditionals;
+pub mod conditionals;
 pub mod block;
 pub mod loops;
 

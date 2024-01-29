@@ -2,11 +2,17 @@ pub mod expr;
 mod block;
 mod scope;
 
-use std::{ cell::Cell, rc::Rc };
+use std::{
+    cell::{ Cell, RefCell },
+    io::Write,
+    mem::size_of,
+    ops::{ RangeFrom, RangeFull },
+    rc::Rc,
+};
 
 use thiserror::Error;
 
-use crate::{ stack::{ Register, RegisterContents }, instructions::Instruction, chunk::Chunk };
+use crate::{ bufreader::Index, chunk::Chunk, instructions::Instruction, stack::RegisterContents };
 
 use self::scope::SymbolTable;
 
@@ -15,13 +21,13 @@ pub enum CodegenError {
     #[error("Undefined symbol: {0}")] UndefinedSymbol(String),
 }
 
-type CodegenResult = std::result::Result<Register, CodegenError>;
+type CodegenResult = std::result::Result<(), CodegenError>;
+type JumpMark = usize;
 
 #[derive(Clone)]
 pub struct Codegen {
     bytes: Vec<u8>,
-    constants: Vec<RegisterContents>,
-    next_register: Cell<Register>,
+    constants: Rc<RefCell<Vec<RegisterContents>>>,
     scope: Rc<SymbolTable>,
 }
 
@@ -30,53 +36,26 @@ impl Codegen {
         Self {
             bytes: Vec::new(),
             constants: Default::default(),
-            next_register: Cell::new(Register::new(1)),
             scope: Default::default(),
         }
     }
 
-    fn next_free_register(&mut self) -> Register {
-        let register = self.next_register.get();
-        self.next_register.set(register.next());
-        register
-    }
-
     fn create_const(&mut self, value: RegisterContents) -> u16 {
-        self.constants.push(value);
-        (self.constants.len() as u16) - 1
+        self.constants.borrow_mut().push(value);
+        (self.constants.borrow().len() as u16) - 1
     }
 
-    /// - Emits the provided instruction with "left" and "right" as its arguments
-    /// - Stores the result in a new register
-    /// - Returns the register
-    pub fn emit_binary(
-        &mut self,
-        left: Register,
-        right: Register,
-        instruction: Instruction
-    ) -> Register {
-        let dst = self.next_free_register();
-        self.bytes.extend([instruction as u8, left.into(), right.into(), dst.into()]);
-        dst
+    /// - Emits simple instructions
+    pub fn emit_simple(&mut self, instruction: Instruction) -> CodegenResult {
+        self.bytes.push(instruction as u8);
+        Ok(())
     }
 
-    ///Emits an instruction to return the value in the provided register
-    pub fn emit_return(&mut self, value: Register) -> Register {
-        let location = if value.is_null() { Register::NULL } else { self.next_free_register() };
-        self.bytes.extend([Instruction::Return as u8, value.into(), location.into()]);
-        location
-    }
-
-    /// - Creates a new constant
-    /// - Loads the constant into a free register
-    /// - Returns the register
-    pub fn emit_const(&mut self, value: RegisterContents) -> Register {
-        let dest = self.next_free_register();
-        let index = self.create_const(value);
+    pub fn emit_const(&mut self, value: RegisterContents) -> CodegenResult {
+        let id = self.create_const(value);
         self.bytes.push(Instruction::Const as u8);
-        self.bytes.extend(index.to_le_bytes());
-        self.bytes.push(dest.into());
-        dest
+        self.bytes.extend(id.to_le_bytes());
+        Ok(())
     }
 
     /// - Pushes a new lexical scope
@@ -88,19 +67,16 @@ impl Codegen {
         self.bytes.push(Instruction::PushFrame as u8);
         self.scope.push();
         let mut child = Self {
-            next_register: Cell::new(Register::new(1)),
-            constants: Vec::new(),
+            constants: self.constants.clone(), //TODO: inefficient
             bytes: Vec::new(),
             scope: self.scope.clone(),
         };
 
-        let result = gen(&mut child)?;
+        gen(&mut child)?;
         self.scope.pop();
-        let Chunk { consts, buffer } = child.chunk();
+        let Chunk { buffer, .. } = child.chunk();
         self.bytes.append(&mut buffer.into_vec());
-        self.constants.extend(consts);
-
-        Ok(self.emit_return(result))
+        Ok(())
     }
 
     /// Declares a new symbol in the current scope
@@ -114,7 +90,6 @@ impl Codegen {
     /// - If the symbol is not defined, returns an error
     pub fn emit_load(&mut self, name: &str) -> CodegenResult {
         if let Some((depth, symbol)) = self.scope.get(name) {
-            let dest = self.next_free_register();
             if depth == 0 {
                 self.bytes.push(Instruction::LoadLocal as u8);
             } else {
@@ -122,8 +97,7 @@ impl Codegen {
             }
 
             self.bytes.extend(symbol.to_le_bytes());
-            self.bytes.push(dest.into());
-            Ok(dest)
+            Ok(())
         } else {
             Err(CodegenError::UndefinedSymbol(name.to_string()))
         }
@@ -132,7 +106,7 @@ impl Codegen {
     /// - Stores the value of the provided register into the symbol
     /// - Returns an error if the symbol is not defined
     /// - Returns the register
-    pub fn emit_store(&mut self, name: &str, value: Register) -> CodegenResult {
+    pub fn emit_store(&mut self, name: &str) -> CodegenResult {
         if let Some((depth, symbol)) = self.scope.get(name) {
             if depth == 0 {
                 self.bytes.push(Instruction::StoreLocal as u8);
@@ -141,17 +115,30 @@ impl Codegen {
             }
 
             self.bytes.extend(symbol.to_le_bytes());
-            self.bytes.push(value.into());
 
-            Ok(Register::NULL)
+            Ok(())
         } else {
             Err(CodegenError::UndefinedSymbol(name.to_string()))
         }
     }
 
+    pub fn emit_jump_to(&mut self) -> JumpMark {
+        self.bytes.push(Instruction::JumpTo as u8);
+        let mark = self.bytes.len();
+        self.bytes.extend((0usize).to_le_bytes());
+        mark
+    }
+
+    pub fn patch_jump(&mut self, to: JumpMark) {
+        let bytes = self.bytes.len().to_le_bytes();
+        println!("before: {:?}, len {}", self.bytes, self.bytes.len());
+        self.bytes.splice(to..to + size_of::<JumpMark>(), bytes);
+        println!("after: {:?}, {}", self.bytes, self.bytes.len());
+    }
+
     pub fn chunk(self) -> Chunk {
         Chunk {
-            consts: self.constants,
+            consts: self.constants.borrow().clone(),
             buffer: self.bytes.into_boxed_slice(),
         }
     }
@@ -173,6 +160,6 @@ mod test {
 
         let index = codegen.create_const(RegisterContents::Int(0));
         assert_eq!(index, 0);
-        assert_eq!(codegen.constants, vec![RegisterContents::Int(0)]);
+        assert_eq!(codegen.constants.take(), vec![RegisterContents::Int(0)]);
     }
 }

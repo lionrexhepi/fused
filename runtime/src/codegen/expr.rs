@@ -1,12 +1,13 @@
 use parser::ast::{
+    conditionals::{ Else, ExprIf },
     declarations::ExprDecl,
     expr::{ Expr, ExprLit },
     number::Number,
-    simple::{ BinaryType, ExprSimple },
     path::PathSegment,
+    simple::{ BinaryType, ExprSimple },
 };
 
-use crate::{ instructions::Instruction, stack::{ Register, RegisterContents } };
+use crate::{ instructions::Instruction, stack::{ RegisterContents } };
 
 use super::{ Codegen, CodegenResult, ToBytecode };
 
@@ -23,7 +24,7 @@ impl ToBytecode for ExprLit {
             ExprLit::Bool(bool) => RegisterContents::Bool(bool.value),
         };
 
-        Ok(codegen.emit_const(value))
+        codegen.emit_const(value)
     }
 }
 
@@ -31,10 +32,10 @@ impl ToBytecode for ExprDecl {
     fn to_bytecode(&self, codegen: &mut Codegen) -> CodegenResult {
         codegen.declare(self.name.name.clone(), self.mutable);
         if let Some(value) = &self.value {
-            let value_reg = value.to_bytecode(codegen)?;
-            codegen.emit_store(&self.name.name, value_reg)
+            value.to_bytecode(codegen)?;
+            codegen.emit_store(&self.name.name)
         } else {
-            Ok(Register::NULL)
+            Ok(())
         }
     }
 }
@@ -43,8 +44,8 @@ impl ToBytecode for ExprSimple {
     fn to_bytecode(&self, codegen: &mut Codegen) -> CodegenResult {
         match self {
             ExprSimple::Binary(left, op, right) => {
-                let left = left.to_bytecode(codegen)?;
-                let right = right.to_bytecode(codegen)?;
+                left.to_bytecode(codegen)?;
+                right.to_bytecode(codegen)?;
                 let instruction = match op {
                     BinaryType::Or => Instruction::Or,
                     BinaryType::Add => Instruction::Add,
@@ -65,7 +66,7 @@ impl ToBytecode for ExprSimple {
                     BinaryType::LeftShift => Instruction::LeftShift,
                     BinaryType::RightShift => Instruction::RightShift,
                 };
-                Ok(codegen.emit_binary(left, right, instruction))
+                codegen.emit_simple(instruction)
             }
             ExprSimple::Literal(lit) => lit.to_bytecode(codegen),
             ExprSimple::Path(path) => {
@@ -84,8 +85,8 @@ impl ToBytecode for ExprSimple {
                 if target.segments.len() == 1 {
                     let ident = target.segments.last().unwrap();
                     if let PathSegment::Ident(ident) = ident {
-                        let value = value.to_bytecode(codegen)?;
-                        codegen.emit_store(&ident.name, value)
+                        value.to_bytecode(codegen)?;
+                        codegen.emit_store(&ident.name)
                     } else {
                         todo!()
                     }
@@ -98,13 +99,46 @@ impl ToBytecode for ExprSimple {
     }
 }
 
+impl ToBytecode for ExprIf {
+    fn to_bytecode(&self, codegen: &mut Codegen) -> CodegenResult {
+        codegen.new_scope(|codegen| {
+            self.condition.to_bytecode(codegen)?;
+            println!("Jumping from {}", codegen.bytes.len() - 1);
+            let jump_to_else = codegen.emit_jump_to();
+            self.body.to_bytecode(codegen)?;
+            println!("Jumping to {}", codegen.bytes.len() - 1);
+            codegen.emit_const(RegisterContents::Bool(false))?;
+            let skip_else = codegen.emit_jump_to();
+            codegen.patch_jump(jump_to_else);
+            if let Some(r#else) = &self.r#else {
+                r#else.to_bytecode(codegen)?;
+            }
+
+            codegen.patch_jump(skip_else);
+            Ok(())
+        })
+    }
+}
+
+impl ToBytecode for Else {
+    fn to_bytecode(&self, codegen: &mut Codegen) -> CodegenResult {
+        match self {
+            Else::If(r#if) => r#if.to_bytecode(codegen),
+            Else::Body(block) => {
+                println!("else");
+                block.to_bytecode(codegen)
+            }
+        }
+    }
+}
+
 impl ToBytecode for Expr {
     fn to_bytecode(&self, codegen: &mut Codegen) -> CodegenResult {
         match self {
             Expr::Simple(simple) => simple.to_bytecode(codegen),
             Expr::Decl(decl) => decl.to_bytecode(codegen),
             Expr::Function(_) => todo!("eeee"),
-            Expr::If(_) => todo!("ees"),
+            Expr::If(r#if) => r#if.to_bytecode(codegen),
             Expr::While(_) => todo!("sse"),
             Expr::For(_) => todo!("fe"),
             Expr::Loop(_) => todo!("dede"),
@@ -117,7 +151,7 @@ impl ToBytecode for Expr {
 mod test {
     use parser::{ ast::{ expr::Expr, stream::ParseStream }, tokens::stream::TokenStream };
 
-    use crate::{ codegen::ToBytecode, stack::Stack, Thread };
+    use crate::{ codegen::ToBytecode, instructions::Instruction, stack::Stack, Thread };
 
     use super::Codegen;
 
@@ -129,7 +163,7 @@ mod test {
         println!("{:?}", expr);
         let mut codegen = Codegen::new();
         let result = expr.to_bytecode(&mut codegen).unwrap();
-        codegen.emit_return(result);
+        codegen.emit_simple(Instruction::Return);
         let chunk = codegen.chunk();
 
         let mut thread = Thread {

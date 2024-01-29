@@ -1,11 +1,14 @@
-use crate::{ chunk::BytecodeError, instructions::Instruction, stack::Register };
+use std::ops::Add;
+
+use crate::{ chunk::BytecodeError, instructions::Instruction };
 
 pub struct BufReader<'a> {
-    ip: usize,
+    ip: Address,
     buf: &'a [u8],
 }
 
 pub type Index = u16;
+pub type Address = usize;
 
 impl<'a> BufReader<'a> {
     pub fn new(buffer: &'a [u8]) -> Self {
@@ -29,11 +32,34 @@ impl<'a> BufReader<'a> {
         Instruction::from_byte(self.next_byte()?)
     }
 
-    pub fn read_register(&mut self) -> Result<Register, BytecodeError> {
-        Ok(Register::new(self.next_byte()?))
-    }
-
     pub fn read_index(&mut self) -> Result<Index, BytecodeError> {
         Ok(Index::from_le_bytes([self.next_byte()?, self.next_byte()?]))
+    }
+
+    pub fn read_address(&mut self) -> Result<Address, BytecodeError> {
+        return Ok(
+            Address::from_le_bytes([
+                self.next_byte()?,
+                self.next_byte()?,
+                self.next_byte()?,
+                self.next_byte()?,
+                self.next_byte()?,
+                self.next_byte()?,
+                self.next_byte()?,
+                self.next_byte()?,
+            ])
+        );
+    }
+
+    pub fn current_address(&self) -> Address {
+        self.ip
+    }
+
+    ///Jumps to the provided address and returns the previous address.
+    pub fn jump_to(&mut self, address: Address) -> Result<Address, BytecodeError> {
+        if address >= self.buf.len() {
+            return Err(BytecodeError::InvalidJumpAddress(address));
+        }
+        Ok(std::mem::replace(&mut self.ip, address))
     }
 }
