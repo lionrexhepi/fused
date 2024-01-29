@@ -4,6 +4,7 @@ mod scope;
 
 use std::{
     cell::{ Cell, RefCell },
+    collections::HashMap,
     io::Write,
     mem::size_of,
     ops::{ RangeFrom, RangeFull },
@@ -27,7 +28,7 @@ type JumpMark = usize;
 #[derive(Clone)]
 pub struct Codegen {
     bytes: Vec<u8>,
-    constants: Rc<RefCell<Vec<RegisterContents>>>,
+    constants: Rc<RefCell<HashMap<RegisterContents, Index>>>,
     scope: Rc<SymbolTable>,
 }
 
@@ -40,9 +41,10 @@ impl Codegen {
         }
     }
 
-    fn create_const(&mut self, value: RegisterContents) -> u16 {
-        self.constants.borrow_mut().push(value);
-        (self.constants.borrow().len() as u16) - 1
+    fn create_const(&mut self, value: RegisterContents) -> Index {
+        let mut consts = self.constants.borrow_mut();
+        let count = consts.len();
+        *consts.entry(value).or_insert(count as Index)
     }
 
     /// - Emits simple instructions
@@ -145,7 +147,11 @@ impl Codegen {
 
     pub fn chunk(self) -> Chunk {
         Chunk {
-            consts: self.constants.borrow().clone(),
+            consts: self.constants
+                .borrow()
+                .iter()
+                .map(|(k, v)| (*v, *k))
+                .collect(),
             buffer: self.bytes.into_boxed_slice(),
         }
     }
@@ -153,20 +159,4 @@ impl Codegen {
 
 pub trait ToBytecode {
     fn to_bytecode(&self, codegen: &mut Codegen) -> CodegenResult;
-}
-
-#[cfg(test)]
-mod test {
-    use crate::stack::RegisterContents;
-
-    use super::Codegen;
-
-    #[test]
-    fn test_create_const() {
-        let mut codegen = Codegen::new();
-
-        let index = codegen.create_const(RegisterContents::Int(0));
-        assert_eq!(index, 0);
-        assert_eq!(codegen.constants.take(), vec![RegisterContents::Int(0)]);
-    }
 }

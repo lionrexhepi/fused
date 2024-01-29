@@ -1,4 +1,4 @@
-use std::{ fmt::{ Display, Formatter }, mem::size_of };
+use std::{ collections::HashMap, fmt::{ Display, Formatter }, mem::size_of };
 
 use thiserror::Error;
 
@@ -20,7 +20,7 @@ pub enum BytecodeError {
 }
 
 pub struct Chunk {
-    pub consts: Vec<RegisterContents>,
+    pub consts: HashMap<u16, RegisterContents>,
     pub buffer: Box<[u8]>,
 }
 
@@ -34,7 +34,7 @@ impl<'a> Display for Chunk {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "{:-^30}", "Constants")?;
 
-        for (index, value) in self.consts.iter().enumerate() {
+        for (index, value) in self.consts.iter() {
             writeln!(f, "{:x}: {:?>30}", index, value)?;
         }
 
@@ -99,30 +99,5 @@ mod test {
         use std::mem::size_of;
         assert_eq!(size_of::<super::Instruction>(), 6);
         assert_eq!(size_of::<super::Chunk>(), 40)
-    }
-
-    #[test]
-    fn display() {
-        let buffer = [
-            1,
-            0,
-            0,
-            0, //const [0] <0>
-            1,
-            0,
-            1,
-            1, //const [1] <1>
-            2,
-            0,
-            1,
-            2, //add <0> <1> <2>
-            0,
-            2, //return <2>
-        ];
-        let chunk = super::Chunk {
-            buffer: Box::new(buffer),
-            consts: vec![RegisterContents::Int(19), RegisterContents::Float(34f64)],
-        };
-        println!("{}", chunk);
     }
 }

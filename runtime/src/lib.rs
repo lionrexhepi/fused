@@ -61,10 +61,10 @@ impl Thread {
                     break value;
                 }
                 Instruction::Const => {
-                    let address = reader.read_index()?;
+                    let index = reader.read_index()?;
                     let const_val = chunk.consts
-                        .get(address as usize)
-                        .ok_or(RuntimeError::InvalidConstant(address))?;
+                        .get(&index)
+                        .ok_or(RuntimeError::InvalidConstant(index))?;
                     self.stack.push(*const_val);
                 }
                 Instruction::PushFrame => {
