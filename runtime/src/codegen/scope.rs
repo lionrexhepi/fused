@@ -1,10 +1,11 @@
-use std::{ cell::RefCell, collections::HashMap };
+use std::{ cell::{ Cell, RefCell }, collections::HashMap };
 
-pub type SymbolId = u16;
+pub type SymbolId = u32;
 
 #[derive(Debug, Default)]
 pub struct SymbolTable {
     contents: RefCell<Vec<HashMap<String, SymbolId>>>,
+    count: Cell<SymbolId>,
 }
 
 impl SymbolTable {
@@ -12,8 +13,9 @@ impl SymbolTable {
         let mut contents = self.contents.borrow_mut();
         let map = contents.last_mut().expect("Attempted to declare symbol in empty symbol table");
 
-        let id = map.len() as SymbolId;
+        let id = self.count.get();
         map.insert(name, id);
+        self.count.set(id + 1);
         id
     }
 
@@ -22,15 +24,20 @@ impl SymbolTable {
     }
 
     pub fn pop(&self) {
-        self.contents.borrow_mut().pop().expect("Attempted to pop empty symbol table");
+        let freed = self.contents.borrow_mut().pop().expect("Attempted to pop empty symbol table");
+        self.count.set(self.count.get() - (freed.len() as SymbolId));
     }
 
-    pub fn get(&self, name: &str) -> Option<(u16, SymbolId)> {
-        for (depth, table) in self.contents.borrow().iter().rev().enumerate() {
+    pub fn get(&self, name: &str) -> Option<SymbolId> {
+        for table in self.contents.borrow().iter().rev(){
             if let Some(index) = table.get(name) {
-                return Some((depth as u16, *index));
+                return Some(*index);
             }
         }
         None
+    }
+
+    pub fn total_vars(&self) -> SymbolId {
+        self.count.get() + 1
     }
 }

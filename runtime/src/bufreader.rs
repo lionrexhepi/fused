@@ -1,4 +1,4 @@
-use crate::{ chunk::BytecodeError, instructions::Instruction };
+use crate::{ chunk::BytecodeError, codegen::scope::SymbolId, instructions::Instruction };
 
 pub struct BufReader<'a> {
     ip: Address,
@@ -34,6 +34,10 @@ impl<'a> BufReader<'a> {
 
     pub fn read_index(&mut self) -> Result<Index, BytecodeError> {
         Ok(Index::from_le_bytes([self.next_byte()?, self.next_byte()?]))
+    }
+
+    pub fn read_symbol(&mut self) -> Result<SymbolId, BytecodeError> {
+        Ok(SymbolId::from_le_bytes([self.next_byte()?, self.next_byte()?, self.next_byte()?, self.next_byte()?]))
     }
 
     pub fn read_address(&mut self) -> Result<Address, BytecodeError> {

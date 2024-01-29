@@ -1,7 +1,7 @@
 use core::hash;
 use std::{ cell::Cell, fmt::Display, vec };
 
-use crate::{ bufreader::Index, Result, RuntimeError };
+use crate::{ bufreader::Index, codegen::scope::SymbolId, Result, RuntimeError };
 
 pub struct FusedObject;
 
@@ -363,24 +363,17 @@ impl RegisterContents {
 
 pub struct Stack {
     pub values: Vec<RegisterContents>,
-    pub variables: Vec<Vec<RegisterContents>>,
+    pub variables: Vec<RegisterContents>,
 }
 
 impl Stack {
-    pub fn new() -> Self {
+    pub fn new(var_count: u32) -> Self {
         Self {
             values: vec![],
-            variables: vec![vec![RegisterContents::None; u8::MAX as usize]],
+            variables: vec![RegisterContents::None; var_count as usize],
         }
     }
 
-    pub fn push_frame(&mut self) {
-        self.variables.push(vec![RegisterContents::None; u8::MAX as usize]);
-    }
-
-    pub fn pop_frame(&mut self) {
-        self.variables.pop();
-    }
 
     pub fn push(&mut self, value: RegisterContents) {
         self.values.push(value)
@@ -390,38 +383,19 @@ impl Stack {
         self.values.pop().ok_or(RuntimeError::BadStackFrame(0))
     }
 
-    pub fn load_local(&self, variable: u16) -> RegisterContents {
-        self.variables.last().unwrap()[variable as usize]
-    }
 
-    pub fn store_local(&mut self, variable: Index, value: RegisterContents) {
-        (&mut self.variables.last_mut().unwrap())[variable as usize] = value;
-    }
 
-    pub fn load_global(&mut self, depth: Index, variable: Index) -> Result<RegisterContents> {
-        let current_depth = self.variables.len() as u16 - depth;
-        Ok(self.variables[current_depth as usize][variable as usize])
+    pub fn load_global(&mut self, symbol: SymbolId) -> Result<RegisterContents> {
+        Ok(self.variables[symbol as usize])
     }
 
     pub fn store_global(
         &mut self,
-        depth: Index,
-        variable: Index,
+        symbol: SymbolId,
         value: RegisterContents
     ) -> Result<()> {
-        let current_depth = self.variables.len() as u16 - depth;
-        self.variables[current_depth as usize][variable as usize] = value;
+        self.variables[symbol as usize] = value;
         Ok(())
     }
 
-    pub fn dump_vars(&self) {
-        for (i, var) in self.variables.iter().enumerate() {
-            println!("Frame {}", i);
-            for (j, var) in var.iter().enumerate() {
-                if var != &RegisterContents::None {
-                    println!("{}: {}", j, var);
-                }
-            }
-        }
-    }
 }

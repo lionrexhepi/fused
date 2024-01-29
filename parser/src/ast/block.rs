@@ -15,11 +15,9 @@ impl Parse for Block {
     fn parse(stream: &mut ParseStream) -> ParseResult<Self> where Self: Sized {
         let first = stream.parse::<Statement>()?;
         let first_indent = first.indent;
-        println!("Starting block with indent {}", first_indent);
         let mut stmts = vec![first];
         while let TokenType::Newline(indent) = stream.current().content {
             if indent != first_indent {
-                println!("Breaking block with indent {}", indent);
                 break;
             }
 

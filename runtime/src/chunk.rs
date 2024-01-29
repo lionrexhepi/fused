@@ -22,6 +22,7 @@ pub enum BytecodeError {
 pub struct Chunk {
     pub consts: HashMap<u16, RegisterContents>,
     pub buffer: Box<[u8]>,
+    pub var_count: u32
 }
 
 impl Chunk {
@@ -38,7 +39,7 @@ impl<'a> Display for Chunk {
             writeln!(f, "{:x}: {:?>30}", index, value)?;
         }
 
-        writeln!(f, "{:-^30}", "Instructions")?;
+        writeln!(f, "{:-^37}", "Instructions")?;
 
         let mut reader = BufReader::new(&self.buffer);
         while !reader.eof() {
@@ -49,22 +50,16 @@ impl<'a> Display for Chunk {
                 Instruction::Return => { ("ret", String::default()) }
                 Instruction::PushFrame => ("pushframe", String::default()),
                 Instruction::PopFrame => ("popframe", String::default()),
-                Instruction::StoreLocal => {
-                    ("store_loc", format!(" >> [{}] ", reader.read_index()?))
-                }
-                Instruction::LoadLocal => {
-                    ("load_loc", format!(" << [{}]", reader.read_index()?))
-                }
                 Instruction::Load => {
-                    ("load", format!("<< [{}, {}]", reader.read_index()?, reader.read_index()?))
+                    ("load", format!("<< [{}]", reader.read_symbol()?))
                 }
                 Instruction::Store => {
-                    ("store", format!(">> [{}, {}]", reader.read_index()?, reader.read_index()?))
+                    ("store", format!(">> [{}]", reader.read_symbol()?))
                 }
                 Instruction::JumpIfFalse => {
-                    ("jump_if_false", format!("#{}", reader.read_address()?))
+                    ("cjump", format!("#{:X}", reader.read_address()?))
                 }
-                Instruction::Jump => { ("jump", format!("#{}", reader.read_address()?)) }
+                Instruction::Jump => { ("jump", format!("#{:X}", reader.read_address()?)) }
 
                 other if other.is_binary() => {
                     let name = match other {
@@ -93,7 +88,7 @@ impl<'a> Display for Chunk {
                 }
                 _ => unreachable!("Missing match arm for instruction {instruction:?}"),
             };
-            writeln!(f, "#{addr:<4} {name:<5} {args:>25}")?;
+            writeln!(f, "#{addr:<4X} {name:<5} {args:>25}")?;
         }
 
         Ok(())

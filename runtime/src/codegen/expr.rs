@@ -178,7 +178,7 @@ mod test {
         let chunk = codegen.chunk();
 
         let mut thread = Thread {
-            stack: Stack::new(),
+            stack: Stack::new(0),
         };
 
         let result = thread.run_chunk(chunk).unwrap();

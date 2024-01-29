@@ -26,9 +26,7 @@ pub enum Instruction {
     PushFrame,
     PopFrame,
     Load,
-    LoadLocal,
     Store,
-    StoreLocal,
     Jump,
     JumpIfFalse,
 }
@@ -73,9 +71,7 @@ impl Instruction {
             PushFrame,
             PopFrame,
             Load,
-            LoadLocal,
             Store,
-            StoreLocal,
             Jump,
             JumpIfFalse
         )

@@ -37,7 +37,6 @@ impl<T: Parse, P: Punct> Parse for Separated<T, P> {
         let mut inner = Vec::new();
 
         while T::could_parse(stream) {
-            println!("Path item, {:?}", stream.current().content);
             let item = stream.parse::<T>()?;
             inner.push(item);
 

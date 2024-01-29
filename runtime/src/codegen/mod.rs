@@ -1,6 +1,6 @@
 pub mod expr;
 mod block;
-mod scope;
+pub mod scope;
 
 use std::{ cell::RefCell, collections::HashMap, mem::size_of, rc::Rc };
 
@@ -59,13 +59,13 @@ impl Codegen {
     /// - Pops the frame, instructing the VM to copy the result into the parent scope via a return instruction
     /// - Returns the register containing the result
     pub fn new_scope(&mut self, gen: impl FnOnce(&mut Self) -> CodegenResult) -> CodegenResult {
-        self.bytes.push(Instruction::PushFrame as u8);
+        //self.bytes.push(Instruction::PushFrame as u8);
         self.scope.push();
 
         gen(self)?;
-        
+
         self.scope.pop();
-        self.bytes.push(Instruction::PopFrame as u8);
+        //self.bytes.push(Instruction::PopFrame as u8);
         Ok(())
     }
 
@@ -79,15 +79,11 @@ impl Codegen {
     /// - Returns the register
     /// - If the symbol is not defined, returns an error
     pub fn emit_load(&mut self, name: &str) -> CodegenResult {
-        if let Some((depth, symbol)) = self.scope.get(name) {
-            if depth == 0 {
-                self.bytes.push(Instruction::LoadLocal as u8);
-            } else {
-                self.bytes.push(Instruction::Load as u8);
-                self.bytes.extend(depth.to_le_bytes());
-            }
+        if let Some(symbol) = self.scope.get(name) {
+            self.bytes.push(Instruction::Load as u8);
 
             self.bytes.extend(symbol.to_le_bytes());
+
             Ok(())
         } else {
             Err(CodegenError::UndefinedSymbol(name.to_string()))
@@ -98,13 +94,8 @@ impl Codegen {
     /// - Returns an error if the symbol is not defined
     /// - Returns the register
     pub fn emit_store(&mut self, name: &str) -> CodegenResult {
-        if let Some((depth, symbol)) = self.scope.get(name) {
-            if depth == 0 {
-                self.bytes.push(Instruction::StoreLocal as u8);
-            } else {
-                self.bytes.extend(&[Instruction::Store as u8]);
-                self.bytes.extend(depth.to_le_bytes());
-            }
+        if let Some(symbol) = self.scope.get(name) {
+            self.bytes.push(Instruction::Store as u8);
 
             self.bytes.extend(symbol.to_le_bytes());
 
@@ -151,6 +142,7 @@ impl Codegen {
                 .map(|(k, v)| (*v, *k))
                 .collect(),
             buffer: self.bytes.into_boxed_slice(),
+            var_count: self.scope.total_vars(),
         }
     }
 }
