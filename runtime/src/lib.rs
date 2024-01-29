@@ -1,13 +1,11 @@
 use bufreader::BufReader;
 use chunk::{ BytecodeError, Chunk };
 use instructions::Instruction;
-use parser::ast::keywords::In;
 use stack::{ RegisterContents, Stack };
 use thiserror::Error;
 
 mod chunk;
 pub mod codegen;
-pub mod constants;
 pub mod instructions;
 pub mod stack;
 mod bufreader;
@@ -55,10 +53,9 @@ impl Thread {
             let instruction = reader.read_instruction()?;
             match instruction {
                 Instruction::Return => {
-                    let value = self.stack.pop()?;
-                    println!("returning {value:?}");
+                    let value = self.stack.pop();
                     self.stack.pop_frame();
-                    break value;
+                    break value.unwrap_or(RegisterContents::None);
                 }
                 Instruction::Const => {
                     let index = reader.read_index()?;
@@ -73,17 +70,28 @@ impl Thread {
 
                 Instruction::StoreLocal => {
                     let value = self.stack.pop()?;
-                    self.stack.store(reader.read_index()?, value);
+                    self.stack.store_local(reader.read_index()?, value);
                 }
 
                 Instruction::LoadLocal => {
-                    let value = self.stack.load(reader.read_index()?);
+                    let value = self.stack.load_local(reader.read_index()?);
                     self.stack.push(value);
+                }
+
+                Instruction::Load => {
+                    let value = self.stack.load_global(reader.read_index()?, reader.read_index()?)?;
+                    self.stack.push(value);
+                }
+
+                Instruction::Store => {
+                    let value = self.stack.pop()?;
+                    self.stack.store_global(reader.read_index()?, reader.read_index()?, value)?;
                 }
 
                 Instruction::JumpIfFalse => {
                     let condition = self.stack.pop()? == RegisterContents::Bool(false);
                     let address = reader.read_address()?;
+
                     if condition {
                         reader.jump_to(address as usize)?;
                     }
@@ -95,7 +103,7 @@ impl Thread {
 
                 other if other.is_binary() => {
                     let (left, right) = (self.stack.pop()?, self.stack.pop()?);
-                    println!("{:?}", &self.stack.variables[0..4]);
+
                     let operator = match other {
                         Instruction::Add => RegisterContents::try_add,
                         Instruction::Sub => RegisterContents::try_sub,

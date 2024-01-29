@@ -1,7 +1,7 @@
 
-a:= if true:
-    2 + 3
-else:
-    2 + 2
+a:= 2 + 1
 
-a
+if a == 3:
+    false
+else:
+    true

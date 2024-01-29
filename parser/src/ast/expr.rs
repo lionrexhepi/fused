@@ -46,6 +46,9 @@ impl Spanned for Expr {
 impl Parse for Expr {
     fn parse(stream: &mut ParseStream) -> ParseResult<Self> {
         stream.skip_newlines();
+        if stream.current().content == TokenType::EOF {
+            return Ok(Self::Empty);
+        }
         let result = if ExprFunction::could_parse(stream) {
             Self::Function(stream.parse()?)
         } else if ExprIf::could_parse(stream) {

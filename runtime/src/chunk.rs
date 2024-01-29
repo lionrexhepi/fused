@@ -54,6 +54,12 @@ impl<'a> Display for Chunk {
                 Instruction::LoadLocal => {
                     ("load_loc", format!(" << [{}]", reader.read_index()?))
                 }
+                Instruction::Load => {
+                    ("load", format!("<< [{}, {}]", reader.read_index()?, reader.read_index()?))
+                }
+                Instruction::Store => {
+                    ("store", format!(">> [{}, {}]", reader.read_index()?, reader.read_index()?))
+                }
                 Instruction::JumpIfFalse => {
                     ("jump_if_false", format!("#{}", reader.read_address()?))
                 }
@@ -77,7 +83,7 @@ impl<'a> Display for Chunk {
                 }
                 _ => unreachable!("Missing match arm for instruction {instruction:?}"),
             };
-            writeln!(f, "#{addr} {name:<5} {args:>25}")?;
+            writeln!(f, "#{addr:<4} {name:<5} {args:>25}")?;
         }
 
         Ok(())

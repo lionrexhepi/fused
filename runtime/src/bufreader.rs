@@ -29,7 +29,9 @@ impl<'a> BufReader<'a> {
     }
 
     pub fn read_instruction(&mut self) -> Result<Instruction, BytecodeError> {
-        Instruction::from_byte(self.next_byte()?)
+        let byte = self.next_byte()?;
+        let res = Instruction::from_byte(byte);
+        res
     }
 
     pub fn read_index(&mut self) -> Result<Index, BytecodeError> {

@@ -25,10 +25,10 @@ impl SymbolTable {
         self.contents.borrow_mut().pop().expect("Attempted to pop empty symbol table");
     }
 
-    pub fn get(&self, name: &str) -> Option<(u8, SymbolId)> {
+    pub fn get(&self, name: &str) -> Option<(u16, SymbolId)> {
         for (depth, table) in self.contents.borrow().iter().rev().enumerate() {
             if let Some(index) = table.get(name) {
-                return Some((depth as u8, *index));
+                return Some((depth as u16, *index));
             }
         }
         None

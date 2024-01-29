@@ -1,7 +1,9 @@
 use core::hash;
-use std::{ cell::Cell, fmt::{ Display, LowerHex }, ops::{ Index, IndexMut }, vec };
+use std::{ cell::Cell, fmt::{ Display, LowerHex }, vec };
 
-use crate::{ Result, RuntimeError };
+use parser::ast::keywords::In;
+
+use crate::{ bufreader::Index, Result, RuntimeError };
 
 pub struct FusedObject;
 
@@ -72,7 +74,6 @@ impl RegisterContents {
     }
 
     pub(crate) fn try_add(&self, other: &Self) -> Result<Self> {
-        println!("{}", self == &Self::None);
         match (self, other) {
             (Self::Int(l), Self::Int(r)) => Ok(Self::Int(l + r)),
             (Self::Float(l), Self::Float(r)) => Ok(Self::Float(l + r)),
@@ -279,7 +280,7 @@ impl RegisterContents {
 
 pub struct Stack {
     pub values: Vec<RegisterContents>,
-    pub variables: Vec<RegisterContents>,
+    pub variables: Vec<Vec<RegisterContents>>,
     depth: Cell<u16>,
 }
 
@@ -287,18 +288,18 @@ impl Stack {
     pub fn new() -> Self {
         Self {
             values: vec![],
-            variables: vec![],
+            variables: vec![vec![RegisterContents::None; u8::MAX as usize]],
             depth: Cell::new(0),
         }
     }
 
     pub fn push_frame(&mut self) {
-        self.variables.extend([RegisterContents::None; u16::MAX as usize]);
+        self.variables.push(vec![RegisterContents::None; u8::MAX as usize]);
         self.depth.set(self.depth.get() + 1)
     }
 
     pub fn pop_frame(&mut self) {
-        self.variables.drain(0..u16::MAX as usize);
+        self.variables.pop();
         self.depth.set(self.depth.get() - 1);
     }
 
@@ -310,12 +311,36 @@ impl Stack {
         self.values.pop().ok_or(RuntimeError::BadStackFrame(0))
     }
 
-    pub fn load(&self, variable: u16) -> RegisterContents {
-        self.variables[variable as usize]
+    pub fn load_local(&self, variable: u16) -> RegisterContents {
+        self.variables[self.depth.get() as usize][variable as usize]
     }
 
-    pub fn store(&mut self, variable: u16, value: RegisterContents) {
-        self.variables[variable as usize] = value;
+    pub fn store_local(&mut self, variable: Index, value: RegisterContents) {
+        (&mut self.variables[self.depth.get() as usize])[variable as usize] = value;
+    }
+
+    pub fn load_global(&mut self, depth: Index, variable: Index) -> Result<RegisterContents> {
+        let current_depth = self.depth.get();
+        if let Some(scope) = current_depth.checked_sub(depth as u16) {
+            Ok(self.variables[scope as usize][variable as usize])
+        } else {
+            Err(RuntimeError::BadStackFrame(depth as u16))
+        }
+    }
+
+    pub fn store_global(
+        &mut self,
+        depth: Index,
+        variable: Index,
+        value: RegisterContents
+    ) -> Result<()> {
+        let current_depth = self.depth.get();
+        if let Some(scope) = current_depth.checked_sub(depth as u16) {
+            self.variables[scope as usize][variable as usize] = value;
+            Ok(())
+        } else {
+            Err(RuntimeError::BadStackFrame(depth as u16))
+        }
     }
 
     pub fn is_root(&self) -> bool {

@@ -68,16 +68,9 @@ impl Codegen {
     pub fn new_scope(&mut self, gen: impl FnOnce(&mut Self) -> CodegenResult) -> CodegenResult {
         self.bytes.push(Instruction::PushFrame as u8);
         self.scope.push();
-        let mut child = Self {
-            constants: self.constants.clone(), //TODO: inefficient
-            bytes: Vec::new(),
-            scope: self.scope.clone(),
-        };
 
-        gen(&mut child)?;
+        gen(self)?;
         self.scope.pop();
-        let Chunk { buffer, .. } = child.chunk();
-        self.bytes.append(&mut buffer.into_vec());
         Ok(())
     }
 
@@ -95,7 +88,8 @@ impl Codegen {
             if depth == 0 {
                 self.bytes.push(Instruction::LoadLocal as u8);
             } else {
-                self.bytes.extend(&[Instruction::Load as u8, depth]);
+                self.bytes.push(Instruction::Load as u8);
+                self.bytes.extend(depth.to_le_bytes());
             }
 
             self.bytes.extend(symbol.to_le_bytes());
@@ -113,7 +107,8 @@ impl Codegen {
             if depth == 0 {
                 self.bytes.push(Instruction::StoreLocal as u8);
             } else {
-                self.bytes.extend(&[Instruction::Store as u8, depth]);
+                self.bytes.extend(&[Instruction::Store as u8]);
+                self.bytes.extend(depth.to_le_bytes());
             }
 
             self.bytes.extend(symbol.to_le_bytes());
@@ -133,6 +128,7 @@ impl Codegen {
 
     pub fn emit_uncond_jump(&mut self) -> JumpMark {
         self.bytes.push(Instruction::Jump as u8);
+
         let mark = self.bytes.len();
         self.bytes.extend((0usize).to_le_bytes());
         mark
@@ -140,9 +136,7 @@ impl Codegen {
 
     pub fn patch_jump(&mut self, to: JumpMark) {
         let bytes = self.bytes.len().to_le_bytes();
-        println!("before: {:?}, len {}", self.bytes, self.bytes.len());
         self.bytes.splice(to..to + size_of::<JumpMark>(), bytes);
-        println!("after: {:?}, {}", self.bytes, self.bytes.len());
     }
 
     pub fn chunk(self) -> Chunk {

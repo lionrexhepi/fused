@@ -8,7 +8,7 @@ fn main() {
     if let Some(_path) = args.next() {
         let mut buf = String::new();
         let file_len = File::open("./test.fused").unwrap().read_to_string(&mut buf).unwrap();
-
+        let time = std::time::Instant::now();
         let tokens = TokenStream::from_string(buf).unwrap();
         let mut parse = ParseStream::new(tokens);
         let block = parse.parse::<Block>().unwrap();
@@ -28,7 +28,9 @@ fn main() {
         };
 
         let result = thread.run_chunk(chunk).unwrap();
-        println!("{result}")
+        let done = time.elapsed();
+
+        println!("{result} in {done:?}")
     } else {
         run_repl()
     }

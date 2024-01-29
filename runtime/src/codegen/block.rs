@@ -19,7 +19,6 @@ impl ToBytecode for Block {
         codegen.new_scope(|codegen: &mut Codegen| {
             for statement in &self.0 {
                 statement.to_bytecode(codegen)?;
-                println!("Codegen len after statememt {statement:?}: {}", codegen.bytes.len());
             }
 
             Ok(())

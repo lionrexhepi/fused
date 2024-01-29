@@ -103,17 +103,17 @@ impl ToBytecode for ExprIf {
     fn to_bytecode(&self, codegen: &mut Codegen) -> CodegenResult {
         codegen.new_scope(|codegen| {
             self.condition.to_bytecode(codegen)?;
-            println!("Jumping from {}", codegen.bytes.len() - 1);
             let jump_to_else = codegen.emit_cond_jump();
             self.body.to_bytecode(codegen)?;
-            println!("Jumping to {}", codegen.bytes.len() - 1);
-            let skip_else = codegen.emit_uncond_jump();
-            codegen.patch_jump(jump_to_else);
             if let Some(r#else) = &self.r#else {
+                let skip_else = codegen.emit_uncond_jump();
+                codegen.patch_jump(jump_to_else);
                 r#else.to_bytecode(codegen)?;
+                codegen.patch_jump(skip_else);
+            } else {
+                codegen.patch_jump(jump_to_else);
             }
 
-            codegen.patch_jump(skip_else);
             Ok(())
         })
     }
@@ -123,10 +123,7 @@ impl ToBytecode for Else {
     fn to_bytecode(&self, codegen: &mut Codegen) -> CodegenResult {
         match self {
             Else::If(r#if) => r#if.to_bytecode(codegen),
-            Else::Body(block) => {
-                println!("else");
-                block.to_bytecode(codegen)
-            }
+            Else::Body(block) => { block.to_bytecode(codegen) }
         }
     }
 }
@@ -141,7 +138,7 @@ impl ToBytecode for Expr {
             Expr::While(_) => todo!("sse"),
             Expr::For(_) => todo!("fe"),
             Expr::Loop(_) => todo!("dede"),
-            Expr::Empty => todo!("öeö"),
+            Expr::Empty => Ok(()),
         }
     }
 }
@@ -159,7 +156,6 @@ mod test {
         let tokens = TokenStream::from_string("5 + 3").unwrap();
         let mut stream = ParseStream::new(tokens);
         let expr = stream.parse::<Expr>().unwrap();
-        println!("{:?}", expr);
         let mut codegen = Codegen::new();
         let result = expr.to_bytecode(&mut codegen).unwrap();
         codegen.emit_simple(Instruction::Return);

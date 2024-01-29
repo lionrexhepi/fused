@@ -47,13 +47,6 @@ pub trait Parse: Spanned {
     fn could_parse(stream: &mut ParseStream) -> bool;
 }
 
-pub trait ParseDescend: Parse {
-    type DescendTo: ParseDescend;
-    fn parse_descend(stream: &mut ParseStream) -> ParseResult<(Self, bool)> where Self: Sized;
-
-    fn unwrap_descend(self) -> Self::DescendTo;
-}
-
 pub struct Newline {
     follwing_spaces: usize,
     span: Span,

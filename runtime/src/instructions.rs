@@ -65,8 +65,8 @@ impl Instruction {
             LoadLocal,
             Store,
             StoreLocal,
-            JumpIfFalse,
             Jump,
+            JumpIfFalse,
             JumpBack
         )
     }

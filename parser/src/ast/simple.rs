@@ -318,7 +318,6 @@ mod test {
         );
         let expr = ExprSimple::parse(&mut stream).unwrap();
         if let ExprSimple::Assign(_, right_assign) = expr {
-            println!("leftmost is path");
             if let ExprSimple::Binary(left_sub, BinaryType::Sub, right_sub) = *right_assign {
                 assert!(matches!(*right_sub, ExprSimple::Binary(_, BinaryType::LeftShift, _)));
                 if let ExprSimple::Binary(left_mul, BinaryType::Mul, right_mul) = *left_sub {
