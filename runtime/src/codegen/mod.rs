@@ -63,7 +63,9 @@ impl Codegen {
         self.scope.push();
 
         gen(self)?;
+        
         self.scope.pop();
+        self.bytes.push(Instruction::PopFrame as u8);
         Ok(())
     }
 
@@ -137,7 +139,7 @@ impl Codegen {
     }
 
     pub fn emit_jump_back(&mut self, to: JumpMark) {
-        self.bytes.push(Instruction::JumpBack as u8);
+        self.bytes.push(Instruction::Jump as u8);
         self.bytes.extend(to.to_le_bytes());
     }
 

@@ -64,7 +64,6 @@ impl Parse for ExprWhile {
 
         token.parse::<Colon>()?;
         let body = token.parse::<Block>()?;
-
         let span = _while.span().join(body.span());
 
         Ok(Self {

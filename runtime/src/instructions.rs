@@ -16,16 +16,21 @@ pub enum Instruction {
     LeftShift,
     RightShift,
     Eq,
+    Neq,
+    Gt,
+    Lt,
+    Geq,
+    Leq,
     And,
     Or,
     PushFrame,
+    PopFrame,
     Load,
     LoadLocal,
     Store,
     StoreLocal,
     Jump,
     JumpIfFalse,
-    JumpBack,
 }
 macro_rules! match_bytes {
     ($byte:expr, $($instrs:ident),*) => {
@@ -58,16 +63,21 @@ impl Instruction {
             LeftShift,
             RightShift,
             Eq,
+            Neq,
+            Lt,
+            Gt,
+            Leq,
+            Geq,
             And,
             Or,
             PushFrame,
+            PopFrame,
             Load,
             LoadLocal,
             Store,
             StoreLocal,
             Jump,
-            JumpIfFalse,
-            JumpBack
+            JumpIfFalse
         )
     }
 }

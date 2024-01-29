@@ -45,8 +45,9 @@ impl ToBytecode for ExprSimple {
     fn to_bytecode(&self, codegen: &mut Codegen) -> CodegenResult {
         match self {
             ExprSimple::Binary(left, op, right) => {
+                right.to_bytecode(codegen)?; //To not break right-associative operations
                 left.to_bytecode(codegen)?;
-                right.to_bytecode(codegen)?;
+
                 let instruction = match op {
                     BinaryType::Or => Instruction::Or,
                     BinaryType::Add => Instruction::Add,
@@ -59,11 +60,11 @@ impl ToBytecode for ExprSimple {
                     BinaryType::BitOr => Instruction::BitOr,
                     BinaryType::BitXor => Instruction::BitXor,
                     BinaryType::Eq => Instruction::Eq,
-                    BinaryType::Neq => todo!(),
-                    BinaryType::Lt => todo!(),
-                    BinaryType::Gt => todo!(),
-                    BinaryType::Leq => todo!(),
-                    BinaryType::Geq => todo!(),
+                    BinaryType::Neq => Instruction::Neq,
+                    BinaryType::Lt => Instruction::Lt,
+                    BinaryType::Gt => Instruction::Gt,
+                    BinaryType::Leq => Instruction::Leq,
+                    BinaryType::Geq => Instruction::Geq,
                     BinaryType::LeftShift => Instruction::LeftShift,
                     BinaryType::RightShift => Instruction::RightShift,
                 };

@@ -48,6 +48,7 @@ impl<'a> Display for Chunk {
                 Instruction::Const => { ("const", format!("{:x}", reader.read_index()?)) }
                 Instruction::Return => { ("ret", String::default()) }
                 Instruction::PushFrame => ("pushframe", String::default()),
+                Instruction::PopFrame => ("popframe", String::default()),
                 Instruction::StoreLocal => {
                     ("store_loc", format!(" >> [{}] ", reader.read_index()?))
                 }
@@ -77,6 +78,15 @@ impl<'a> Display for Chunk {
                         Instruction::BitXor => "bitxor",
                         Instruction::Eq => "eq",
                         Instruction::And => "and",
+                        Instruction::Or => "or",
+                        Instruction::Neq => "not",
+                        Instruction::Gt => "gt",
+                        Instruction::Lt => "lt",
+                        Instruction::Geq => "geq",
+                        Instruction::Leq => "leq",
+                        Instruction::LeftShift => "lshift",
+                        Instruction::RightShift => "rshift",
+
                         _ => unreachable!(),
                     };
                     (name, String::default())

@@ -67,25 +67,43 @@ impl Thread {
                 Instruction::PushFrame => {
                     self.stack.push_frame();
                 }
+                Instruction::PopFrame => {
+                    self.stack.pop_frame();
+                }
 
                 Instruction::StoreLocal => {
                     let value = self.stack.pop()?;
+
                     self.stack.store_local(reader.read_index()?, value);
                 }
 
                 Instruction::LoadLocal => {
                     let value = self.stack.load_local(reader.read_index()?);
+                    println!("Loading local: {value}");
+
                     self.stack.push(value);
+                    self.stack.dump_vars();
+
                 }
 
                 Instruction::Load => {
-                    let value = self.stack.load_global(reader.read_index()?, reader.read_index()?)?;
+                    self.stack.dump_vars();
+
+                    let depth = reader.read_index()?;
+                    let index = reader.read_index()?;
+                    println!(" <- {depth} {index}");
+                    let value = self.stack.load_global(depth, index)?;
                     self.stack.push(value);
+                    self.stack.dump_vars();
                 }
 
                 Instruction::Store => {
                     let value = self.stack.pop()?;
-                    self.stack.store_global(reader.read_index()?, reader.read_index()?, value)?;
+                    let depth = reader.read_index()?;
+                    let index = reader.read_index()?;
+                    println!("{value} -> {depth} {index}");
+                    self.stack.store_global(depth, index, value)?;
+                    self.stack.dump_vars();
                 }
 
                 Instruction::JumpIfFalse => {
@@ -97,13 +115,14 @@ impl Thread {
                     }
                 }
                 Instruction::Jump => {
+                    //Same implementation
                     let address = reader.read_address()?;
                     reader.jump_to(address as usize)?;
                 }
 
                 other if other.is_binary() => {
                     let (left, right) = (self.stack.pop()?, self.stack.pop()?);
-
+                    println!("binary: {left} {other:?} {right}");
                     let operator = match other {
                         Instruction::Add => RegisterContents::try_add,
                         Instruction::Sub => RegisterContents::try_sub,
@@ -118,10 +137,17 @@ impl Thread {
                         Instruction::Eq => RegisterContents::try_eq,
                         Instruction::And => RegisterContents::try_and,
                         Instruction::Or => RegisterContents::try_or,
+                        Instruction::Neq => RegisterContents::try_neq,
+                        Instruction::Gt => RegisterContents::try_gt,
+                        Instruction::Lt => RegisterContents::try_lt,
+                        Instruction::Geq => RegisterContents::try_geq,
+                        Instruction::Leq => RegisterContents::try_leq,
+
                         _ => unreachable!(),
                     };
 
                     let result = operator(&left, &right)?;
+                    println!("Result: {result}");
                     self.stack.push(result);
                 }
                 _ => unreachable!("Missing match arm for instruction {:?}", instruction),

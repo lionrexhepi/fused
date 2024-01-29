@@ -274,12 +274,96 @@ impl RegisterContents {
                 ),
         }
     }
+
+    pub(crate) fn try_neq(&self, other: &Self) -> Result<Self> {
+        match (self, other) {
+            (Self::Int(l), Self::Int(r)) => Ok(Self::Bool(l != r)),
+            (Self::Float(l), Self::Float(r)) => Ok(Self::Bool(l != r)),
+            (Self::Bool(l), Self::Bool(r)) => Ok(Self::Bool(l != r)),
+            (Self::Char(l), Self::Char(r)) => Ok(Self::Bool(l != r)),
+            (Self::Object(l), Self::Object(r)) => Ok(Self::Bool(l != r)),
+            (Self::None, _) | (_, Self::None) => Err(RuntimeError::NullAccess("neq")),
+            (other_left, other_right) =>
+                Err(
+                    RuntimeError::InvalidOperation(
+                        "neq",
+                        other_left.type_name(),
+                        other_right.type_name()
+                    )
+                ),
+        }
+    }
+
+    pub(crate) fn try_gt(&self, other: &Self) -> Result<Self> {
+        match (self, other) {
+            (Self::Int(l), Self::Int(r)) => Ok(Self::Bool(l > r)),
+            (Self::Float(l), Self::Float(r)) => Ok(Self::Bool(l > r)),
+            (Self::None, _) | (_, Self::None) => Err(RuntimeError::NullAccess("gt")),
+            (other_left, other_right) =>
+                Err(
+                    RuntimeError::InvalidOperation(
+                        "gt",
+                        other_left.type_name(),
+                        other_right.type_name()
+                    )
+                ),
+        }
+    }
+
+    pub(crate) fn try_lt(&self, other: &Self) -> Result<Self> {
+
+        match (self, other) {
+            (Self::Int(l), Self::Int(r)) => Ok(Self::Bool(l < r)),
+            (Self::Float(l), Self::Float(r)) => Ok(Self::Bool(l < r)),
+            (Self::None, _) | (_, Self::None) => Err(RuntimeError::NullAccess("lt")),
+            (other_left, other_right) =>
+                Err(
+                    RuntimeError::InvalidOperation(
+                        "lt",
+                        other_left.type_name(),
+                        other_right.type_name()
+                    )
+                ),
+        }
+    }
+
+    pub(crate) fn try_geq(&self, other: &Self) -> Result<Self> {
+        match (self, other) {
+            (Self::Int(l), Self::Int(r)) => Ok(Self::Bool(l >= r)),
+            (Self::Float(l), Self::Float(r)) => Ok(Self::Bool(l >= r)),
+            (Self::None, _) | (_, Self::None) => Err(RuntimeError::NullAccess("geq")),
+            (other_left, other_right) =>
+                Err(
+                    RuntimeError::InvalidOperation(
+                        "geq",
+                        other_left.type_name(),
+                        other_right.type_name()
+                    )
+                ),
+        }
+    }
+
+    pub(crate) fn try_leq(&self, other: &Self) -> Result<Self> {
+        match (self, other) {
+            (Self::Int(l), Self::Int(r)) => Ok(Self::Bool(l <= r)),
+            (Self::Float(l), Self::Float(r)) => Ok(Self::Bool(l <= r)),
+            (Self::None, _) | (_, Self::None) => Err(RuntimeError::NullAccess("leq")),
+            (other_left, other_right) =>
+                Err(
+                    RuntimeError::InvalidOperation(
+                        "leq",
+                        other_left.type_name(),
+                        other_right.type_name()
+                    )
+                ),
+        }
+    }
+
 }
 
 pub struct Stack {
     pub values: Vec<RegisterContents>,
     pub variables: Vec<Vec<RegisterContents>>,
-    depth: Cell<u16>,
 }
 
 impl Stack {
@@ -287,18 +371,15 @@ impl Stack {
         Self {
             values: vec![],
             variables: vec![vec![RegisterContents::None; u8::MAX as usize]],
-            depth: Cell::new(0),
         }
     }
 
     pub fn push_frame(&mut self) {
         self.variables.push(vec![RegisterContents::None; u8::MAX as usize]);
-        self.depth.set(self.depth.get() + 1)
     }
 
     pub fn pop_frame(&mut self) {
         self.variables.pop();
-        self.depth.set(self.depth.get() - 1);
     }
 
     pub fn push(&mut self, value: RegisterContents) {
@@ -310,20 +391,16 @@ impl Stack {
     }
 
     pub fn load_local(&self, variable: u16) -> RegisterContents {
-        self.variables[self.depth.get() as usize][variable as usize]
+        self.variables.last().unwrap()[variable as usize]
     }
 
     pub fn store_local(&mut self, variable: Index, value: RegisterContents) {
-        (&mut self.variables[self.depth.get() as usize])[variable as usize] = value;
+        (&mut self.variables.last_mut().unwrap())[variable as usize] = value;
     }
 
     pub fn load_global(&mut self, depth: Index, variable: Index) -> Result<RegisterContents> {
-        let current_depth = self.depth.get();
-        if let Some(scope) = current_depth.checked_sub(depth as u16) {
-            Ok(self.variables[scope as usize][variable as usize])
-        } else {
-            Err(RuntimeError::BadStackFrame(depth as u16))
-        }
+        let current_depth = self.variables.len() as u16 - depth;
+        Ok(self.variables[current_depth as usize][variable as usize])
     }
 
     pub fn store_global(
@@ -332,16 +409,19 @@ impl Stack {
         variable: Index,
         value: RegisterContents
     ) -> Result<()> {
-        let current_depth = self.depth.get();
-        if let Some(scope) = current_depth.checked_sub(depth as u16) {
-            self.variables[scope as usize][variable as usize] = value;
-            Ok(())
-        } else {
-            Err(RuntimeError::BadStackFrame(depth as u16))
-        }
+        let current_depth = self.variables.len() as u16 - depth;
+        self.variables[current_depth as usize][variable as usize] = value;
+        Ok(())
     }
 
-    pub fn is_root(&self) -> bool {
-        self.depth.get() == 0
+    pub fn dump_vars(&self) {
+        for (i, var) in self.variables.iter().enumerate() {
+            println!("Frame {}", i);
+            for (j, var) in var.iter().enumerate() {
+                if var != &RegisterContents::None {
+                    println!("{}: {}", j, var);
+                }
+            }
+        }
     }
 }

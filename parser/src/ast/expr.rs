@@ -46,6 +46,7 @@ impl Spanned for Expr {
 impl Parse for Expr {
     fn parse(stream: &mut ParseStream) -> ParseResult<Self> {
         stream.skip_newlines();
+        println!("{:?}", stream.current().content);
         if stream.current().content == TokenType::EOF {
             return Ok(Self::Empty);
         }
