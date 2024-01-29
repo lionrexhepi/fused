@@ -23,7 +23,8 @@ pub enum Instruction {
     LoadLocal,
     Store,
     StoreLocal,
-    JumpTo,
+    Jump,
+    JumpIfFalse,
     JumpBack,
 }
 macro_rules! match_bytes {
@@ -64,7 +65,8 @@ impl Instruction {
             LoadLocal,
             Store,
             StoreLocal,
-            JumpTo,
+            JumpIfFalse,
+            Jump,
             JumpBack
         )
     }

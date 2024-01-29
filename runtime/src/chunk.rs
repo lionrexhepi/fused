@@ -54,7 +54,10 @@ impl<'a> Display for Chunk {
                 Instruction::LoadLocal => {
                     ("load_loc", format!(" << [{}]", reader.read_index()?))
                 }
-                Instruction::JumpTo => { ("jump_to", format!("#{}", reader.read_address()?)) }
+                Instruction::JumpIfFalse => {
+                    ("jump_if_false", format!("#{}", reader.read_address()?))
+                }
+                Instruction::Jump => { ("jump", format!("#{}", reader.read_address()?)) }
 
                 other if other.is_binary() => {
                     let name = match other {

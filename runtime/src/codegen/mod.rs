@@ -122,8 +122,15 @@ impl Codegen {
         }
     }
 
-    pub fn emit_jump_to(&mut self) -> JumpMark {
-        self.bytes.push(Instruction::JumpTo as u8);
+    pub fn emit_cond_jump(&mut self) -> JumpMark {
+        self.bytes.push(Instruction::JumpIfFalse as u8);
+        let mark = self.bytes.len();
+        self.bytes.extend((0usize).to_le_bytes());
+        mark
+    }
+
+    pub fn emit_uncond_jump(&mut self) -> JumpMark {
+        self.bytes.push(Instruction::Jump as u8);
         let mark = self.bytes.len();
         self.bytes.extend((0usize).to_le_bytes());
         mark

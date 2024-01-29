@@ -104,11 +104,10 @@ impl ToBytecode for ExprIf {
         codegen.new_scope(|codegen| {
             self.condition.to_bytecode(codegen)?;
             println!("Jumping from {}", codegen.bytes.len() - 1);
-            let jump_to_else = codegen.emit_jump_to();
+            let jump_to_else = codegen.emit_cond_jump();
             self.body.to_bytecode(codegen)?;
             println!("Jumping to {}", codegen.bytes.len() - 1);
-            codegen.emit_const(RegisterContents::Bool(false))?;
-            let skip_else = codegen.emit_jump_to();
+            let skip_else = codegen.emit_uncond_jump();
             codegen.patch_jump(jump_to_else);
             if let Some(r#else) = &self.r#else {
                 r#else.to_bytecode(codegen)?;

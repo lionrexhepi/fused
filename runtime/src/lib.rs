@@ -81,13 +81,16 @@ impl Thread {
                     self.stack.push(value);
                 }
 
-                Instruction::JumpTo => {
+                Instruction::JumpIfFalse => {
                     let condition = self.stack.pop()? == RegisterContents::Bool(false);
                     let address = reader.read_address()?;
                     if condition {
-                        println!("jumping to {address}");
                         reader.jump_to(address as usize)?;
                     }
+                }
+                Instruction::Jump => {
+                    let address = reader.read_address()?;
+                    reader.jump_to(address as usize)?;
                 }
 
                 other if other.is_binary() => {
