@@ -1,7 +1,7 @@
 
-a:= 2 + 1
+a:= 0
 
-if a == 3:
-    false
-else:
-    true
+while a == 0:
+    a = a + 1
+
+a

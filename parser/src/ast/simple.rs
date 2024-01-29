@@ -97,6 +97,7 @@ impl ExprSimple {
             if operator.matches(stream) {
                 ty = Some(*operator);
             }
+            println!("{:?} not found, instead: {:?}", operator, stream.current().content);
         }
 
         if let Some(ty) = ty {

@@ -2,6 +2,7 @@ use parser::ast::{
     conditionals::{ Else, ExprIf },
     declarations::ExprDecl,
     expr::{ Expr, ExprLit },
+    loops::ExprWhile,
     number::Number,
     path::PathSegment,
     simple::{ BinaryType, ExprSimple },
@@ -128,6 +129,20 @@ impl ToBytecode for Else {
     }
 }
 
+impl ToBytecode for ExprWhile {
+    fn to_bytecode(&self, codegen: &mut Codegen) -> CodegenResult {
+        codegen.new_scope(|codegen| {
+            let start = codegen.get_jump_mark();
+            self.condition.to_bytecode(codegen)?;
+            let jump_to_end = codegen.emit_cond_jump();
+            self.body.to_bytecode(codegen)?;
+            codegen.emit_jump_back(start);
+            codegen.patch_jump(jump_to_end);
+            Ok(())
+        })
+    }
+}
+
 impl ToBytecode for Expr {
     fn to_bytecode(&self, codegen: &mut Codegen) -> CodegenResult {
         match self {
@@ -135,7 +150,7 @@ impl ToBytecode for Expr {
             Expr::Decl(decl) => decl.to_bytecode(codegen),
             Expr::Function(_) => todo!("eeee"),
             Expr::If(r#if) => r#if.to_bytecode(codegen),
-            Expr::While(_) => todo!("sse"),
+            Expr::While(r#while) => r#while.to_bytecode(codegen),
             Expr::For(_) => todo!("fe"),
             Expr::Loop(_) => todo!("dede"),
             Expr::Empty => Ok(()),

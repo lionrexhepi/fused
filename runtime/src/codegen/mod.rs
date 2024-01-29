@@ -132,6 +132,15 @@ impl Codegen {
         self.bytes.splice(to..to + size_of::<JumpMark>(), bytes);
     }
 
+    pub fn get_jump_mark(&self) -> JumpMark {
+        self.bytes.len()
+    }
+
+    pub fn emit_jump_back(&mut self, to: JumpMark) {
+        self.bytes.push(Instruction::JumpBack as u8);
+        self.bytes.extend(to.to_le_bytes());
+    }
+
     pub fn chunk(self) -> Chunk {
         Chunk {
             consts: self.constants

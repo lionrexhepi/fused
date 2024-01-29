@@ -36,11 +36,15 @@ impl<T: Parse, P: Punct> Parse for Separated<T, P> {
     fn parse(stream: &mut ParseStream) -> ParseResult<Self> where Self: Sized {
         let mut inner = Vec::new();
 
-        while let Ok(item) = stream.parse::<T>() {
+        while T::could_parse(stream) {
+            println!("Path item, {:?}", stream.current().content);
+            let item = stream.parse::<T>()?;
             inner.push(item);
 
-            if stream.parse::<P>().is_err() {
+            if !P::could_parse(stream) {
                 break;
+            } else {
+                P::parse(stream)?;
             }
         }
 
