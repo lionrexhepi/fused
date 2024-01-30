@@ -311,7 +311,6 @@ impl RegisterContents {
     }
 
     pub(crate) fn try_lt(&self, other: &Self) -> Result<Self> {
-
         match (self, other) {
             (Self::Int(l), Self::Int(r)) => Ok(Self::Bool(l < r)),
             (Self::Float(l), Self::Float(r)) => Ok(Self::Bool(l < r)),
@@ -358,7 +357,6 @@ impl RegisterContents {
                 ),
         }
     }
-
 }
 
 pub struct Stack {
@@ -374,7 +372,6 @@ impl Stack {
         }
     }
 
-
     pub fn push(&mut self, value: RegisterContents) {
         self.values.push(value)
     }
@@ -383,19 +380,71 @@ impl Stack {
         self.values.pop().ok_or(RuntimeError::BadStackFrame(0))
     }
 
-
-
     pub fn load_global(&mut self, symbol: SymbolId) -> Result<RegisterContents> {
-        Ok(self.variables[symbol as usize])
+        if (symbol as usize) >= self.variables.len() {
+            return Err(RuntimeError::InvalidSymbol(symbol));
+        } else {
+            Ok(self.variables[symbol as usize])
+        }
     }
 
-    pub fn store_global(
-        &mut self,
-        symbol: SymbolId,
-        value: RegisterContents
-    ) -> Result<()> {
-        self.variables[symbol as usize] = value;
-        Ok(())
+    pub fn store_global(&mut self, symbol: SymbolId, value: RegisterContents) -> Result<()> {
+        if (symbol as usize) >= self.variables.len() {
+            return Err(RuntimeError::InvalidSymbol(symbol));
+        } else {
+            self.variables[symbol as usize] = value;
+            Ok(())
+        }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::stack::RegisterContents;
+
+    #[test]
+    fn test_stack_new() {
+        let stack = super::Stack::new(1);
+        assert_eq!(stack.values.len(), 0);
+        assert_eq!(stack.variables.len(), 1);
     }
 
+    #[test]
+    fn test_stack_push() {
+        let mut stack = super::Stack::new(1);
+        stack.push(RegisterContents::Int(1));
+        assert_eq!(stack.values.len(), 1);
+        assert_eq!(stack.pop(), Ok(RegisterContents::Int(1)));
+        assert_eq!(stack.variables.len(), 1);
+    }
+
+    #[test]
+    fn test_stack_pop() {
+        let mut stack = super::Stack::new(1);
+        stack.push(RegisterContents::Int(1));
+        assert_eq!(stack.values.len(), 1);
+        assert_eq!(stack.pop(), Ok(RegisterContents::Int(1)));
+        assert_eq!(stack.values.len(), 0);
+        assert_eq!(stack.pop(), Err(crate::RuntimeError::BadStackFrame(0)));
+        assert_eq!(stack.variables.len(), 1);
+    }
+
+    #[test]
+    fn test_stack_load_global() {
+        let mut stack = super::Stack::new(1);
+        stack.variables[0] = RegisterContents::Int(1);
+        assert_eq!(stack.load_global(0), Ok(RegisterContents::Int(1)));
+        assert_eq!(stack.load_global(1), Err(crate::RuntimeError::InvalidSymbol(1)));
+    }
+
+    #[test]
+    fn test_stack_store_global() {
+        let mut stack = super::Stack::new(1);
+        stack.store_global(0, RegisterContents::Int(1)).unwrap();
+        assert_eq!(stack.variables[0], RegisterContents::Int(1));
+        assert_eq!(
+            stack.store_global(1, RegisterContents::Int(1)),
+            Err(crate::RuntimeError::InvalidSymbol(1))
+        );
+    }
 }

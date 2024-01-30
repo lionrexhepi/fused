@@ -1,5 +1,6 @@
 use bufreader::BufReader;
 use chunk::{ BytecodeError, Chunk };
+use codegen::scope::SymbolId;
 use instructions::Instruction;
 use stack::{ RegisterContents, Stack };
 use thiserror::Error;
@@ -27,6 +28,7 @@ pub enum RuntimeError {
     #[error("Chunk does not contain a constant at index {0:x}")] InvalidConstant(u16),
     #[error("Attempted to access undefined variable {0}")] UndefinedSymbol(String),
     #[error("Attempted to mutate immutable variable {0}")] ImmutableSymbol(String),
+    #[error("Invalid symbol")] InvalidSymbol(SymbolId),
 }
 
 pub(crate) type Result<T> = std::result::Result<T, RuntimeError>;

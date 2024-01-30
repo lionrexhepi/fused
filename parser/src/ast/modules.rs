@@ -1,3 +1,5 @@
+//TODO: Fix all of this
+
 use crate::{ Span, ast::{ keywords::Mod, grouped::Braced } };
 
 use super::{
@@ -9,7 +11,8 @@ use super::{
     ident::Ident,
     separated::Separated,
     stream::ParseStream,
-    ParseResult, keywords::Use,
+    ParseResult,
+    keywords::Use,
 };
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -130,7 +133,7 @@ impl Parse for UsePathSegment {
 
 #[cfg(test)]
 mod test {
-    use crate:: tokens::stream::TokenStream;
+    use crate::tokens::stream::TokenStream;
 
     use super::{ UsePath, super::stream::ParseStream, Module };
 
@@ -158,7 +161,7 @@ mod test {
 
     #[test]
     fn test_use_path() {
-        let tokens = TokenStream::from_string("test.test.test").unwrap();
+        let tokens = TokenStream::from_string("use test.test.test").unwrap();
         let mut stream = ParseStream::new(tokens);
 
         let path = stream.parse::<UsePath>().unwrap();
@@ -169,7 +172,7 @@ mod test {
 
     #[test]
     fn test_simple_extract() {
-        let tokens = TokenStream::from_string("test.test { test } ").unwrap();
+        let tokens = TokenStream::from_string("use test.test { test } ").unwrap();
         let mut stream = ParseStream::new(tokens);
 
         let path = stream.parse::<UsePath>().unwrap();
@@ -181,7 +184,9 @@ mod test {
 
     #[test]
     fn test_multiple_extract() {
-        let tokens = TokenStream::from_string("test.test { test.test { test }, test2 }").unwrap();
+        let tokens = TokenStream::from_string(
+            "use test.test { test.test { test }, test2 }"
+        ).unwrap();
         let mut stream = ParseStream::new(tokens);
 
         let path = stream.parse::<UsePath>().unwrap();
@@ -193,7 +198,7 @@ mod test {
 
     #[test]
     fn test_simple_wildcard() {
-        let tokens = TokenStream::from_string("test.test.*").unwrap();
+        let tokens = TokenStream::from_string("use test.test.*").unwrap();
         let mut stream = ParseStream::new(tokens);
 
         let path = stream.parse::<UsePath>().unwrap();
@@ -204,13 +209,13 @@ mod test {
 
     #[test]
     fn test_wildcard_extract() {
-        let tokens = TokenStream::from_string("test.test { *, test.one } ").unwrap();
+        let tokens = TokenStream::from_string("use test.test { *, test.one } ").unwrap();
         let mut stream = ParseStream::new(tokens);
 
         let path = stream.parse::<UsePath>().unwrap();
 
-        assert!(path.regular.len() == 2);
+        assert_eq!(path.regular.len(), 2);
         assert!(path.extract.is_some());
-        assert!(path.extract.unwrap().len() == 2);
+        assert_eq!(path.extract.unwrap().len(), 2);
     }
 }

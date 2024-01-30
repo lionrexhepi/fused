@@ -22,7 +22,7 @@ pub enum BytecodeError {
 pub struct Chunk {
     pub consts: HashMap<u16, RegisterContents>,
     pub buffer: Box<[u8]>,
-    pub var_count: u32
+    pub var_count: u32,
 }
 
 impl Chunk {
@@ -52,15 +52,9 @@ impl<'a> Display for Chunk {
                 Instruction::Return => { ("ret", String::default()) }
                 Instruction::PushFrame => ("pushframe", String::default()),
                 Instruction::PopFrame => ("popframe", String::default()),
-                Instruction::Load => {
-                    ("load", format!("<< [{}]", reader.read_symbol()?))
-                }
-                Instruction::Store => {
-                    ("store", format!(">> [{}]", reader.read_symbol()?))
-                }
-                Instruction::JumpIfFalse => {
-                    ("cjump", format!("#{:X}", reader.read_address()?))
-                }
+                Instruction::Load => { ("load", format!("<< [{}]", reader.read_symbol()?)) }
+                Instruction::Store => { ("store", format!(">> [{}]", reader.read_symbol()?)) }
+                Instruction::JumpIfFalse => { ("cjump", format!("#{:X}", reader.read_address()?)) }
                 Instruction::Jump => { ("jump", format!("#{:X}", reader.read_address()?)) }
 
                 other if other.is_binary() => {
@@ -108,7 +102,7 @@ mod test {
     #[test]
     fn test_sizes() {
         use std::mem::size_of;
-        assert_eq!(size_of::<super::Instruction>(), 6);
-        assert_eq!(size_of::<super::Chunk>(), 40)
+        assert_eq!(size_of::<super::Instruction>(), 1);
+        assert_eq!(size_of::<super::Chunk>(), 72)
     }
 }

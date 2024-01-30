@@ -12,6 +12,7 @@ fn main() {
         let tokens = TokenStream::from_string(buf).unwrap();
         let mut parse = ParseStream::new(tokens);
         let block = parse.parse::<Block>().unwrap();
+        println!("{}", block.0.len());
         let mut codegen = Codegen::new();
         _ = block.to_bytecode(&mut codegen).unwrap();
         codegen.emit_simple(Instruction::Return).unwrap();
@@ -23,8 +24,9 @@ fn main() {
             ((size as f64) / (file_len as f64)) * 100f64
         );
         println!("{}", chunk);
+        let stack = Stack::new(chunk.var_count);
         let mut thread = Thread {
-            stack: Stack::new(chunk.var_count ),
+            stack,
         };
 
         let result = thread.run_chunk(chunk).unwrap();

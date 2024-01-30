@@ -1,4 +1,4 @@
-use crate::Span;
+use crate::{ tokens::Token, Span };
 
 use super::{
     expr::Expr,
@@ -13,7 +13,6 @@ use super::{
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Statement {
     pub content: StatementContent,
-    pub indent: usize,
 }
 
 impl Spanned for Statement {
@@ -24,19 +23,23 @@ impl Spanned for Statement {
 
 impl Parse for Statement {
     fn parse(stream: &mut ParseStream) -> ParseResult<Self> where Self: Sized {
-        let indent = stream.parse::<Newline>()?.follwing_spaces;
-
         let content = if let Some(module) = stream.parse::<Module>().ok() {
             StatementContent::Module(module)
         } else if let Some(use_path) = stream.parse::<UsePath>().ok() {
             StatementContent::Use(use_path)
         } else {
-            StatementContent::Expr(stream.parse::<Expr>()?)
+            let expr = stream.parse::<Expr>()?;
+            if expr == Expr::Empty {
+                return Err(super::ParseError::UnexpectedToken {
+                    expected: "<statement>",
+                    got: stream.current().clone(),
+                });
+            }
+            StatementContent::Expr(expr)
         };
 
         Ok(Self {
             content,
-            indent,
         })
     }
 

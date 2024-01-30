@@ -130,4 +130,28 @@ mod test {
         assert!(matches!(*r#if.condition, ExprSimple::Literal(ExprLit::Bool(_))));
         assert!(matches!(r#if.r#else.unwrap(), Else::If(_)));
     }
+
+    #[test]
+    fn test_nested() {
+        let tokens = TokenStream::from_string(
+            "if true:\n    if false:\n        1\n    else:\n        2\nelse:\n    3"
+        ).unwrap();
+
+        let mut stream = ParseStream::new(tokens);
+
+        let r#if = stream.parse::<ExprIf>().unwrap();
+
+        assert!(matches!(*r#if.condition, ExprSimple::Literal(ExprLit::Bool(_))));
+        assert!(matches!(r#if.r#else.as_ref().unwrap(), Else::Body(_)));
+        assert!(matches!(r#if.r#else.unwrap(), Else::Body(block) if block.0.len() == 1));
+    }
+
+    #[test]
+    fn test_nested_chained() {
+        let tokens = TokenStream::from_string(
+            "\nif true:\n    if false:\n        1\n    else:\n        2\nelse:\n    3\nb:=4"
+        ).unwrap();
+
+        let mut stream = ParseStream::new(tokens);
+    }
 }

@@ -55,7 +55,7 @@ impl Spanned for PathSegment {
     fn span(&self) -> Span {
         match self {
             Self::Ident(ident) => ident.span(),
-            Self::Generics( generics) => generics.0.last().unwrap().span(),
+            Self::Generics(generics) => generics.0.last().unwrap().span(),
         }
     }
 }
@@ -98,7 +98,7 @@ impl Parse for Generics {
     }
 
     fn could_parse(stream: &mut ParseStream) -> bool {
-        Lt::could_parse(stream) 
+        Lt::could_parse(stream)
     }
 }
 
@@ -121,17 +121,21 @@ mod test {
         let tokens = TokenStream::from_string("name.<type1, type2>").unwrap();
         let mut stream = ParseStream::new(tokens);
         let path = stream.parse::<ExprPath>().unwrap();
-        assert_eq!(path.segments.len(), 1);
-        assert!(matches!(path.segments.first().unwrap(), PathSegment::Generics( _)))
+        assert_eq!(path.segments.len(), 2);
+        assert!(matches!(path.segments.first().unwrap(), PathSegment::Ident(_)));
+        assert!(matches!(path.segments.get(1).unwrap(), PathSegment::Generics(_)));
     }
 
     #[test]
     fn test_complex() {
-        let tokens = TokenStream::from_string("name.<type1, type2>.field.method<type3>").unwrap();
+        let tokens = TokenStream::from_string("name.<type1, type2>.field.method.<type3>").unwrap();
         let mut stream = ParseStream::new(tokens);
         let path = stream.parse::<ExprPath>().unwrap();
-        assert_eq!(path.segments.len(), 3);
-        assert!(matches!(path.segments.first().unwrap(), PathSegment::Generics( _)));
-        assert!(matches!(path.segments.get(1).unwrap(), PathSegment::Ident(_)));
+        assert_eq!(path.segments.len(), 5);
+        assert!(matches!(path.segments.first().unwrap(), PathSegment::Ident(_)));
+        assert!(matches!(path.segments.get(1).unwrap(), PathSegment::Generics(_)));
+        assert!(matches!(path.segments.get(2).unwrap(), PathSegment::Ident(_)));
+        assert!(matches!(path.segments.get(3).unwrap(), PathSegment::Ident(_)));
+        assert!(matches!(path.segments.last().unwrap(), PathSegment::Generics(_)));
     }
 }

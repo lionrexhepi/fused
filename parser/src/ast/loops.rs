@@ -119,7 +119,7 @@ impl Parse for ExprFor {
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct ExprBreak {
     span: Span,
-    pub value: Option<ExprSimple>
+    pub value: Option<ExprSimple>,
 }
 
 impl Spanned for ExprBreak {
@@ -131,16 +131,11 @@ impl Spanned for ExprBreak {
 impl Parse for ExprBreak {
     fn parse(stream: &mut ParseStream) -> ParseResult<Self> where Self: Sized {
         let span = stream.parse::<Break>()?.span();
-        let value = if ExprSimple::could_parse(stream) {
-            Some(stream.parse()?)
-        } else{
-            None
-        };
+        let value = if ExprSimple::could_parse(stream) { Some(stream.parse()?) } else { None };
         Ok(Self {
             span,
-            value
+            value,
         })
-        
     }
 
     fn could_parse(stream: &mut ParseStream) -> bool {
@@ -180,6 +175,8 @@ mod test {
         assert_eq!(r#while.body.0.len(), 1);
     }
 
+    
+
     #[test]
     fn test_for() {
         let tokens = TokenStream::from_string("for i in array:\n    1").unwrap();
@@ -191,5 +188,16 @@ mod test {
         assert_eq!(r#for.ident.name, "i");
         assert!(matches!(*r#for.iter, ExprSimple::Path(ExprPath { .. })));
         assert_eq!(r#for.body.0.len(), 1);
+    }
+
+    #[test]
+    fn test_break() {
+        let tokens = TokenStream::from_string("break").unwrap();
+
+        let mut stream = ParseStream::new(tokens);
+
+        let r#break = stream.parse::<super::ExprBreak>().unwrap();
+
+        assert!(r#break.value.is_none());
     }
 }

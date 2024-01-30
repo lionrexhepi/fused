@@ -37,7 +37,14 @@ impl<'a> BufReader<'a> {
     }
 
     pub fn read_symbol(&mut self) -> Result<SymbolId, BytecodeError> {
-        Ok(SymbolId::from_le_bytes([self.next_byte()?, self.next_byte()?, self.next_byte()?, self.next_byte()?]))
+        Ok(
+            SymbolId::from_le_bytes([
+                self.next_byte()?,
+                self.next_byte()?,
+                self.next_byte()?,
+                self.next_byte()?,
+            ])
+        )
     }
 
     pub fn read_address(&mut self) -> Result<Address, BytecodeError> {
@@ -65,5 +72,54 @@ impl<'a> BufReader<'a> {
             return Err(BytecodeError::InvalidJumpAddress(address));
         }
         Ok(std::mem::replace(&mut self.ip, address))
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::instructions::Instruction;
+
+    #[test]
+    fn test_read_instruction() {
+        let buffer = &[Instruction::Add as u8, Instruction::Sub as u8];
+        let mut reader = super::BufReader::new(buffer);
+        assert_eq!(reader.read_instruction().unwrap(), Instruction::Add);
+        assert_eq!(reader.read_instruction().unwrap(), Instruction::Sub);
+        assert!(reader.eof());
+    }
+
+    #[test]
+    fn test_read_index() {
+        let buffer = &[0x01, 0x00, 0x02, 0x00];
+        let mut reader = super::BufReader::new(buffer);
+        assert_eq!(reader.read_index().unwrap(), 1);
+        assert_eq!(reader.read_index().unwrap(), 2);
+        assert!(reader.eof());
+    }
+
+    #[test]
+    fn test_read_symbol() {
+        let buffer = &[0x01, 0x00, 0x00, 0x00];
+        let mut reader = super::BufReader::new(buffer);
+        assert_eq!(reader.read_symbol().unwrap(), 1);
+        assert!(reader.eof());
+    }
+
+    #[test]
+    fn test_read_address() {
+        let buffer = &[0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00];
+        let mut reader = super::BufReader::new(buffer);
+        assert_eq!(reader.read_address().unwrap(), 1);
+        assert!(reader.eof());
+    }
+
+    #[test]
+    fn test_jump_to() {
+        let buffer = &[Instruction::Const as u8, 0x00, 0x00, Instruction::Return as u8];
+        let mut reader = super::BufReader::new(buffer);
+        assert_eq!(reader.read_instruction().unwrap(), Instruction::Const);
+        assert_eq!(reader.jump_to(3).unwrap(), 1);
+        assert_eq!(reader.read_instruction().unwrap(), Instruction::Return);
+        assert!(reader.eof());
     }
 }

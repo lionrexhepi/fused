@@ -23,7 +23,7 @@ pub struct Codegen {
     bytes: Vec<u8>,
     constants: Rc<RefCell<HashMap<RegisterContents, Index>>>,
     scope: Rc<SymbolTable>,
-    breaks: Option<Vec<JumpMark>>,
+    breaks: Vec<Vec<JumpMark>>,
 }
 
 impl Codegen {
@@ -31,8 +31,8 @@ impl Codegen {
         Self {
             bytes: Vec::new(),
             constants: Default::default(),
-            scope: Default::default(),
-            breaks: None,
+            scope: Rc::new(SymbolTable::new()),
+            breaks: vec![],
         }
     }
 
@@ -72,13 +72,13 @@ impl Codegen {
     }
 
     pub fn enter_loop(&mut self) {
-        self.breaks = Some(Vec::new());
+        self.breaks.push(Vec::new())
     }
 
     pub fn emit_break(&mut self) -> CodegenResult {
-        if self.breaks.is_some() {
+        if !self.breaks.is_empty() {
             let mark = self.emit_uncond_jump();
-            self.breaks.as_mut().unwrap().push(mark);
+            self.breaks.last_mut().unwrap().push(mark);
             Ok(())
         } else {
             Err(CodegenError::UndefinedSymbol("break".to_string()))
@@ -86,7 +86,7 @@ impl Codegen {
     }
 
     pub fn exit_loop(&mut self) {
-        let breaks = std::mem::take(&mut self.breaks).expect("Attempted to call exit_loop outside of a loop");
+        let breaks = self.breaks.pop().expect("Attempted to exit loop without entering one");
         for mark in breaks {
             self.patch_jump(mark);
         }
@@ -172,4 +172,227 @@ impl Codegen {
 
 pub trait ToBytecode {
     fn to_bytecode(&self, codegen: &mut Codegen) -> CodegenResult;
+}
+
+#[cfg(test)]
+mod test {
+    use crate::stack::RegisterContents;
+
+    #[test]
+    fn test_new_codegen() {
+        let codegen = super::Codegen::new();
+        assert_eq!(codegen.bytes.len(), 0);
+    }
+
+    #[test]
+    fn test_emit_simple() {
+        let mut codegen = super::Codegen::new();
+        codegen.emit_simple(super::Instruction::Return).unwrap();
+        let chunk = codegen.chunk();
+        let mut reader = crate::bufreader::BufReader::new(&chunk.buffer);
+        assert_eq!(reader.read_instruction().unwrap(), super::Instruction::Return);
+    }
+
+    #[test]
+    fn test_emit_const() {
+        let mut codegen = super::Codegen::new();
+        codegen.emit_const(RegisterContents::Int(5)).unwrap();
+        codegen.emit_const(RegisterContents::Int(3)).unwrap();
+
+        let chunk = codegen.chunk();
+
+        assert_eq!(chunk.consts.len(), 2);
+        assert_eq!(chunk.consts[&0], RegisterContents::Int(5));
+        assert_eq!(chunk.consts[&1], RegisterContents::Int(3));
+
+        let mut reader = crate::bufreader::BufReader::new(&chunk.buffer);
+        assert_eq!(reader.read_instruction().unwrap(), super::Instruction::Const);
+        assert_eq!(reader.read_index().unwrap(), 0);
+        assert_eq!(reader.read_instruction().unwrap(), super::Instruction::Const);
+        assert_eq!(reader.read_index().unwrap(), 1);
+    }
+
+    #[test]
+    fn test_emit_load() {
+        let mut codegen = super::Codegen::new();
+        codegen.declare("test".to_string(), false);
+        codegen.emit_load("test").unwrap();
+
+        let chunk = codegen.chunk();
+        assert_eq!(chunk.consts.len(), 0);
+        assert_eq!(chunk.var_count, 1);
+
+        let mut reader = crate::bufreader::BufReader::new(&chunk.buffer);
+        assert_eq!(reader.read_instruction().unwrap(), super::Instruction::Load);
+        assert_eq!(reader.read_symbol().unwrap(), 0);
+    }
+
+    #[test]
+    fn test_emit_store() {
+        let mut codegen = super::Codegen::new();
+        codegen.declare("test".to_string(), false);
+        codegen.emit_store("test").unwrap();
+
+        let chunk = codegen.chunk();
+        assert_eq!(chunk.consts.len(), 0);
+        assert_eq!(chunk.var_count, 1);
+
+        let mut reader = crate::bufreader::BufReader::new(&chunk.buffer);
+        assert_eq!(reader.read_instruction().unwrap(), super::Instruction::Store);
+        assert_eq!(reader.read_symbol().unwrap(), 0);
+    }
+
+    #[test]
+    fn test_emit_jump() {
+        let mut codegen = super::Codegen::new();
+        let mark = codegen.emit_uncond_jump();
+        codegen.patch_jump(mark);
+        codegen.emit_simple(super::Instruction::Return).unwrap();
+
+        let chunk = codegen.chunk();
+        assert_eq!(chunk.consts.len(), 0);
+        assert_eq!(chunk.var_count, 0);
+
+        let mut reader = crate::bufreader::BufReader::new(&chunk.buffer);
+        assert_eq!(reader.read_instruction().unwrap(), super::Instruction::Jump);
+        let address = reader.read_address().unwrap();
+        assert_eq!(address, 9);
+        assert_eq!(reader.read_instruction().unwrap(), super::Instruction::Return);
+    }
+
+    #[test]
+    fn test_emit_cond_jump() {
+        let mut codegen = super::Codegen::new();
+        let mark = codegen.emit_cond_jump();
+        codegen.patch_jump(mark);
+        codegen.emit_simple(super::Instruction::Return).unwrap();
+
+        let chunk = codegen.chunk();
+        assert_eq!(chunk.consts.len(), 0);
+        assert_eq!(chunk.var_count, 0);
+
+        let mut reader = crate::bufreader::BufReader::new(&chunk.buffer);
+        assert_eq!(reader.read_instruction().unwrap(), super::Instruction::JumpIfFalse);
+        let address = reader.read_address().unwrap();
+        assert_eq!(address, 9);
+        assert_eq!(reader.read_instruction().unwrap(), super::Instruction::Return);
+    }
+
+    #[test]
+    fn test_emit_jump_back() {
+        let mut codegen = super::Codegen::new();
+        let mark = codegen.get_jump_mark();
+        codegen.emit_const(RegisterContents::Bool(true)).unwrap();
+        codegen.emit_jump_back(mark);
+        codegen.emit_simple(super::Instruction::Return).unwrap();
+
+        let chunk = codegen.chunk();
+        assert_eq!(chunk.consts.len(), 1);
+        assert_eq!(chunk.var_count, 0);
+
+        let mut reader = crate::bufreader::BufReader::new(&chunk.buffer);
+        assert_eq!(reader.read_instruction().unwrap(), super::Instruction::Const);
+        assert_eq!(reader.read_index().unwrap(), 0);
+        assert_eq!(reader.read_instruction().unwrap(), super::Instruction::Jump);
+        let address = reader.read_address().unwrap();
+        assert_eq!(address, 0);
+        reader.jump_to(address).unwrap();
+        assert_eq!(reader.read_instruction().unwrap(), super::Instruction::Const);
+    }
+
+    #[test]
+    fn test_new_scope() {
+        let mut codegen = super::Codegen::new();
+        codegen.declare("x".to_string(), true);
+
+        codegen
+            .new_scope(|codegen| {
+                codegen.emit_const(RegisterContents::Int(5))?;
+                codegen.emit_store("x")?;
+                codegen.declare("y".to_string(), true);
+                codegen.emit_const(RegisterContents::Int(3))?;
+                codegen.emit_store("y")?;
+                Ok(())
+            })
+            .unwrap();
+        codegen.emit_simple(super::Instruction::Return).unwrap();
+
+        let chunk = codegen.chunk();
+        assert_eq!(chunk.consts.len(), 2);
+        assert_eq!(chunk.var_count, 2);
+
+        let mut reader = crate::bufreader::BufReader::new(&chunk.buffer);
+        assert_eq!(reader.read_instruction().unwrap(), super::Instruction::Const);
+        assert_eq!(reader.read_index().unwrap(), 0);
+        assert_eq!(reader.read_instruction().unwrap(), super::Instruction::Store);
+        assert_eq!(reader.read_symbol().unwrap(), 0);
+        assert_eq!(reader.read_instruction().unwrap(), super::Instruction::Const);
+        assert_eq!(reader.read_index().unwrap(), 1);
+        assert_eq!(reader.read_instruction().unwrap(), super::Instruction::Store);
+        assert_eq!(reader.read_symbol().unwrap(), 1);
+
+        assert_eq!(reader.read_instruction().unwrap(), super::Instruction::Return);
+    }
+
+    #[test]
+    fn test_emit_break() {
+        let mut codegen = super::Codegen::new();
+        codegen.enter_loop();
+        codegen.emit_break().unwrap();
+        codegen.exit_loop();
+        codegen.emit_simple(super::Instruction::Return).unwrap();
+
+        let chunk = codegen.chunk();
+        assert_eq!(chunk.consts.len(), 0);
+        assert_eq!(chunk.var_count, 0);
+
+        let mut reader = crate::bufreader::BufReader::new(&chunk.buffer);
+        assert_eq!(reader.read_instruction().unwrap(), super::Instruction::Jump);
+        let address = reader.read_address().unwrap();
+        assert_eq!(address, 9);
+        assert_eq!(reader.read_instruction().unwrap(), super::Instruction::Return);
+    }
+
+    #[test]
+    fn test_nested_scope() {
+        let mut codegen = super::Codegen::new();
+        codegen.declare("x".to_string(), true);
+
+        codegen
+            .new_scope(|codegen| {
+                codegen.emit_const(RegisterContents::Int(5))?;
+                codegen.emit_store("x")?;
+                codegen.declare("y".to_string(), true);
+                codegen.emit_const(RegisterContents::Int(3))?;
+                codegen.emit_store("y")?;
+                codegen.new_scope(|codegen| {
+                    codegen.declare("x".to_string(), true);
+                    codegen.emit_const(RegisterContents::Int(7))?;
+                    codegen.emit_store("x")?;
+                    Ok(())
+                })?;
+                Ok(())
+            })
+            .unwrap();
+
+        codegen.emit_simple(super::Instruction::Return).unwrap();
+
+        let chunk = codegen.chunk();
+        assert_eq!(chunk.consts.len(), 3);
+        assert_eq!(chunk.var_count, 3);
+
+        let mut reader = crate::bufreader::BufReader::new(&chunk.buffer);
+        assert_eq!(reader.read_instruction().unwrap(), super::Instruction::Const);
+        assert_eq!(reader.read_index().unwrap(), 0);
+        assert_eq!(reader.read_instruction().unwrap(), super::Instruction::Store);
+        assert_eq!(reader.read_symbol().unwrap(), 0);
+        assert_eq!(reader.read_instruction().unwrap(), super::Instruction::Const);
+        assert_eq!(reader.read_index().unwrap(), 1);
+        assert_eq!(reader.read_instruction().unwrap(), super::Instruction::Store);
+        assert_eq!(reader.read_symbol().unwrap(), 1);
+        assert_eq!(reader.read_instruction().unwrap(), super::Instruction::Const);
+        assert_eq!(reader.read_index().unwrap(), 2);
+        assert_eq!(reader.read_instruction().unwrap(), super::Instruction::Store);
+        assert_eq!(reader.read_symbol().unwrap(), 2);
+    }
 }
