@@ -8,7 +8,7 @@ use super::{
     ParseError,
     functions::ExprFunction,
     conditionals::ExprIf,
-    loops::{ ExprWhile, ExprFor, ExprLoop },
+    loops::{ ExprBreak, ExprFor, ExprLoop, ExprWhile },
     stream::ParseStream,
     ParseResult,
     simple::ExprSimple,
@@ -24,6 +24,7 @@ pub enum Expr {
     While(ExprWhile),
     For(ExprFor),
     Loop(ExprLoop),
+    Break(ExprBreak),
     #[default]
     Empty,
 }
@@ -38,6 +39,7 @@ impl Spanned for Expr {
             Expr::While(r#while) => r#while.span(),
             Expr::For(r#for) => r#for.span(),
             Expr::Loop(r#loop) => r#loop.span(),
+            Expr::Break(r#break) => r#break.span(),
             Expr::Empty => Span::default(),
         }
     }
@@ -61,6 +63,8 @@ impl Parse for Expr {
             Self::Loop(stream.parse()?)
         } else if ExprDecl::could_parse(stream) {
             Self::Decl(stream.parse()?)
+        } else if ExprBreak::could_parse(stream) { 
+            Self::Break(stream.parse()?)
         } else {
             Self::Simple(stream.parse()?)
         };

@@ -5,7 +5,7 @@ use super::{
     block::Block,
     Spanned,
     Parse,
-    keywords::{ Loop, While, In, For },
+    keywords::{ Break, For, In, Loop, While },
     ident::Ident,
     punct::Colon,
     stream::ParseStream,
@@ -113,6 +113,38 @@ impl Parse for ExprFor {
 
     fn could_parse(stream: &mut ParseStream) -> bool {
         For::could_parse(stream)
+    }
+}
+
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub struct ExprBreak {
+    span: Span,
+    pub value: Option<ExprSimple>
+}
+
+impl Spanned for ExprBreak {
+    fn span(&self) -> Span {
+        self.span
+    }
+}
+
+impl Parse for ExprBreak {
+    fn parse(stream: &mut ParseStream) -> ParseResult<Self> where Self: Sized {
+        let span = stream.parse::<Break>()?.span();
+        let value = if ExprSimple::could_parse(stream) {
+            Some(stream.parse()?)
+        } else{
+            None
+        };
+        Ok(Self {
+            span,
+            value
+        })
+        
+    }
+
+    fn could_parse(stream: &mut ParseStream) -> bool {
+        Break::could_parse(stream)
     }
 }
 

@@ -33,6 +33,8 @@ impl Chunk {
 
 impl<'a> Display for Chunk {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "Chunk size: {} bytes", self.size())?;
+        writeln!(f, "Variable count: {}", self.var_count)?;
         writeln!(f, "{:-^30}", "Constants")?;
 
         for (index, value) in self.consts.iter() {

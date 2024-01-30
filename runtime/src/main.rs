@@ -24,7 +24,7 @@ fn main() {
         );
         println!("{}", chunk);
         let mut thread = Thread {
-            stack: Stack::new(chunk.var_count),
+            stack: Stack::new(chunk.var_count ),
         };
 
         let result = thread.run_chunk(chunk).unwrap();

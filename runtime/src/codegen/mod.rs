@@ -23,6 +23,7 @@ pub struct Codegen {
     bytes: Vec<u8>,
     constants: Rc<RefCell<HashMap<RegisterContents, Index>>>,
     scope: Rc<SymbolTable>,
+    breaks: Option<Vec<JumpMark>>,
 }
 
 impl Codegen {
@@ -31,6 +32,7 @@ impl Codegen {
             bytes: Vec::new(),
             constants: Default::default(),
             scope: Default::default(),
+            breaks: None,
         }
     }
 
@@ -67,6 +69,27 @@ impl Codegen {
         self.scope.pop();
         //self.bytes.push(Instruction::PopFrame as u8);
         Ok(())
+    }
+
+    pub fn enter_loop(&mut self) {
+        self.breaks = Some(Vec::new());
+    }
+
+    pub fn emit_break(&mut self) -> CodegenResult {
+        if self.breaks.is_some() {
+            let mark = self.emit_uncond_jump();
+            self.breaks.as_mut().unwrap().push(mark);
+            Ok(())
+        } else {
+            Err(CodegenError::UndefinedSymbol("break".to_string()))
+        }
+    }
+
+    pub fn exit_loop(&mut self) {
+        let breaks = std::mem::take(&mut self.breaks).expect("Attempted to call exit_loop outside of a loop");
+        for mark in breaks {
+            self.patch_jump(mark);
+        }
     }
 
     /// Declares a new symbol in the current scope
