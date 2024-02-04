@@ -31,7 +31,6 @@ impl Parse for ExprIf {
         let condition = token.parse()?;
         token.parse::<Colon>()?;
         let body = token.parse::<Block>()?;
-        token.skip_newlines();
         let r#else = token.parse().ok();
 
         let span = match &r#else {

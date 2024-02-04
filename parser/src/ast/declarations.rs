@@ -6,7 +6,7 @@ use super::{
     Spanned,
     Parse,
     keywords::Mut,
-    punct::{  Eq, Colon },
+    punct::{ Eq, Colon },
     stream::ParseStream,
     ParseResult,
     grouped::Bracketed,
@@ -118,7 +118,7 @@ mod test {
         assert!(decl.value.is_some());
         assert!(decl.ty.is_none());
         assert_eq!(decl.mutable, false);
-        stream.skip_newlines();
+
         let decl = stream.parse::<ExprDecl>().unwrap();
         assert_eq!(decl.name.name, "b");
         assert!(decl.value.is_some());
@@ -135,7 +135,7 @@ mod test {
         assert!(decl.value.is_some());
         assert_eq!(decl.mutable, false);
         assert_eq!(decl.ty.unwrap().name, "i32");
-        stream.skip_newlines();
+
         let decl = stream.parse::<ExprDecl>().unwrap();
         assert_eq!(decl.name.name, "b");
         assert!(decl.value.is_some());
@@ -160,7 +160,7 @@ mod test {
         assert!(decl.value.is_some());
         assert!(decl.ty.is_none());
         assert_eq!(decl.mutable, false);
-        stream.skip_newlines();
+
         let decl = stream.parse::<ExprDecl>().unwrap();
         assert_eq!(decl.name.name, "b");
         assert!(decl.value.is_some());
@@ -177,7 +177,7 @@ mod test {
         assert!(decl.value.is_some());
         assert_eq!(decl.mutable, false);
         assert_eq!(decl.ty.unwrap().name, "i32");
-        stream.skip_newlines();
+
         let decl = stream.parse::<ExprDecl>().unwrap();
         assert_eq!(decl.name.name, "b");
         assert!(decl.value.is_some());

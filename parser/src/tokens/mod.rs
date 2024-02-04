@@ -4,7 +4,12 @@ use thiserror::Error;
 
 use crate::{ file::SourceCursor, Span };
 
-use self::{ literal::TokenLiteral, comment::TokenComment, group::TokenGroup };
+use self::{
+    comment::TokenComment,
+    group::TokenGroup,
+    literal::TokenLiteral,
+    spacing::read_newline,
+};
 
 pub mod literal;
 pub mod ident;
@@ -37,14 +42,14 @@ impl Token {
             TokenType::Literal(literal)
         } else if let Some(ident) = ident::TokenIdent::try_read(cursor)? {
             TokenType::Ident(ident)
-        } else if spacing::read_newline(cursor) {
-            TokenType::Newline(spacing::count_spaces(cursor))
         } else if let Some(punct) = punct::TokenPunct::try_read(cursor)? {
             TokenType::Punct(punct)
         } else if let Some(comment) = comment::TokenComment::try_read(cursor)? {
             TokenType::Comment(comment)
         } else if let Some(group) = TokenGroup::try_read(cursor)? {
             TokenType::Group(group)
+        } else if read_newline(cursor) {
+            TokenType::Newline
         } else if cursor.eof() {
             TokenType::EOF
         } else {
@@ -62,8 +67,8 @@ pub enum TokenType {
     Ident(ident::TokenIdent),
     Group(TokenGroup),
     Punct(punct::TokenPunct),
-    Newline(usize),
     Comment(TokenComment),
+    Newline,
     EOF,
 }
 
@@ -74,9 +79,8 @@ impl Display for TokenType {
             TokenType::Literal(_) => write!(f, "<literal>"),
             TokenType::Group(_) => write!(f, "<group>"),
             TokenType::Punct(_) => write!(f, "<punct>"),
-            TokenType::Newline(_) => write!(f, "<newline>"),
             TokenType::Comment(_) => write!(f, "<comment>"),
-
+            TokenType::Newline => write!(f, "<newline>"),
             TokenType::EOF => write!(f, "EOF"),
         }
     }

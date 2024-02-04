@@ -46,35 +46,3 @@ pub trait Parse: Spanned {
 
     fn could_parse(stream: &mut ParseStream) -> bool;
 }
-
-pub struct Newline {
-    follwing_spaces: usize,
-    span: Span,
-}
-
-impl Spanned for Newline {
-    fn span(&self) -> Span {
-        self.span
-    }
-}
-
-impl Parse for Newline {
-    fn parse(stream: &mut ParseStream) -> ParseResult<Self> where Self: Sized {
-        stream.parse_with(|cursor: &mut TokenCursor| {
-            let token = cursor.current().clone();
-            if let TokenType::Newline(spaces) = &token.content {
-                cursor.advance();
-                Ok(Self {
-                    follwing_spaces: *spaces,
-                    span: token.span,
-                })
-            } else {
-                Err(ParseError::UnexpectedToken { expected: "newline", got: token.clone() })
-            }
-        })
-    }
-
-    fn could_parse(stream: &mut ParseStream) -> bool {
-        matches!(stream.current().content, TokenType::Newline(_))
-    }
-}

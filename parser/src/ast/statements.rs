@@ -6,7 +6,6 @@ use super::{
     ParseResult,
     Parse,
     Spanned,
-    Newline,
     modules::{ Module, UsePath },
 };
 
@@ -44,7 +43,7 @@ impl Parse for Statement {
     }
 
     fn could_parse(stream: &mut ParseStream) -> bool {
-        Newline::could_parse(stream)
+        Expr::could_parse(stream) || Module::could_parse(stream) || UsePath::could_parse(stream)
     }
 }
 

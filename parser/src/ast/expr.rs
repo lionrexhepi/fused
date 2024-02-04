@@ -47,7 +47,6 @@ impl Spanned for Expr {
 
 impl Parse for Expr {
     fn parse(stream: &mut ParseStream) -> ParseResult<Self> {
-        stream.skip_newlines();
         if stream.current().content == TokenType::EOF {
             return Ok(Self::Empty);
         }
@@ -63,7 +62,7 @@ impl Parse for Expr {
             Self::Loop(stream.parse()?)
         } else if ExprDecl::could_parse(stream) {
             Self::Decl(stream.parse()?)
-        } else if ExprBreak::could_parse(stream) { 
+        } else if ExprBreak::could_parse(stream) {
             Self::Break(stream.parse()?)
         } else {
             Self::Simple(stream.parse()?)

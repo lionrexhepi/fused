@@ -1,6 +1,6 @@
 use crate::tokens::{ stream::TokenStream, Token, TokenType };
 
-use super::{ Parse, ParseResult };
+use super::{ Parse, ParseError, ParseResult };
 
 #[derive(Clone)]
 pub struct ParseStream {
@@ -19,6 +19,18 @@ impl ParseStream {
         T::parse(self)
     }
 
+    pub fn expect_newline(&mut self) -> ParseResult<()> {
+        if self.tokens.current().content == TokenType::Newline {
+            self.tokens.advance();
+            Ok(())
+        } else {
+            Err(ParseError::UnexpectedToken {
+                expected: "newline",
+                got: self.tokens.current().clone(),
+            })
+        }
+    }
+
     pub fn cursor(&self) -> TokenCursor {
         TokenCursor::new(&self.tokens)
     }
@@ -30,12 +42,6 @@ impl ParseStream {
             self.tokens.advance_to(cursor.moved);
         }
         result
-    }
-
-    pub fn skip_newlines(&mut self) {
-        while let TokenType::Newline(_) = self.tokens.current().content {
-            self.tokens.advance();
-        }
     }
 
     pub fn current(&self) -> &Token {
@@ -68,15 +74,31 @@ impl<'a> TokenCursor<'a> {
     }
 
     pub fn current(&self) -> &Token {
-        self.tokenstream.nth(self.moved)
+        let mut shift = 0;
+        while let TokenType::Newline = self.tokenstream.nth(self.moved + shift).content {
+            shift += 1;
+        }
+        self.tokenstream.nth(self.moved + shift)
     }
 
     pub fn next(&self) -> &Token {
-        self.tokenstream.nth(self.moved + 1)
+        let mut shift = 1;
+        while let TokenType::Newline = self.tokenstream.nth(self.moved + shift).content {
+            shift += 1;
+        }
+        self.tokenstream.nth(self.moved + shift)
     }
 
     pub fn nth(&self, n: usize) -> &Token {
-        self.tokenstream.nth(self.moved + n)
+        let mut shift = n;
+        while let TokenType::Newline = self.tokenstream.nth(self.moved + shift).content {
+            shift += 1;
+        }
+        self.tokenstream.nth(self.moved + shift)
+    }
+
+    pub fn newline(&self) -> bool {
+        matches!(self.tokenstream.current().content, TokenType::Newline)
     }
 
     pub fn advance(&mut self) -> bool {

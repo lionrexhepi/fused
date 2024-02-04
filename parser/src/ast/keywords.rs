@@ -84,6 +84,7 @@ define_keyword!(Loop, "loop");
 define_keyword!(Mod, "mod");
 define_keyword!(Use, "use");
 define_keyword!(Block, "block");
+define_keyword!(End, "end");
 
 #[cfg(test)]
 mod test {
