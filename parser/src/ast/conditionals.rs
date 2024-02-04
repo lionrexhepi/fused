@@ -30,7 +30,7 @@ impl Parse for ExprIf {
         let r#if = token.parse::<If>()?;
         let condition = token.parse()?;
         token.parse::<Colon>()?;
-        let body = token.parse::<Block>()?;
+        let body = Block::parse_with_end::<Else>(stream)?;
         let r#else = token.parse().ok();
 
         let span = match &r#else {
@@ -133,7 +133,7 @@ mod test {
     #[test]
     fn test_nested() {
         let tokens = TokenStream::from_string(
-            "if true:\n    if false:\n        1\n    else:\n        2\nelse:\n    3"
+            "if true:\n  if false:\n        1\nend\n    else:\n        2\nend\nelse:\n    3\nend\n"
         ).unwrap();
 
         let mut stream = ParseStream::new(tokens);
@@ -148,7 +148,7 @@ mod test {
     #[test]
     fn test_nested_chained() {
         let tokens = TokenStream::from_string(
-            "\nif true:\n    if false:\n        1\n    else:\n        2\nelse:\n    3\nb:=4"
+            "if true:\n  if false:\n        1\nend\n    else:\n        2\nend\nelse:\n    3\nend\nb:=4"
         ).unwrap();
 
         let mut stream = ParseStream::new(tokens);

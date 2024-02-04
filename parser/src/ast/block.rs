@@ -1,7 +1,7 @@
 use crate::{ tokens::TokenType, Span };
 
 use super::{
-    keywords::{ self, End },
+    keywords::{ self, End, Keyword },
     punct::Colon,
     statements::Statement,
     stream::ParseStream,
@@ -21,17 +21,24 @@ impl Spanned for Block {
 
 impl Parse for Block {
     fn parse(stream: &mut ParseStream) -> ParseResult<Self> where Self: Sized {
-        let first = stream.parse::<Statement>()?;
-        let mut stmts = vec![first];
-        while !End::could_parse(stream) {
-            stmts.push(stream.parse()?);
-        }
-        stream.parse::<End>()?;
-        Ok(Self(stmts))
+        Self::parse_with_end::<End>(stream)
     }
 
     fn could_parse(stream: &mut ParseStream) -> bool {
         Statement::could_parse(stream)
+    }
+}
+
+impl Block {
+    pub fn parse_with_end<E: Parse>(stream: &mut ParseStream) -> ParseResult<(Self, E)> {
+        let first = stream.parse::<Statement>()?;
+        let mut stmts = vec![first];
+        while !E::could_parse(stream) {
+            stream.expect_newline()?;
+            stmts.push(stream.parse()?);
+        }
+        stream.parse::<E>()?;
+        Ok((Self(stmts), stream.parse::<E>()?))
     }
 }
 
@@ -47,6 +54,7 @@ impl Parse for ExprBlock {
     fn parse(stream: &mut ParseStream) -> ParseResult<Self> where Self: Sized {
         stream.parse::<keywords::Block>()?;
         stream.parse::<Colon>()?;
+        stream.expect_newline()?;
         Ok(Self(stream.parse()?))
     }
 
@@ -62,7 +70,7 @@ mod test {
 
     #[test]
     fn test_single_statement() {
-        let tokens = TokenStream::from_string("1 end").unwrap();
+        let tokens = TokenStream::from_string("1 \nend").unwrap();
 
         let mut stream = ParseStream::new(tokens);
 
@@ -73,7 +81,7 @@ mod test {
 
     #[test]
     fn test_several_statements() {
-        let tokens = TokenStream::from_string("a:=1\nb:=2\nc:=3 end").unwrap();
+        let tokens = TokenStream::from_string("a:=1\nb:=2\nc:=3 \nend").unwrap();
 
         let mut stream = ParseStream::new(tokens);
 

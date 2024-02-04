@@ -76,7 +76,9 @@ fn is_keyword(ident: &str) -> bool {
         | "continue"
         | "mut"
         | "true"
-        | "false" => true,
+        | "false"
+        | "end"
+        | "block" => true,
         _ => false,
     }
 }

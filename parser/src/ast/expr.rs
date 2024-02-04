@@ -48,7 +48,10 @@ impl Spanned for Expr {
 impl Parse for Expr {
     fn parse(stream: &mut ParseStream) -> ParseResult<Self> {
         if stream.current().content == TokenType::EOF {
-            return Ok(Self::Empty);
+            return Err(ParseError::UnexpectedToken {
+                expected: "<expression>",
+                got: stream.current().clone(),
+            });
         }
         let result = if ExprFunction::could_parse(stream) {
             Self::Function(stream.parse()?)

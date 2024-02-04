@@ -45,7 +45,11 @@ impl ParseStream {
     }
 
     pub fn current(&self) -> &Token {
-        self.tokens.current()
+        let mut shift = 0;
+        while let TokenType::Newline = self.tokens.nth(shift).content {
+            shift += 1;
+        }
+        self.tokens.nth(shift)
     }
 }
 
