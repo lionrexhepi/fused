@@ -1,7 +1,8 @@
-use crate::{ tokens::TokenType, Span };
+
+use crate:: Span ;
 
 use super::{
-    keywords::{ self, End, Keyword },
+    keywords::{ self, End, },
     punct::Colon,
     statements::Statement,
     stream::ParseStream,
@@ -21,26 +22,20 @@ impl Spanned for Block {
 
 impl Parse for Block {
     fn parse(stream: &mut ParseStream) -> ParseResult<Self> where Self: Sized {
-        Self::parse_with_end::<End>(stream)
-    }
+        let first = stream.parse::<Statement>()?;
+        let mut stmts = vec![first];
+        while !End::could_parse(stream) {
+            stream.expect_newline()?;
+            stmts.push(stream.parse()?);
+        }
+        stream.parse::<End>()?;
+        Ok(Self(stmts))}
 
     fn could_parse(stream: &mut ParseStream) -> bool {
         Statement::could_parse(stream)
     }
-}
+} 
 
-impl Block {
-    pub fn parse_with_end<E: Parse>(stream: &mut ParseStream) -> ParseResult<(Self, E)> {
-        let first = stream.parse::<Statement>()?;
-        let mut stmts = vec![first];
-        while !E::could_parse(stream) {
-            stream.expect_newline()?;
-            stmts.push(stream.parse()?);
-        }
-        stream.parse::<E>()?;
-        Ok((Self(stmts), stream.parse::<E>()?))
-    }
-}
 
 pub struct ExprBlock(pub Block);
 

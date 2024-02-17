@@ -4,6 +4,7 @@ pub mod scope;
 
 use std::{ cell::RefCell, collections::HashMap, mem::size_of, rc::Rc };
 
+use parser::ast::Ast;
 use thiserror::Error;
 
 use crate::{ bufreader::Index, chunk::Chunk, instructions::Instruction, stack::RegisterContents };
@@ -172,6 +173,16 @@ impl Codegen {
 
 pub trait ToBytecode {
     fn to_bytecode(&self, codegen: &mut Codegen) -> CodegenResult;
+}
+
+impl ToBytecode for Ast {
+    fn to_bytecode(&self, codegen: &mut Codegen) -> CodegenResult {
+        for expr in &self.items {
+            expr.to_bytecode(codegen)?;
+        }
+        codegen.emit_simple(Instruction::Return)?;
+        Ok(())
+    }
 }
 
 #[cfg(test)]

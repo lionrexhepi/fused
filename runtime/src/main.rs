@@ -1,6 +1,6 @@
 use std::{ env::args, fs::File, io::Read };
 
-use parser::{ tokens::stream::TokenStream, ast::{ stream::ParseStream, block::Block } };
+use parser::{ ast::{ block::Block, stream::ParseStream, Ast }, tokens::stream::TokenStream };
 use runtime::{ codegen::{ Codegen, ToBytecode }, instructions::Instruction, stack::Stack, Thread };
 
 fn main() {
@@ -10,12 +10,10 @@ fn main() {
         let file_len = File::open("./test.fused").unwrap().read_to_string(&mut buf).unwrap();
         let time = std::time::Instant::now();
         let tokens = TokenStream::from_string(buf).unwrap();
-        let mut parse = ParseStream::new(tokens);
-        let block = parse.parse::<Block>().unwrap();
-        println!("{}", block.0.len());
+        let block = Ast::from_tokens(&mut ParseStream::new(tokens)).unwrap();
+        println!("{}", block.items.len());
         let mut codegen = Codegen::new();
         _ = block.to_bytecode(&mut codegen).unwrap();
-        codegen.emit_simple(Instruction::Return).unwrap();
 
         let chunk = codegen.chunk();
         let size = chunk.size();

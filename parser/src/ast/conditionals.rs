@@ -30,9 +30,19 @@ impl Parse for ExprIf {
         let r#if = token.parse::<If>()?;
         let condition = token.parse()?;
         token.parse::<Colon>()?;
-        let body = Block::parse_with_end::<Else>(stream)?;
-        let r#else = token.parse().ok();
-
+        token.expect_newline()?;
+        let mut content = Vec::new();
+        let r#else = loop {
+            if keywords::End::could_parse(token) {
+                break None;
+            } else if Else::could_parse(token) {
+                break Some(token.parse()?);
+            } else {
+                content.push(token.parse()?);
+            }
+            token.expect_newline()?;
+        };
+        let body = Block(content);
         let span = match &r#else {
             Some(Else::If(expr)) => r#if.span().join(expr.span()),
             Some(Else::Body(block)) => r#if.span().join(block.span()),
@@ -86,18 +96,19 @@ impl Parse for Else {
 #[cfg(test)]
 mod test {
     use crate::{
-        tokens::stream::TokenStream,
         ast::{
-            stream::ParseStream,
-            conditionals::{ ExprIf, Else },
-            expr::ExprLit,
+            conditionals::{ Else, ExprIf },
+            expr::{ Expr, ExprLit },
             simple::ExprSimple,
+            stream::ParseStream,
+            Ast,
         },
+        tokens::stream::TokenStream,
     };
 
     #[test]
     fn test_if() {
-        let tokens = TokenStream::from_string("if true:\n    1\n").unwrap();
+        let tokens = TokenStream::from_string("if true:\n    1\nend").unwrap();
 
         let mut stream = ParseStream::new(tokens);
 
@@ -152,5 +163,13 @@ mod test {
         ).unwrap();
 
         let mut stream = ParseStream::new(tokens);
+        let ast = Ast::from_tokens(&mut stream).unwrap();
+
+        assert_eq!(ast.items.len(), 2);
+        let r#if = match &ast.items[0].content {
+            crate::ast::statements::StatementContent::Expr(expr) => expr,
+            _ => panic!(),
+        };
+        assert!(matches!(*r#if, Expr::If(ExprIf { .. })));
     }
 }

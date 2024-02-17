@@ -2,7 +2,7 @@ use thiserror::Error;
 
 use crate::{ Span, tokens::{ TokenType, Token } };
 
-use self::stream::{ ParseStream, TokenCursor };
+use self::{ statements::Statement, stream::{ ParseStream, TokenCursor } };
 
 pub mod keywords;
 pub mod number;
@@ -24,7 +24,30 @@ pub mod statements;
 pub mod modules;
 pub mod simple;
 
-pub struct Ast;
+pub struct Ast {
+    pub items: Vec<Statement>,
+}
+
+impl Ast {
+    pub fn from_tokens(stream: &mut ParseStream) -> std::result::Result<Self, Vec<ParseError>> {
+        let mut items = Vec::new();
+        let mut errors = Vec::new();
+        let first = stream.parse().map_err(|err| vec![err])?;
+        items.push(first);
+        while stream.current().content != TokenType::EOF {
+            match stream.parse::<Statement>() {
+                Ok(item) => items.push(item),
+                Err(err) => errors.push(err),
+            }
+        }
+
+        if errors.is_empty() {
+            Ok(Self { items })
+        } else {
+            Err(errors)
+        }
+    }
+}
 
 pub trait Spanned {
     fn span(&self) -> Span;
